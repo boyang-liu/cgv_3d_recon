@@ -1,0 +1,1 @@
+install:vs2019,camke,opencv,Azure-Kinect-Sensor-SDK, 
