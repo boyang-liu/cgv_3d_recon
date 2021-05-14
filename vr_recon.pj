@@ -2,7 +2,9 @@
 projectName="vr_recon";
 projectType="application_plugin";
 projectGUID="562ED7BB-7DE5-4E59-A3F5-0F84DB4BBB9B";
-addIncDirs    =[CGV_DIR."/3rd", CGV_DIR."/libs/rgbd_capture", CGV_BUILD_DIR."/vr_recon"];
+addIncDirs    =[CGV_DIR."/3rd", CGV_DIR."/libs/rgbd_capture", CGV_BUILD_DIR."/vr_recon", env::AZURE_KINECT_SDK."/include"];
+addLibDirs=[env::AZURE_KINECT_SDK."/windows-desktop/amd64/release/bin",env::AZURE_KINECT_SDK."/windows-desktop/amd64/release/lib"];
+addMapDeps = [ ["kinect_azure_lib", ["k4a","k4a","k4a","k4a"] ] ];
 addProjectDirs=[CGV_DIR."/libs", CGV_DIR."/3rd", CGV_DIR."/plugins", CGV_DIR."/test"];
 addProjectDeps=["cgv_utils","cgv_type","cgv_data","cgv_base", "cgv_signal", "cgv_reflect", "cgv_media", "cgv_os", "cgv_gui", 
 				"cgv_render", 
@@ -10,7 +12,7 @@ addProjectDeps=["cgv_utils","cgv_type","cgv_data","cgv_base", "cgv_signal", "cgv
 				"cmi_io", "crg_vr_view", "cg_vr", "vr_emulator", "openvr_driver", "crg_grid", 
 				"glew",
                 "rgbd_capture",  "rgbd_kinect_azure", "point_cloud"];
-addDependencies=["opengl"];
+addDependencies=["opengl","kinect_azure_lib"];
 addSharedDefines=["VR_RECON_EXPORTS"];
 addCommandLineArguments=[
 		after("type(vr_recon):protocol_path='".INPUT_DIR."'", "vr_recon"),

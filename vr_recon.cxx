@@ -23,6 +23,7 @@
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
 
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -104,24 +105,61 @@ void vr_rgbd::generate_point_cloud(std::vector<vertex>& pc)
 		}
 }
 	/// start the rgbd device
+
+
 void vr_rgbd::start_rgbd()
 {
-		if (!rgbd_inp.is_attached()) {
+
+	
+
+
+		if (!rgbd_inp.is_attached()) 
+		{
+
+			//std::cout <<"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"<< rgbd::rgbd_input::get_nr_devices() << std::endl;
 			if (rgbd::rgbd_input::get_nr_devices() == 0)
+			{
+				
 				return;
-			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(0)))
+				
+			}
+				
+			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))
+			{			
+				
 				return;
+				
+			}
+			
 		}
+
+
+		//unsigned n_d = rgbd_input::get_nr_devices();
+		/*string bbb = "2";
+		
+		for (unsigned j = 0; j < n_d; ++j) {
+			bbb += ",";
+			bbb += rgbd_input::get_serial(j);
+		}
+		
+		std::cout << "////////////:"<< bbb << std::endl;*/
+		//rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx));
+		
 		rgbd_inp.set_near_mode(true);
 		std::vector<rgbd::stream_format> stream_formats;
 		rgbd_started = rgbd_inp.start(rgbd::IS_COLOR_AND_DEPTH, stream_formats);
 		update_member(&rgbd_started);
+		
 }
 	/// stop rgbd device
 void vr_rgbd::stop_rgbd()
 {
 	if (!rgbd_inp.is_started())
 		return;
+	
+	rgbd_inp.stop();
+	rgbd_inp.detach();
+	
 	rgbd_started = rgbd_inp.stop();
 	update_member(&rgbd_started);
 }
@@ -399,7 +437,7 @@ void vr_rgbd::timer_event(double t, double dt)
 				bool new_frame;
 				bool found_frame = false;
 				bool depth_frame_changed = false;
-				bool color_frame_changed = false;
+				bool color_frame_changed = false;			
 				do {
 					new_frame = false;
 					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0);
@@ -468,8 +506,8 @@ void vr_rgbd::create_gui()
 		num_devices = n;
 		connect_copy(add_control("device", (DummyEnum&)device_idx, "dropdown", device_def)->value_change, rebind(this, &vr_rgbd::device_select));
 
-		std::cout << "num_devices:"<< num_devices << std::endl;
-		std::cout << "////////////////////////////////"  << std::endl;
+		//std::cout << "num_devices:"<< num_devices << std::endl;
+		//std::cout << "////////////////////////////////"  << std::endl;
 
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
@@ -542,9 +580,27 @@ void vr_rgbd::on_set(void* member_ptr)
 {
 		if (member_ptr == &rgbd_started && rgbd_started != rgbd_inp.is_started()) {
 			if (rgbd_started)
+			{ 
+				/*unsigned n_d = rgbd_input::get_nr_devices();
+				string aaa = "-";
+
+				for (unsigned i = 0; i < n_d; ++i) {
+					aaa += ",";
+					aaa += rgbd_input::get_serial(i);
+				}
+
+				std::cout << "1111111111111111:" << aaa << std::endl;*/
 				start_rgbd();
+				
+			}
+				
 			else
+			{ 
+				
 				stop_rgbd();
+			
+			}
+				
 		}
 		if (member_ptr == &rgbd_protocol_path) {
 			rgbd_inp.stop();
@@ -941,7 +997,7 @@ void vr_rgbd::device_select() {
 	else if (device_idx == -2)
 		device_mode = No_Device;
 	else device_mode = Has_Device;
-
+	//std::cout<<"device_id:"<< device_idx <<std::endl;
 
 
 
@@ -954,11 +1010,19 @@ void vr_rgbd::set_devices() {
 
 }
 
+vector<uint32_t> device_indices{ 0 };
+void vr_rgbd::capture_multi_device()
+{
+	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
+	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
+	multidevice capturer(device_indices, color_exposure_usec, powerline_freq);
+	//start_devices
+}
 
 
 
 #include <cgv/base/register.h>
-
+#include "multidevice.h"
 cgv::base::object_registration<vr_rgbd> vr_rgbd_reg("");
 
 ///@}

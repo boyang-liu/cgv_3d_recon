@@ -33,7 +33,8 @@
 #include <cg_vr/vr_server.h>
 #include <vr_view_interactor.h>
 #include "intersection.h"
-
+#include "k4a/k4a.h"
+#include "multidevice.h"
 using namespace rgbd;
 
 
@@ -215,9 +216,10 @@ private:
 	int device_idx;
 	DeviceMode device_mode;
 	int num_devices;
+
 	//std::vector<int> device_indices ;
 protected:
 	void device_select();
 	void set_devices();
-
+	void capture_multi_device();
 };
