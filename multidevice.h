@@ -226,6 +226,25 @@ public:
 		// if we've made it to here, it means that we have synchronized captures.
 		return captures;
 	}
+	const k4a::device& get_master_device() const
+	{
+		return master_device;
+	}
+
+	const k4a::device& get_subordinate_device_by_index(size_t i) const
+	{
+		// devices[0] is the master. There are only devices.size() - 1 others. So, indices greater or equal are invalid
+		if (i >= subordinate_devices.size())
+		{
+			cerr << "Subordinate index too large!\n ";
+			exit(1);
+		}
+		return subordinate_devices[i];
+	}
+
+
+
+
 private:
 	// Once the constuctor finishes, devices[0] will always be the master
 	k4a::device master_device;

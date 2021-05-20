@@ -22,7 +22,7 @@
 #include <cgv/type/standard_types.h>
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
-
+#include "rgbd_kinect_azure/rgbd_kinect_azure.h"
 
 using namespace std;
 using namespace cgv::base;
@@ -109,31 +109,18 @@ void vr_rgbd::generate_point_cloud(std::vector<vertex>& pc)
 
 void vr_rgbd::start_rgbd()
 {
-
-	
-
-
 		if (!rgbd_inp.is_attached()) 
 		{
-
-			//std::cout <<"qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"<< rgbd::rgbd_input::get_nr_devices() << std::endl;
 			if (rgbd::rgbd_input::get_nr_devices() == 0)
-			{
-				
-				return;
-				
+			{				
+				return;			
 			}
 				
 			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))
-			{			
-				
-				return;
-				
-			}
-			
+			{						
+				return;		
+			}	
 		}
-
-
 		//unsigned n_d = rgbd_input::get_nr_devices();
 		/*string bbb = "2";
 		
@@ -152,6 +139,84 @@ void vr_rgbd::start_rgbd()
 		
 }
 	/// stop rgbd device
+
+
+
+static k4a_device_configuration_t get_master_config();
+static k4a_device_configuration_t get_subordinate_config();
+void vr_rgbd::start_multi_rgbd()
+{
+	
+	
+	/*if (!rgbd_inp.is_attached()) 
+	{
+		std::cout << "......................:" << std::endl;
+		if (rgbd::rgbd_input::get_nr_devices() < 2)
+		{
+			
+			return;
+		}
+		if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))
+		{
+			
+			return;
+		}
+	
+	}*/
+	
+	
+	if (num_devices > k4a::device::get_installed_count())
+	{
+		cerr << "Not enough cameras plugged in!\n";
+		exit(1);
+	}
+
+	if (num_devices == 2)
+	{
+		
+
+		vector<uint32_t> device_indices{ 0 };
+		device_indices.emplace_back(1);
+		int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
+		int32_t powerline_freq = 2;			// default to a 60 Hz powerline
+		multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
+
+		//std::cout<<mycapturer.get_subordinate_device_by_index(0).get_serialnum()<<std::endl;
+
+		k4a_device_configuration_t main_config = get_master_config();
+		k4a_device_configuration_t secondary_config = get_subordinate_config();
+		k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
+			main_config.color_resolution);
+		//k4a::transformation main_depth_to_main_color(main_calibration);
+		mycapturer.start_devices(main_config, secondary_config);
+		//vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
+
+		
+
+
+
+	}
+
+	/*unsigned n_d = rgbd_input::get_nr_devices();
+		string bbb = "--";
+
+		for (unsigned j = 0; j < n_d; ++j) {
+			bbb += ",";
+			bbb += rgbd_input::get_serial(j);
+		}
+		std::cout << "num:" << n_d << std::endl;
+		std::cout << "////////////:"<< bbb << std::endl;*/
+		
+	
+}
+void vr_rgbd::stop_multi_rgbd() 
+{
+
+}
+
+
+
+
 void vr_rgbd::stop_rgbd()
 {
 	if (!rgbd_inp.is_started())
@@ -195,6 +260,7 @@ vr_rgbd::vr_rgbd()
 	srs.radius = 0.005f;
 	state[0] = state[1] = state[2] = state[3] = IS_NONE;
 	rgbd_started = false;
+	rgbd_multi_started = false;
 	record_frame = false;
 	record_all_frames = false;
 	record_key_frames = false;
@@ -511,6 +577,7 @@ void vr_rgbd::create_gui()
 
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
+		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
 		add_member_control(this, "record_frame", record_frame, "check");
 		add_member_control(this, "record_all_frames", record_all_frames, "check");
 		add_member_control(this, "clear_all_frames", clear_all_frames, "check");
@@ -574,33 +641,21 @@ bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 			rh.reflect_member("record_all_frames", record_all_frames) &&
 			rh.reflect_member("clear_all_frames", clear_all_frames) &&
 			rh.reflect_member("rgbd_started", rgbd_started) &&
+			rh.reflect_member("rgbd_multi_started", rgbd_multi_started) &&
 			rh.reflect_member("rgbd_protocol_path", rgbd_protocol_path);
 }
 void vr_rgbd::on_set(void* member_ptr)
 {
+	
 		if (member_ptr == &rgbd_started && rgbd_started != rgbd_inp.is_started()) {
 			if (rgbd_started)
-			{ 
-				/*unsigned n_d = rgbd_input::get_nr_devices();
-				string aaa = "-";
-
-				for (unsigned i = 0; i < n_d; ++i) {
-					aaa += ",";
-					aaa += rgbd_input::get_serial(i);
-				}
-
-				std::cout << "1111111111111111:" << aaa << std::endl;*/
-				start_rgbd();
-				
-			}
-				
+			{ 				
+				start_rgbd();				
+			}				
 			else
-			{ 
-				
-				stop_rgbd();
-			
-			}
-				
+			{ 				
+				stop_rgbd();			
+			}				
 		}
 		if (member_ptr == &rgbd_protocol_path) {
 			rgbd_inp.stop();
@@ -609,6 +664,21 @@ void vr_rgbd::on_set(void* member_ptr)
 			if (rgbd_started)
 				start_rgbd();
 		}
+		if (member_ptr == &rgbd_multi_started && rgbd_multi_started != rgbd_inp.is_started())
+		{
+			
+			if (rgbd_multi_started)
+			{
+				start_multi_rgbd();
+			}
+			else
+			{
+				stop_multi_rgbd();
+			}
+		}
+
+
+
 		update_member(member_ptr);
 		post_redraw();
 }
@@ -1003,21 +1073,21 @@ void vr_rgbd::device_select() {
 
 }
 
-void vr_rgbd::set_devices() {
-	std::vector<int> device_indices{0};
-	if (num_devices == 2)
-		device_indices.emplace_back(1);
-
-}
-
-vector<uint32_t> device_indices{ 0 };
-void vr_rgbd::capture_multi_device()
-{
-	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
-	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
-	multidevice capturer(device_indices, color_exposure_usec, powerline_freq);
-	//start_devices
-}
+//void vr_rgbd::set_devices() {
+//	std::vector<int> device_indices{0};
+//	if (num_devices == 2)
+//		device_indices.emplace_back(1);
+//
+//}
+//
+//vector<uint32_t> device_indices{ 0 };
+//void vr_rgbd::capture_multi_device()
+//{
+//	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
+//	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
+//	multidevice capturer(device_indices, color_exposure_usec, powerline_freq);
+//	//start_devices
+//}
 
 
 

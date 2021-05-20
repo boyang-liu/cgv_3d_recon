@@ -120,6 +120,7 @@ protected:
 	std::string pc_file_path;
 	///
 	bool rgbd_started;
+	bool rgbd_multi_started;
 	std::string rgbd_protocol_path;
 	/// 
 	rgbd::rgbd_input rgbd_inp;
@@ -174,6 +175,8 @@ protected:
 	void generate_point_cloud(std::vector<vertex>& pc);
 	/// start the rgbd device
 	void start_rgbd();
+	void start_multi_rgbd();
+	void vr_rgbd::stop_multi_rgbd();
 	/// stop rgbd device
 	void stop_rgbd();
 
