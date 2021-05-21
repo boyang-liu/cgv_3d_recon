@@ -1,16 +1,6 @@
-<<<<<<< HEAD
-environment configuration:
-	install:vs2019,camke,opencv,Azure-Kinect-Sensor-SDK
-	download cgv with branch"develop-rgbd"
-	try to run green_screen.exe by using amd.Default values are 2 9 6 28
-task1:link 3 cameras in cgv with the help of green_screen
-	use rgbd_kinect_azure class to make start_multidevice 
-task2:use tracker and controller to correct the position of point cloud 
-=======
 environment configuration:
 	install:vs2019,camke,opencv,Azure-Kinect-Sensor-SDK
 	download cgv with branch"develop-rgbd"
 	try to run green_screen.exe by using amd.Default values are 2 9 6 28
 task1:link 3 cameras in cgv with the help of green_screen
 task2:use tracker and controller to correct the position of point cloud 
->>>>>>> 93b023a27477dc3599d414a52abd32b98ef97cea
