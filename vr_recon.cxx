@@ -22,8 +22,8 @@
 #include <cgv/type/standard_types.h>
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
-#include "rgbd_kinect_azure/rgbd_kinect_azure.h"
-
+//#include "rgbd_kinect_azure/rgbd_kinect_azure.h"
+#include "multidevice.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -109,6 +109,7 @@ void vr_rgbd::generate_point_cloud(std::vector<vertex>& pc)
 
 void vr_rgbd::start_rgbd()
 {
+	//std::cout << "device idx:" << device_idx << std::endl;
 		if (!rgbd_inp.is_attached()) 
 		{
 			if (rgbd::rgbd_input::get_nr_devices() == 0)
@@ -116,86 +117,109 @@ void vr_rgbd::start_rgbd()
 				return;			
 			}
 				
-			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))
-			{						
+			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))//
+			{
 				return;		
 			}	
 		}
-		//unsigned n_d = rgbd_input::get_nr_devices();
-		/*string bbb = "2";
 		
-		for (unsigned j = 0; j < n_d; ++j) {
-			bbb += ",";
-			bbb += rgbd_input::get_serial(j);
-		}
 		
-		std::cout << "////////////:"<< bbb << std::endl;*/
-		//rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx));
+
 		
+		//std::cout << "if it is attached:" << rgbd::rgbd_input::get_serial(0) << std::endl;
+		//std::cout << "if it is attached:" << rgbd_inp.get_serial() << std::endl;
+		
+
+		
+
 		rgbd_inp.set_near_mode(true);
 		std::vector<rgbd::stream_format> stream_formats;
 		rgbd_started = rgbd_inp.start(rgbd::IS_COLOR_AND_DEPTH, stream_formats);
-		update_member(&rgbd_started);
-		
+		update_member(&rgbd_started);	
 }
 	/// stop rgbd device
 
 
+constexpr uint32_t MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC = 160;
+static k4a_device_configuration_t get_default_config()
+{
+	k4a_device_configuration_t camera_config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
+	camera_config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
+	camera_config.color_resolution = K4A_COLOR_RESOLUTION_720P;
+	camera_config.depth_mode = K4A_DEPTH_MODE_WFOV_UNBINNED; // No need for depth during calibration
+	camera_config.camera_fps = K4A_FRAMES_PER_SECOND_15;     // Don't use all USB bandwidth
+	camera_config.subordinate_delay_off_master_usec = 0;     // Must be zero for master
+	camera_config.synchronized_images_only = true;
+	return camera_config;
+}
 
-static k4a_device_configuration_t get_master_config();
-static k4a_device_configuration_t get_subordinate_config();
+static k4a_device_configuration_t get_master_config()
+{
+	k4a_device_configuration_t camera_config = get_default_config();
+	camera_config.wired_sync_mode = K4A_WIRED_SYNC_MODE_MASTER;
+
+	// Two depth images should be seperated by MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC to ensure the depth imaging
+	// sensor doesn't interfere with the other. To accomplish this the master depth image captures
+	// (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) before the color image, and the subordinate camera captures its
+	// depth image (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) after the color image. This gives us two depth
+	// images centered around the color image as closely as possible.
+	camera_config.depth_delay_off_color_usec = -static_cast<int32_t>(MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2);
+	camera_config.synchronized_images_only = true;
+	return camera_config;
+}
+
+static k4a_device_configuration_t get_subordinate_config()
+{
+	k4a_device_configuration_t camera_config = get_default_config();
+	camera_config.wired_sync_mode = K4A_WIRED_SYNC_MODE_SUBORDINATE;
+
+	// Two depth images should be seperated by MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC to ensure the depth imaging
+	// sensor doesn't interfere with the other. To accomplish this the master depth image captures
+	// (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) before the color image, and the subordinate camera captures its
+	// depth image (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) after the color image. This gives us two depth
+	// images centered around the color image as closely as possible.
+	camera_config.depth_delay_off_color_usec = MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2;
+	return camera_config;
+}
+
+
+
 void vr_rgbd::start_multi_rgbd()
 {
-	
-	
-	/*if (!rgbd_inp.is_attached()) 
-	{
-		std::cout << "......................:" << std::endl;
-		if (rgbd::rgbd_input::get_nr_devices() < 2)
-		{
-			
-			return;
-		}
-		if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))
-		{
-			
-			return;
-		}
-	
-	}*/
-	
-	
+
+
+
 	if (num_devices > k4a::device::get_installed_count())
 	{
 		cerr << "Not enough cameras plugged in!\n";
 		exit(1);
 	}
 
-	if (num_devices == 2)
-	{
-		
+	//if (num_devices == 2)
+	//{
 
-		vector<uint32_t> device_indices{ 0 };
-		device_indices.emplace_back(1);
-		int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
-		int32_t powerline_freq = 2;			// default to a 60 Hz powerline
-		multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
 
-		//std::cout<<mycapturer.get_subordinate_device_by_index(0).get_serialnum()<<std::endl;
+	vector<uint32_t> device_indices{ 0 };
+	device_indices.emplace_back(1);
+	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
+	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
+	multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
+	//std::cout<<mycapturer.get_subordinate_device_by_index(1).get_serialnum()<<std::endl;
 
-		k4a_device_configuration_t main_config = get_master_config();
-		k4a_device_configuration_t secondary_config = get_subordinate_config();
-		k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
+	k4a_device_configuration_t main_config = get_master_config();
+	k4a_device_configuration_t secondary_config = get_subordinate_config();
+	k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
 			main_config.color_resolution);
-		//k4a::transformation main_depth_to_main_color(main_calibration);
-		mycapturer.start_devices(main_config, secondary_config);
-		//vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
-
+	k4a::transformation main_depth_to_main_color(main_calibration);		
+	mycapturer.start_devices(main_config, secondary_config);
+	vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
+		
+	//std::chrono::time_point<std::chrono::system_clock> start_time = std::chrono::system_clock::now();
 		
 
 
 
-	}
+	//}
 
 	/*unsigned n_d = rgbd_input::get_nr_devices();
 		string bbb = "--";
@@ -570,6 +594,9 @@ void vr_rgbd::create_gui()
 		}
 		device_def += "'";
 		num_devices = n;
+
+
+
 		connect_copy(add_control("device", (DummyEnum&)device_idx, "dropdown", device_def)->value_change, rebind(this, &vr_rgbd::device_select));
 
 		//std::cout << "num_devices:"<< num_devices << std::endl;
@@ -1073,26 +1100,11 @@ void vr_rgbd::device_select() {
 
 }
 
-//void vr_rgbd::set_devices() {
-//	std::vector<int> device_indices{0};
-//	if (num_devices == 2)
-//		device_indices.emplace_back(1);
-//
-//}
-//
-//vector<uint32_t> device_indices{ 0 };
-//void vr_rgbd::capture_multi_device()
-//{
-//	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
-//	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
-//	multidevice capturer(device_indices, color_exposure_usec, powerline_freq);
-//	//start_devices
-//}
+
 
 
 
 #include <cgv/base/register.h>
-#include "multidevice.h"
+//cgv::base::object_registration<vr_rgbd> vr_rgbd_reg("vr_rgbd");
 cgv::base::object_registration<vr_rgbd> vr_rgbd_reg("");
-
 ///@}

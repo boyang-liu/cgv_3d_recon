@@ -35,6 +35,7 @@
 #include "intersection.h"
 #include "k4a/k4a.h"
 #include "multidevice.h"
+#include <plugins/rgbd_kinect_azure/rgbd_kinect_azure.h>
 using namespace rgbd;
 
 
@@ -124,10 +125,11 @@ protected:
 	std::string rgbd_protocol_path;
 	/// 
 	rgbd::rgbd_input rgbd_inp;
+
 	// store the scene as colored boxes
 	std::vector<box3> boxes;
 	std::vector<rgb> box_colors;
-
+	rgbd::rgbd_kinect_azure rka_inp;
 	// rendering style for boxes
 	cgv::render::box_render_style style;
 
@@ -184,7 +186,6 @@ public:
 	vr_rgbd();
 	~vr_rgbd();
 	size_t construct_point_cloud();
-
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
@@ -192,7 +193,6 @@ public:
 	void copy_pointcloud(const std::vector<vertex> input, point_cloud& output);
 	///cast point_cloud to vertex
 	void pc2vertex(const point_cloud& input, std::vector<vertex>& output);
-
 	void write_pcs_to_disk(int i);
 	size_t read_pc_queue(const std::string filename, std::string content);
 	void registrationPointCloud();
@@ -201,7 +201,6 @@ public:
 	void construct_TSDtree();
 	bool record_this_frame(double t);
 	void timer_event(double t, double dt);
-
 	std::string get_type_name() const;
 	void create_gui();
 	bool self_reflect(cgv::reflect::reflection_handler& rh);
@@ -212,8 +211,9 @@ public:
 	void clear(cgv::render::context& ctx);
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
 	void draw(cgv::render::context& ctx);
-
 	enum DeviceMode {No_Device,Protocol,Has_Device};
+
+	 
 
 private:
 	int device_idx;
