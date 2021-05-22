@@ -22,7 +22,6 @@
 #include <cgv/type/standard_types.h>
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
-//#include "rgbd_kinect_azure/rgbd_kinect_azure.h"
 #include "multidevice.h"
 using namespace std;
 using namespace cgv::base;
@@ -123,19 +122,11 @@ void vr_rgbd::start_rgbd()
 			}	
 		}
 		
-		
-
-		
-		//std::cout << "if it is attached:" << rgbd::rgbd_input::get_serial(0) << std::endl;
-		//std::cout << "if it is attached:" << rgbd_inp.get_serial() << std::endl;
-		
-
-		
-
 		rgbd_inp.set_near_mode(true);
 		std::vector<rgbd::stream_format> stream_formats;
 		rgbd_started = rgbd_inp.start(rgbd::IS_COLOR_AND_DEPTH, stream_formats);
 		update_member(&rgbd_started);	
+
 }
 	/// stop rgbd device
 
@@ -189,30 +180,30 @@ void vr_rgbd::start_multi_rgbd()
 
 
 
-	if (num_devices > k4a::device::get_installed_count())
-	{
-		cerr << "Not enough cameras plugged in!\n";
-		exit(1);
-	}
-
-	//if (num_devices == 2)
+	//if (num_devices > k4a::device::get_installed_count())
 	//{
+	//	cerr << "Not enough cameras plugged in!\n";
+	//	exit(1);
+	//}
+
+	////if (num_devices == 2)
+	////{
 
 
-	vector<uint32_t> device_indices{ 0 };
-	device_indices.emplace_back(1);
-	int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
-	int32_t powerline_freq = 2;			// default to a 60 Hz powerline
-	multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
-	//std::cout<<mycapturer.get_subordinate_device_by_index(1).get_serialnum()<<std::endl;
+	//vector<uint32_t> device_indices{ 0 };
+	//device_indices.emplace_back(1);
+	//int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
+	//int32_t powerline_freq = 2;			// default to a 60 Hz powerline
+	//multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
+	////std::cout<<mycapturer.get_subordinate_device_by_index(1).get_serialnum()<<std::endl;
 
-	k4a_device_configuration_t main_config = get_master_config();
-	k4a_device_configuration_t secondary_config = get_subordinate_config();
-	k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
-			main_config.color_resolution);
-	k4a::transformation main_depth_to_main_color(main_calibration);		
-	mycapturer.start_devices(main_config, secondary_config);
-	vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
+	//k4a_device_configuration_t main_config = get_master_config();
+	//k4a_device_configuration_t secondary_config = get_subordinate_config();
+	//k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
+	//		main_config.color_resolution);
+	//k4a::transformation main_depth_to_main_color(main_calibration);		
+	//mycapturer.start_devices(main_config, secondary_config);
+	//vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
 		
 	//std::chrono::time_point<std::chrono::system_clock> start_time = std::chrono::system_clock::now();
 		
@@ -524,6 +515,11 @@ void vr_rgbd::timer_event(double t, double dt)
 		}
 		if (rgbd_inp.is_started()) {
 			if (rgbd_inp.is_started()) {
+
+				/*if (rgbd_inp.get_serial() == rgbd::rgbd_input::get_serial(0))
+					rgbd_inp.attach(rgbd::rgbd_input::get_serial(1));
+				else rgbd_inp.attach(rgbd::rgbd_input::get_serial(0));*/
+
 				bool new_frame;
 				bool found_frame = false;
 				bool depth_frame_changed = false;
@@ -531,7 +527,9 @@ void vr_rgbd::timer_event(double t, double dt)
 				do {
 					new_frame = false;
 					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0);
+					//std::cout << "0000000000000000000" << std::endl;
 					if (new_color_frame_changed) {
+						//std::cout<<"111111111111111111111"<<std::endl;
 						++nr_color_frames;
 						color_frame_changed = new_color_frame_changed;
 						new_frame = true;
@@ -539,6 +537,7 @@ void vr_rgbd::timer_event(double t, double dt)
 					}
 					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0);
 					if (new_depth_frame_changed) {
+						//std::cout << "222222222222222222222222222" << std::endl;
 						++nr_depth_frames;
 						depth_frame_changed = new_depth_frame_changed;
 						new_frame = true;

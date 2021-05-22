@@ -1,0 +1,6 @@
+start rgbd camrera:
+rgbinput attach()
+set near mode()
+rgb.start(stram ,buffer)   start_device()
+update_member()
+timer event:
