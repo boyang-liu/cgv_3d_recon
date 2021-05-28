@@ -178,7 +178,7 @@ protected:
 	/// start the rgbd device
 	void start_rgbd();
 	void start_multi_rgbd();
-	void vr_rgbd::stop_multi_rgbd();
+	void stop_multi_rgbd();
 	/// stop rgbd device
 	void stop_rgbd();
 

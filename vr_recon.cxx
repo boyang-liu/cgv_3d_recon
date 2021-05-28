@@ -130,99 +130,30 @@ void vr_rgbd::start_rgbd()
 }
 	/// stop rgbd device
 
-
-constexpr uint32_t MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC = 160;
-static k4a_device_configuration_t get_default_config()
-{
-	k4a_device_configuration_t camera_config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
-	camera_config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-	camera_config.color_resolution = K4A_COLOR_RESOLUTION_720P;
-	camera_config.depth_mode = K4A_DEPTH_MODE_WFOV_UNBINNED; // No need for depth during calibration
-	camera_config.camera_fps = K4A_FRAMES_PER_SECOND_15;     // Don't use all USB bandwidth
-	camera_config.subordinate_delay_off_master_usec = 0;     // Must be zero for master
-	camera_config.synchronized_images_only = true;
-	return camera_config;
-}
-
-static k4a_device_configuration_t get_master_config()
-{
-	k4a_device_configuration_t camera_config = get_default_config();
-	camera_config.wired_sync_mode = K4A_WIRED_SYNC_MODE_MASTER;
-
-	// Two depth images should be seperated by MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC to ensure the depth imaging
-	// sensor doesn't interfere with the other. To accomplish this the master depth image captures
-	// (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) before the color image, and the subordinate camera captures its
-	// depth image (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) after the color image. This gives us two depth
-	// images centered around the color image as closely as possible.
-	camera_config.depth_delay_off_color_usec = -static_cast<int32_t>(MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2);
-	camera_config.synchronized_images_only = true;
-	return camera_config;
-}
-
-static k4a_device_configuration_t get_subordinate_config()
-{
-	k4a_device_configuration_t camera_config = get_default_config();
-	camera_config.wired_sync_mode = K4A_WIRED_SYNC_MODE_SUBORDINATE;
-
-	// Two depth images should be seperated by MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC to ensure the depth imaging
-	// sensor doesn't interfere with the other. To accomplish this the master depth image captures
-	// (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) before the color image, and the subordinate camera captures its
-	// depth image (MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2) after the color image. This gives us two depth
-	// images centered around the color image as closely as possible.
-	camera_config.depth_delay_off_color_usec = MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC / 2;
-	return camera_config;
-}
-
-
-
 void vr_rgbd::start_multi_rgbd()
 {
-
-
-
-	//if (num_devices > k4a::device::get_installed_count())
-	//{
-	//	cerr << "Not enough cameras plugged in!\n";
-	//	exit(1);
-	//}
-
-	////if (num_devices == 2)
-	////{
-
-
-	//vector<uint32_t> device_indices{ 0 };
-	//device_indices.emplace_back(1);
-	//int32_t color_exposure_usec = 8000; // somewhat reasonable default exposure time
-	//int32_t powerline_freq = 2;			// default to a 60 Hz powerline
-	//multidevice mycapturer(device_indices, color_exposure_usec, powerline_freq);
-	////std::cout<<mycapturer.get_subordinate_device_by_index(1).get_serialnum()<<std::endl;
-
-	//k4a_device_configuration_t main_config = get_master_config();
-	//k4a_device_configuration_t secondary_config = get_subordinate_config();
-	//k4a::calibration main_calibration = mycapturer.get_master_device().get_calibration(main_config.depth_mode,
-	//		main_config.color_resolution);
-	//k4a::transformation main_depth_to_main_color(main_calibration);		
-	//mycapturer.start_devices(main_config, secondary_config);
-	//vector<k4a::capture> background_captures = mycapturer.get_synchronized_captures(secondary_config);
-		
-	//std::chrono::time_point<std::chrono::system_clock> start_time = std::chrono::system_clock::now();
-		
-
-
-
-	//}
-
-	/*unsigned n_d = rgbd_input::get_nr_devices();
-		string bbb = "--";
-
-		for (unsigned j = 0; j < n_d; ++j) {
-			bbb += ",";
-			bbb += rgbd_input::get_serial(j);
+	/*std::cout << "nr_devices:" << rgbd::rgbd_input::get_nr_devices() << std::endl;
+	if (!rgbd_inp.is_multiattached()) 
+	{
+		if (rgbd::rgbd_input::get_nr_devices() == 0)
+		{
+			return;
 		}
-		std::cout << "num:" << n_d << std::endl;
-		std::cout << "////////////:"<< bbb << std::endl;*/
+		if (!rgbd_inp.multi_attach) 
+		{
 		
+		}
+	}*/
+	vector<int*> p;
+	int q = 1;
+	int q2 = 2;
+	int* w1 = q;
+
 	
+
+	std::cout << "nr_devices:" << p.size() << std::endl;
+	p[1]
+
 }
 void vr_rgbd::stop_multi_rgbd() 
 {
@@ -527,9 +458,9 @@ void vr_rgbd::timer_event(double t, double dt)
 				do {
 					new_frame = false;
 					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0);
-					//std::cout << "0000000000000000000" << std::endl;
+					
 					if (new_color_frame_changed) {
-						//std::cout<<"111111111111111111111"<<std::endl;
+						
 						++nr_color_frames;
 						color_frame_changed = new_color_frame_changed;
 						new_frame = true;
@@ -537,7 +468,7 @@ void vr_rgbd::timer_event(double t, double dt)
 					}
 					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0);
 					if (new_depth_frame_changed) {
-						//std::cout << "222222222222222222222222222" << std::endl;
+						
 						++nr_depth_frames;
 						depth_frame_changed = new_depth_frame_changed;
 						new_frame = true;
