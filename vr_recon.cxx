@@ -121,7 +121,7 @@ void vr_rgbd::start_rgbd()
 				return;		
 			}	
 		}
-		
+		//std::cout << "nr_device:" << device_idx << std::endl;
 		rgbd_inp.set_near_mode(true);
 		std::vector<rgbd::stream_format> stream_formats;
 		rgbd_started = rgbd_inp.start(rgbd::IS_COLOR_AND_DEPTH, stream_formats);
@@ -132,6 +132,37 @@ void vr_rgbd::start_rgbd()
 
 void vr_rgbd::start_multi_rgbd()
 {
+
+	if (!rgbd_inp.is_multi_attached())
+	{
+		//std::cout << "if it is attached:"  << std::endl;
+		if (rgbd::rgbd_input::get_nr_devices() == 0)
+		{
+			
+			return;
+		}
+		vector<std::string> ser;
+		ser.push_back(rgbd::rgbd_input::get_serial(0));
+		ser.push_back(rgbd::rgbd_input::get_serial(1));
+		if (!rgbd_inp.multi_attach(ser))//
+		{
+			//std::cout << "is excuted" << std::endl;
+			return;
+		}
+
+
+	}
+
+	if (rgbd_inp.is_multi_attached())
+		std::cout << "it is attached" << std::endl;
+	else
+		std::cout << "it is not attached" << std::endl;
+
+
+	//std::cout << "if it is attached:"<<rgbd_inp.nr_multi_de() << std::endl;
+	//bool a = rgbd_inp.is_multi_attached();
+	//std::cout << "if it is attached:" << a << std::endl;
+
 	/*std::cout << "nr_devices:" << rgbd::rgbd_input::get_nr_devices() << std::endl;
 	if (!rgbd_inp.is_multiattached()) 
 	{
@@ -144,15 +175,23 @@ void vr_rgbd::start_multi_rgbd()
 		
 		}
 	}*/
-	vector<int*> p;
-	int q = 1;
-	int q2 = 2;
-	int* w1 = q;
 
+	//vector<int*> p;
+	////char *q = "a";
+	//
+	//int q2 = 2;
+	//int* q3 ;
+	//q3 = &q2;
+	//p.push_back(q3);
+	////p[0]= &q[0];
+	//std::cout << "nr_devices:" << *p[0] << std::endl;
 	
 
+	/*delete p[1];
+	p[1] = NULL;
 	std::cout << "nr_devices:" << p.size() << std::endl;
-	p[1]
+	*/
+	
 
 }
 void vr_rgbd::stop_multi_rgbd() 
