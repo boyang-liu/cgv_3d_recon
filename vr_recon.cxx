@@ -132,7 +132,7 @@ void vr_rgbd::start_rgbd()
 
 void vr_rgbd::start_multi_rgbd()
 {
-
+	
 	if (!rgbd_inp.is_multi_attached())
 	{
 		//std::cout << "if it is attached:"  << std::endl;
@@ -141,62 +141,45 @@ void vr_rgbd::start_multi_rgbd()
 			
 			return;
 		}
+		
 		vector<std::string> ser;
-		ser.push_back(rgbd::rgbd_input::get_serial(0));
-		ser.push_back(rgbd::rgbd_input::get_serial(1));
-		if (!rgbd_inp.multi_attach(ser))//
+		
+		for (int nr_de=0;nr_de< rgbd::rgbd_input::get_nr_devices();nr_de++) 	
 		{
-			//std::cout << "is excuted" << std::endl;
+			ser.push_back(rgbd::rgbd_input::get_serial(nr_de));
+		}
+		//std::cout << "size of ser"<< ser.size() << std::endl;
+		if (!rgbd_inp.multi_attach(ser))
+		{			
 			return;
 		}
-
+		
 
 	}
 
 	if (rgbd_inp.is_multi_attached())
-		std::cout << "it is attached" << std::endl;
+		std::cout << "these are attached" << std::endl;
 	else
-		std::cout << "it is not attached" << std::endl;
+		std::cout << "these are not attached" << std::endl;
 
-
-	//std::cout << "if it is attached:"<<rgbd_inp.nr_multi_de() << std::endl;
-	//bool a = rgbd_inp.is_multi_attached();
-	//std::cout << "if it is attached:" << a << std::endl;
-
-	/*std::cout << "nr_devices:" << rgbd::rgbd_input::get_nr_devices() << std::endl;
-	if (!rgbd_inp.is_multiattached()) 
-	{
-		if (rgbd::rgbd_input::get_nr_devices() == 0)
-		{
-			return;
-		}
-		if (!rgbd_inp.multi_attach) 
-		{
-		
-		}
-	}*/
-
-	//vector<int*> p;
-	////char *q = "a";
-	//
-	//int q2 = 2;
-	//int* q3 ;
-	//q3 = &q2;
-	//p.push_back(q3);
-	////p[0]= &q[0];
-	//std::cout << "nr_devices:" << *p[0] << std::endl;
 	
-
-	/*delete p[1];
-	p[1] = NULL;
-	std::cout << "nr_devices:" << p.size() << std::endl;
-	*/
+	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());
+	rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
 	
-
+	update_member(&rgbd_multi_started);
+	
 }
 void vr_rgbd::stop_multi_rgbd() 
 {
+	std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
+	if (!rgbd_inp.is_multi_started())
+		return;
+	rgbd_inp.stop();//
+	rgbd_inp.detach();
 
+	rgbd_multi_started = rgbd_inp.stop();
+	std::cout << "nr of attached devices"<<rgbd_inp.nr_multi_de() << std::endl;
+	update_member(&rgbd_multi_started);
 }
 
 
@@ -486,10 +469,6 @@ void vr_rgbd::timer_event(double t, double dt)
 		if (rgbd_inp.is_started()) {
 			if (rgbd_inp.is_started()) {
 
-				/*if (rgbd_inp.get_serial() == rgbd::rgbd_input::get_serial(0))
-					rgbd_inp.attach(rgbd::rgbd_input::get_serial(1));
-				else rgbd_inp.attach(rgbd::rgbd_input::get_serial(0));*/
-
 				bool new_frame;
 				bool found_frame = false;
 				bool depth_frame_changed = false;
@@ -545,6 +524,19 @@ void vr_rgbd::timer_event(double t, double dt)
 				}
 			}
 		}
+		if (rgbd_inp.is_multi_started()) {
+
+
+
+
+
+
+
+		}
+
+
+
+		//if(rgbd_inp.is_multi_started)
 }
 
 std::string vr_rgbd::get_type_name() const
@@ -669,6 +661,7 @@ void vr_rgbd::on_set(void* member_ptr)
 			}
 			else
 			{
+				
 				stop_multi_rgbd();
 			}
 		}
