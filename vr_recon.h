@@ -63,6 +63,8 @@ protected:
 	/// internal members used for data storage
 	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
 	rgbd::frame_type color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
+	std::vector<frame_type> color_frames, depth_frames, warped_color_frames;
+	std::vector<frame_type> color_frames_2, depth_frames_2, warped_color_frames_2;
 	///
 	size_t nr_depth_frames;
 	size_t nr_color_frames;
@@ -115,6 +117,7 @@ protected:
 	float recording_fps;
 	///
 	std::future<size_t> future_handle;
+
 	/// 
 
 	/// path to be set for pc files
@@ -186,6 +189,8 @@ public:
 	vr_rgbd();
 	~vr_rgbd();
 	size_t construct_point_cloud();
+	//for multiple devices' point cloud
+	//size_t construct_point_cloud(int index);
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
