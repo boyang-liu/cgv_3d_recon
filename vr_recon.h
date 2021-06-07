@@ -190,7 +190,7 @@ public:
 	~vr_rgbd();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
-	//size_t construct_point_cloud(int index);
+	size_t construct_multi_point_cloud();//
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();

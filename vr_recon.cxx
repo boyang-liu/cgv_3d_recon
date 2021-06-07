@@ -135,7 +135,7 @@ void vr_rgbd::start_multi_rgbd()
 	
 	if (!rgbd_inp.is_multi_attached())
 	{
-		//std::cout << "if it is attached:"  << std::endl;
+		
 		if (rgbd::rgbd_input::get_nr_devices() == 0)
 		{
 			
@@ -148,12 +148,13 @@ void vr_rgbd::start_multi_rgbd()
 		{
 			ser.push_back(rgbd::rgbd_input::get_serial(nr_de));
 		}
-		//std::cout << "size of ser"<< ser.size() << std::endl;
+		
+		
 		if (!rgbd_inp.multi_attach(ser))
 		{			
 			return;
 		}
-		
+		std::cout << "size of multi_rgbd00:" << rgbd_inp.nr_multi_de() << std::endl;
 
 	}
 
@@ -161,11 +162,16 @@ void vr_rgbd::start_multi_rgbd()
 		std::cout << "these are attached" << std::endl;
 	else
 		std::cout << "these are not attached" << std::endl;
-
+	
 	
 	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());
 	rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
+	if (rgbd_multi_started)
+		std::cout << "these are started" << std::endl;
+	else
+		std::cout << "these are not started" << std::endl;
 	
+	//std::cout << "---------------" << rgbd_inp.nr_multi_de() << std::endl;
 	update_member(&rgbd_multi_started);
 	
 }
@@ -264,7 +270,7 @@ vr_rgbd::~vr_rgbd()
 	
 		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2);
 		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
-
+		
 		int i = 0;
 		for (int y = 0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {
@@ -289,39 +295,44 @@ vr_rgbd::~vr_rgbd()
 		return intermediate_pc.size();
 	}
 
-	//size_t vr_rgbd::construct_multi_point_cloud(int index)
-	//{
-		//intermediate_pc.clear();
-		//const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
-		//const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
+	size_t vr_rgbd::construct_multi_point_cloud()//int index
+	{
+		for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {
+		if(index_device ==0)
+			intermediate_pc.clear();
 
-		//rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2);
-		//colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
+		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
+		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
-		//int i = 0;
-		//for (int y = 0; y < depth_frame_2.height; ++y)
-		//	for (int x = 0; x < depth_frame_2.width; ++x) {
-		//		vec3 p;
-		//		if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0])) {
-		//			// flipping y to make it the same direction as in pixel y coordinate
-		//			p = -p;
-		//			p = rgbd_2_controller_orientation * p + rgbd_2_controller_position;
-		//			p = controller_orientation_pc * p + controller_position_pc;
-		//			rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
-		//			vertex v;
-		//			//filter points without color for 32 bit formats
-		//			static const rgba8 filter_color = rgba8(0, 0, 0, 255);
-		//			if (!(c == filter_color)) {
-		//				v.color = c;
-		//				v.point = p;
-		//			}
-		//			intermediate_pc.push_back(v);
-		//		}
-		//		++i;
-		//	}
-		//return intermediate_pc.size();
+		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index_device);//,index
+		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
+
+
+		int i = 0;
+		for (int y = 0; y < depth_frame_2.height; ++y)
+			for (int x = 0; x < depth_frame_2.width; ++x) {
+				vec3 p;
+				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index_device)) {//,index
+					// flipping y to make it the same direction as in pixel y coordinate
+					p = -p;
+					p = rgbd_2_controller_orientation * p + rgbd_2_controller_position;
+					p = controller_orientation_pc * p + controller_position_pc;
+					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
+					vertex v;
+					//filter points without color for 32 bit formats
+					static const rgba8 filter_color = rgba8(0, 0, 0, 255);
+					if (!(c == filter_color)) {
+						v.color = c;
+						v.point = p;
+					}
+					intermediate_pc.push_back(v);
+				}
+				++i;
+			}
+		}
+		return intermediate_pc.size();
 	
-	//}
+	}
 
 
 
@@ -477,26 +488,28 @@ vr_rgbd::~vr_rgbd()
 			if (future_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
 				size_t N = future_handle.get();
 				// copy computed point cloud
-				if (record_this_frame(t)) {
-					if (registration_started) {
-						//registrationPointCloud();
-						test_icp();
-					}
-					recorded_pcs.push_back(intermediate_pc);
-					if (save_pointcloud) {
-						counter_pc++;
-						write_pcs_to_disk(counter_pc);
-					}
-					current_pc.clear();
-					record_frame = false;
-					update_member(&record_frame);
-				}
-				else if (clear_all_frames) {
-					recorded_pcs.clear();
-					clear_all_frames = false;
-					update_member(&clear_all_frames);
-				}
-				else
+
+
+				//if (record_this_frame(t)) {
+				//	if (registration_started) {
+				//		//registrationPointCloud();
+				//		test_icp();
+				//	}
+				//	recorded_pcs.push_back(intermediate_pc);
+				//	if (save_pointcloud) {
+				//		counter_pc++;
+				//		write_pcs_to_disk(counter_pc);
+				//	}
+				//	current_pc.clear();
+				//	record_frame = false;
+				//	update_member(&record_frame);
+				//}
+				//else if (clear_all_frames) {
+				//	recorded_pcs.clear();
+				//	clear_all_frames = false;
+				//	update_member(&clear_all_frames);
+				//}
+				//else
 					current_pc = intermediate_pc;
 				post_redraw();
 			}
@@ -535,7 +548,7 @@ vr_rgbd::~vr_rgbd()
 				if (color_frame.is_allocated() && depth_frame.is_allocated() &&
 					(color_frame_changed || depth_frame_changed)) {
 					
-					if (!future_handle.valid()) { 
+					if (!future_handle.valid()) { //
 						if (!in_calibration) {
 							color_frame_2 = color_frame;
 							depth_frame_2 = depth_frame;
@@ -557,35 +570,39 @@ vr_rgbd::~vr_rgbd()
 							
 						}
 						future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
-						
+						//construct_point_cloud();
+						//current_pc = intermediate_pc;
+						//post_redraw();
+						//std::cout<<"run this"<<std::endl;
 					}
+					
 				}
 			//}
 		}
 		if (rgbd_inp.is_multi_started()) {
-			for (int m=0;m<rgbd_inp.nr_multi_de();m++) {
+			//for (int m=0;m<1;m++) {//rgbd_inp.nr_multi_de()
 			bool new_frame;
 			bool found_frame = false;
 			bool depth_frame_changed = false;
 			bool color_frame_changed = false;
 			do {
 				new_frame = false;
-				bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0,m);
-				color_frames.push_back(color_frame);
+				bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0,0);
+
 				if (new_color_frame_changed) {
 
-					//++nr_color_frames;
+					++nr_color_frames;
 					color_frame_changed = new_color_frame_changed;
 					new_frame = true;
-					//update_member(&nr_color_frames);
+					update_member(&nr_color_frames);
 				}
-				bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0,m);
+				bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0,0);
 				if (new_depth_frame_changed) {
 
-					//++nr_depth_frames;
+					++nr_depth_frames;
 					depth_frame_changed = new_depth_frame_changed;
 					new_frame = true;
-					//update_member(&nr_depth_frames);
+					update_member(&nr_depth_frames);
 				}
 				if (new_frame)
 					found_frame = true;
@@ -595,12 +612,13 @@ vr_rgbd::~vr_rgbd()
 			if (color_frame.is_allocated() && depth_frame.is_allocated() &&
 				(color_frame_changed || depth_frame_changed)) {
 
-				if (!future_handle.valid()) {
+				if (!future_handle.valid()) { //
 					if (!in_calibration) {
-						color_frames_2 .push_back(color_frame);
-						depth_frames_2 .push_back(depth_frame);
+						color_frame_2 = color_frame;
+						depth_frame_2 = depth_frame;
+
 					}
-					/*if (zoom_out && !zoom_in)
+					if (zoom_out && !zoom_in)
 					{
 						controller_orientation_pc = controller_orientation * 2;
 						controller_position_pc = controller_position;
@@ -609,18 +627,24 @@ vr_rgbd::~vr_rgbd()
 					{
 						controller_orientation_pc = controller_orientation * 0.5;
 						controller_position_pc = controller_position;
-					}*/
+					}
 					else {
 						controller_orientation_pc = controller_orientation;
 						controller_position_pc = controller_position;
+
 					}
-					//future_handle = std::async(&vr_rgbd::construct_point_cloud(), this);
+					future_handle = std::async(&vr_rgbd::construct_multi_point_cloud, this);
+					
+					
+					
+
+					//std::cout<<"run this"<<std::endl;
 				}
-			}
-
-
 
 			}
+			
+
+
 		}
 
 
