@@ -108,6 +108,7 @@ void vr_rgbd::generate_point_cloud(std::vector<vertex>& pc)
 
 void vr_rgbd::start_rgbd()
 {
+	
 	//std::cout << "device idx:" << device_idx << std::endl;
 		if (!rgbd_inp.is_attached()) 
 		{
@@ -115,8 +116,8 @@ void vr_rgbd::start_rgbd()
 			{				
 				return;			
 			}
-				
-			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(0)))//device_idx
+			
+			if (!rgbd_inp.attach(rgbd::rgbd_input::get_serial(device_idx)))//device_idx
 			{
 				return;		
 			}	
@@ -154,7 +155,7 @@ void vr_rgbd::start_multi_rgbd()
 		{			
 			return;
 		}
-		std::cout << "size of multi_rgbd00:" << rgbd_inp.nr_multi_de() << std::endl;
+		std::cout << "size of multi_rgbd:" << rgbd_inp.nr_multi_de() << std::endl;
 
 	}
 
@@ -167,11 +168,10 @@ void vr_rgbd::start_multi_rgbd()
 	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());
 	rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
 	if (rgbd_multi_started)
-		std::cout << "these are started" << std::endl;
+		std::cout << "they are started" << std::endl;
 	else
-		std::cout << "these are not started" << std::endl;
-	
-	//std::cout << "---------------" << rgbd_inp.nr_multi_de() << std::endl;
+		std::cout << "they are not started" << std::endl;
+		
 	update_member(&rgbd_multi_started);
 	
 }
@@ -205,6 +205,7 @@ void vr_rgbd::stop_rgbd()
 
 vr_rgbd::vr_rgbd()
 {
+	
 	set_name("vr_rgbd");
 	rgbd_controller_index = 0;
 	controller_orientation.identity();
@@ -256,6 +257,16 @@ vr_rgbd::vr_rgbd()
 	pc_file_path = QUOTE_SYMBOL_VALUE(INPUT_DIR) " / .. / data";
 
 	connect(cgv::gui::get_animation_trigger().shoot, this, &vr_rgbd::timer_event);
+
+	
+	bool camera_pos_1 = false;
+	vec3 camera_translation_1 = (0, 0, 0);
+	bool camera_pos_2 = false;
+	vec3 camera_translation_2 = (0, 0, 0);
+	bool camera_pos_3 = false;
+	vec3 camera_translation_3 = (0, 0, 0);
+
+
 }
 
 vr_rgbd::~vr_rgbd()
@@ -294,17 +305,18 @@ vr_rgbd::~vr_rgbd()
 			}
 		return intermediate_pc.size();
 	}
-
-	size_t vr_rgbd::construct_multi_point_cloud()//int index
+	
+	size_t vr_rgbd::construct_multi_point_cloud(int index)//
 	{
-		for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {
-		if(index_device ==0)
+		//for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {//
+			
+		if(index ==0)
 			intermediate_pc.clear();
 
 		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
 		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
-		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index_device);//,index
+		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);//,index
 		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
 
 
@@ -312,11 +324,24 @@ vr_rgbd::~vr_rgbd()
 		for (int y = 0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {
 				vec3 p;
-				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index_device)) {//,index
+				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
 					// flipping y to make it the same direction as in pixel y coordinate
-					p = -p;
-					p = rgbd_2_controller_orientation * p + rgbd_2_controller_position;
-					p = controller_orientation_pc * p + controller_position_pc;
+					p[1] = -p[1];
+					p[1] = p[1] + 2.0;
+					
+					if (index == 1 && camera_pos_2)
+					{
+						p = p + camera_translation_2 - camera_translation_1;
+						//std::cout<<"p's position:"<< p <<std::endl;
+						//p = rgbd_2_controller_orientation2* p + rgbd_2_controller_position2;
+						//p = rgbd_2_controller_orientation2 * p + rgbd_2_controller_position2;
+						//p = controller_orientation_pc * p + controller_position_pc;
+					}
+					else if (index == 2&& camera_pos_3)
+					{
+						p = p + camera_translation_3 - camera_translation_2;
+					}
+					
 					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
 					vertex v;
 					//filter points without color for 32 bit formats
@@ -329,7 +354,8 @@ vr_rgbd::~vr_rgbd()
 				}
 				++i;
 			}
-		}
+		
+		
 		return intermediate_pc.size();
 	
 	}
@@ -580,69 +606,79 @@ vr_rgbd::~vr_rgbd()
 			//}
 		}
 		if (rgbd_inp.is_multi_started()) {
-			//for (int m=0;m<1;m++) {//rgbd_inp.nr_multi_de()
-			bool new_frame;
-			bool found_frame = false;
-			bool depth_frame_changed = false;
-			bool color_frame_changed = false;
-			do {
-				new_frame = false;
-				bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0,0);
-
-				if (new_color_frame_changed) {
-
-					++nr_color_frames;
-					color_frame_changed = new_color_frame_changed;
-					new_frame = true;
-					update_member(&nr_color_frames);
-				}
-				bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0,0);
-				if (new_depth_frame_changed) {
-
-					++nr_depth_frames;
-					depth_frame_changed = new_depth_frame_changed;
-					new_frame = true;
-					update_member(&nr_depth_frames);
-				}
-				if (new_frame)
-					found_frame = true;
-			} while (new_frame);
-			if (found_frame)
-				post_redraw();
-			if (color_frame.is_allocated() && depth_frame.is_allocated() &&
-				(color_frame_changed || depth_frame_changed)) {
-
-				if (!future_handle.valid()) { //
-					if (!in_calibration) {
-						color_frame_2 = color_frame;
-						depth_frame_2 = depth_frame;
-
-					}
-					if (zoom_out && !zoom_in)
-					{
-						controller_orientation_pc = controller_orientation * 2;
-						controller_position_pc = controller_position;
-					}
-					else if (zoom_in && !zoom_out)
-					{
-						controller_orientation_pc = controller_orientation * 0.5;
-						controller_position_pc = controller_position;
-					}
-					else {
-						controller_orientation_pc = controller_orientation;
-						controller_position_pc = controller_position;
-
-					}
-					future_handle = std::async(&vr_rgbd::construct_multi_point_cloud, this);
-					
-					
-					
-
-					//std::cout<<"run this"<<std::endl;
-				}
-
-			}
+			for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)
 			
+			{//
+				bool new_frame;
+				bool found_frame = false;
+				bool depth_frame_changed = false;
+				bool color_frame_changed = false;
+				do {
+					new_frame = false;
+					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0, m);
+
+					if (new_color_frame_changed) {
+
+						++nr_color_frames;
+						color_frame_changed = new_color_frame_changed;
+						new_frame = true;
+						update_member(&nr_color_frames);
+					}
+					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0, m);
+					if (new_depth_frame_changed) {
+
+						++nr_depth_frames;
+						depth_frame_changed = new_depth_frame_changed;
+						new_frame = true;
+						update_member(&nr_depth_frames);
+					}
+					if (new_frame)
+						found_frame = true;
+				} while (new_frame);
+
+
+				if (found_frame)
+					post_redraw();
+				if (color_frame.is_allocated() && depth_frame.is_allocated() &&
+					(color_frame_changed || depth_frame_changed)) {
+
+					if (!future_handle.valid()) { //
+						if (!in_calibration) {
+							color_frame_2 = color_frame;
+							depth_frame_2 = depth_frame;
+
+						}
+						if (zoom_out && !zoom_in)
+						{
+							controller_orientation_pc = controller_orientation * 2;
+							controller_position_pc = controller_position;
+						}
+						else if (zoom_in && !zoom_out)
+						{
+							controller_orientation_pc = controller_orientation * 0.5;
+							controller_position_pc = controller_position;
+						}
+						else {
+							controller_orientation_pc = controller_orientation;
+							controller_position_pc = controller_position;
+
+						}
+						
+						vr_rgbd::construct_multi_point_cloud(m);
+						
+						
+
+
+						
+					}
+
+				}
+
+
+			}current_pc = intermediate_pc;post_redraw();
+
+
+
 
 
 		}
@@ -657,6 +693,7 @@ std::string vr_rgbd::get_type_name() const
 }
 void vr_rgbd::create_gui()
 {
+	
 		add_decorator("vr_rgbd", "heading", "level=2");
 
 		unsigned n = rgbd_input::get_nr_devices();
@@ -674,7 +711,7 @@ void vr_rgbd::create_gui()
 
 		//std::cout << "num_devices:"<< num_devices << std::endl;
 		//std::cout << "////////////////////////////////"  << std::endl;
-
+		
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
@@ -726,6 +763,7 @@ void vr_rgbd::create_gui()
 			align("\b");
 			end_tree_node(srs);
 		}
+		
 }
 bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 {
@@ -837,6 +875,43 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				case cgv::gui::KA_RELEASE:
 					zoom_out = false;
 					update_member(&zoom_out);
+					break;
+				}
+			}
+			if (ci == 1 && vrke.get_key() == vr::VR_DPAD_UP)
+			{
+				switch (vrke.get_action()) {
+				case cgv::gui::KA_PRESS:
+					if (camera_pos_1 == false) {
+						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+						camera_translation_1 = p;
+						std::cout<<"p positon:"<<p<< std::endl;
+						vec3 p1 = vec3(vrke.get_state().controller[1].pose[0], vrke.get_state().controller[1].pose[1], vrke.get_state().controller[1].pose[2]);
+						vec3 p2 = vec3(vrke.get_state().controller[1].pose[3], vrke.get_state().controller[1].pose[4], vrke.get_state().controller[1].pose[5]);
+						vec3 p3 = vec3(vrke.get_state().controller[1].pose[6], vrke.get_state().controller[1].pose[7], vrke.get_state().controller[1].pose[8]);
+						std::cout << "p1p2p3:"<< p1 << std::endl;
+						std::cout << "       "<< p2 << std::endl;
+						std::cout << "       "<< p3 << std::endl;
+						
+						//camera_pos_1 = true;
+					}else if(camera_pos_2 == false)
+					{
+						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+						camera_translation_2 = p;
+
+						
+
+						camera_pos_2 = true;
+					}
+					else if (camera_pos_3 == false)
+					{
+						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+						camera_translation_3 = p;
+						camera_pos_3 = true;
+					}
+					break;
+				case cgv::gui::KA_RELEASE:
+					
 					break;
 				}
 			}
@@ -968,7 +1043,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			}
 		}
 		cgv::render::ref_box_renderer(ctx, 1);
-		cgv::render::ref_sphere_renderer(ctx, 1);
+		cgv::render::ref_sphere_renderer(ctx, 1);		
 		return true;
 }
 void vr_rgbd::clear(cgv::render::context& ctx)

@@ -107,9 +107,17 @@ protected:
 	/// current calibration pose mapping from rgbd coordinates to controller coordinates 
 	mat3 rgbd_2_controller_orientation;
 	vec3 rgbd_2_controller_position;
+
+	//mat3 rgbd_2_controller_orientation2;
+	//vec3 rgbd_2_controller_position2;
+
 	/// calibration pose mapping from rgbd coordinates to controller coordinates stored at the time when freezing the point cloud for calibration
 	mat3 rgbd_2_controller_orientation_start_calib;
 	vec3 rgbd_2_controller_position_start_calib;
+
+	//mat3 rgbd_2_controller_orientation_start_calib2;
+	//vec3 rgbd_2_controller_position_start_calib2;
+
 	///
 	bool show_points;
 	unsigned max_nr_shown_recorded_pcs;
@@ -185,12 +193,25 @@ protected:
 	/// stop rgbd device
 	void stop_rgbd();
 
+
+	bool camera_pos_1;
+	vec3 camera_translation_1 ;
+	bool camera_pos_2;
+	vec3 camera_translation_2 ;
+	bool camera_pos_3;
+	vec3 camera_translation_3 ;
+
+
+
+
+
 public:
 	vr_rgbd();
 	~vr_rgbd();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
-	size_t construct_multi_point_cloud();//
+	size_t construct_multi_point_cloud(int index);//
+	
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
