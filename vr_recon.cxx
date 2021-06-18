@@ -38,6 +38,19 @@ using namespace rgbd;
 
 /// the plugin class vr_rgbd inherits like other plugins from node, drawable and provider
 
+std::string get_stream_format_enum(const std::vector<rgbd::stream_format>& sfs)
+{
+	std::string enum_def = "enums='default=-1";
+	for (const auto& sf : sfs) {
+		enum_def += ",";
+		enum_def += to_string(sf);
+	}
+	return enum_def + "'";
+}
+
+
+
+
 void vr_rgbd::compute_intersections(const vec3& origin, const vec3& direction, int ci, const rgb& color)
 {
 	for (size_t i = 0; i < movable_boxes.size(); ++i) {
@@ -182,7 +195,6 @@ void vr_rgbd::stop_multi_rgbd()
 		return;
 	rgbd_inp.stop();//
 	rgbd_inp.detach();
-
 	rgbd_multi_started = rgbd_inp.stop();
 	std::cout << "nr of attached devices"<<rgbd_inp.nr_multi_de() << std::endl;
 	update_member(&rgbd_multi_started);
@@ -201,6 +213,18 @@ void vr_rgbd::stop_rgbd()
 	
 	rgbd_started = rgbd_inp.stop();
 	update_member(&rgbd_started);
+}
+void vr_rgbd::set_rgbd_pos()
+{
+	
+	//std::cout<<"1111111111111"<< controller_position <<std::endl;
+	get_camera_pos_1 = true;
+	get_camera_pos_2 = true;
+	//std::cout << "camera1:" << camera_pos_1 << std::endl;
+	//std::cout << "camera2:" << camera_pos_2 << std::endl;
+	std::cout << "camera1:" << camera_ori_1 << std::endl;
+	std::cout << "camera2:" << camera_ori_2 << std::endl;
+	return;
 }
 
 vr_rgbd::vr_rgbd()
@@ -236,6 +260,7 @@ vr_rgbd::vr_rgbd()
 	state[0] = state[1] = state[2] = state[3] = IS_NONE;
 	rgbd_started = false;
 	rgbd_multi_started = false;
+	get_tracker_positions = false;
 	record_frame = false;
 	record_all_frames = false;
 	record_key_frames = false;
@@ -259,12 +284,17 @@ vr_rgbd::vr_rgbd()
 	connect(cgv::gui::get_animation_trigger().shoot, this, &vr_rgbd::timer_event);
 
 	
-	bool camera_pos_1 = false;
-	vec3 camera_translation_1 = (0, 0, 0);
-	bool camera_pos_2 = false;
-	vec3 camera_translation_2 = (0, 0, 0);
-	bool camera_pos_3 = false;
-	vec3 camera_translation_3 = (0, 0, 0);
+	get_camera_pos_1 = false;
+	camera_pos_1 = (0, 0, 0);
+	camera_ori_1.identity();
+	get_camera_pos_2 = false;
+	camera_pos_2 = (0, 0, 0);
+	camera_ori_2.identity();
+	//get_camera_pos = false;
+	get_camera_pos_3 = false;
+	camera_pos_3 = (0, 0, 0);
+	camera_ori_3.identity();
+	bool no_controller=false;
 
 
 }
@@ -312,7 +342,8 @@ vr_rgbd::~vr_rgbd()
 			
 		if(index ==0)
 			intermediate_pc.clear();
-
+		//if (index == 1)
+			//return intermediate_pc.size();
 		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
 		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
@@ -326,20 +357,22 @@ vr_rgbd::~vr_rgbd()
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
 					// flipping y to make it the same direction as in pixel y coordinate
-					p[1] = -p[1];
-					p[1] = p[1] + 2.0;
+					//p[1] = -p[1];
+					//p[1] = p[1] + 2.0;
 					
-					if (index == 1 && camera_pos_2)
+					if (index == 0 )
 					{
-						p = p + camera_translation_2 - camera_translation_1;
-						//std::cout<<"p's position:"<< p <<std::endl;
-						//p = rgbd_2_controller_orientation2* p + rgbd_2_controller_position2;
-						//p = rgbd_2_controller_orientation2 * p + rgbd_2_controller_position2;
-						//p = controller_orientation_pc * p + controller_position_pc;
+						p = camera_ori_1*p  ;
+						p = p +  camera_pos_1;
+						p[1] = -p[1];
+						p[2] = -p[2];
 					}
-					else if (index == 2&& camera_pos_3)
+					if (index == 1)
 					{
-						p = p + camera_translation_3 - camera_translation_2;
+						p = camera_ori_2*p  ;
+						p = p + camera_pos_2;
+						p[1] = -p[1];
+						p[2] = -p[2];
 					}
 					
 					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
@@ -536,7 +569,7 @@ vr_rgbd::~vr_rgbd()
 				//	update_member(&clear_all_frames);
 				//}
 				//else
-					current_pc = intermediate_pc;
+				current_pc = intermediate_pc;
 				post_redraw();
 			}
 		}
@@ -642,48 +675,36 @@ vr_rgbd::~vr_rgbd()
 				if (color_frame.is_allocated() && depth_frame.is_allocated() &&
 					(color_frame_changed || depth_frame_changed)) {
 
-					if (!future_handle.valid()) { //
-						if (!in_calibration) {
-							color_frame_2 = color_frame;
-							depth_frame_2 = depth_frame;
+					//if (!future_handle.valid()) { //
+					//	if (!in_calibration) {
+					//		color_frame_2 = color_frame;
+					//		depth_frame_2 = depth_frame;
 
-						}
-						if (zoom_out && !zoom_in)
-						{
-							controller_orientation_pc = controller_orientation * 2;
-							controller_position_pc = controller_position;
-						}
-						else if (zoom_in && !zoom_out)
-						{
-							controller_orientation_pc = controller_orientation * 0.5;
-							controller_position_pc = controller_position;
-						}
-						else {
-							controller_orientation_pc = controller_orientation;
-							controller_position_pc = controller_position;
-
-						}
-						
-						vr_rgbd::construct_multi_point_cloud(m);
-						
-						
-
-
-						
-					}
-
-				}
-
-
-			}current_pc = intermediate_pc;post_redraw();
-
-
-
-
+					//	}
+					//	if (zoom_out && !zoom_in)
+					//	{
+					//		controller_orientation_pc = controller_orientation * 2;
+					//		controller_position_pc = controller_position;
+					//	}
+					//	else if (zoom_in && !zoom_out)
+					//	{
+					//		controller_orientation_pc = controller_orientation * 0.5;
+					//		controller_position_pc = controller_position;
+					//	}
+					//	else {
+					//		controller_orientation_pc = controller_orientation;
+					//		controller_position_pc = controller_position;
+					//	}					
+					//								
+					//}
+					color_frame_2 = color_frame;
+					depth_frame_2 = depth_frame;
+					vr_rgbd::construct_multi_point_cloud(m);
+				}	
+			}
+			current_pc = intermediate_pc;post_redraw();
 
 		}
-
-
 
 }
 
@@ -714,7 +735,9 @@ void vr_rgbd::create_gui()
 		
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
+		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
+		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
 		add_member_control(this, "record_frame", record_frame, "check");
 		add_member_control(this, "record_all_frames", record_all_frames, "check");
 		add_member_control(this, "clear_all_frames", clear_all_frames, "check");
@@ -780,6 +803,7 @@ bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 			rh.reflect_member("clear_all_frames", clear_all_frames) &&
 			rh.reflect_member("rgbd_started", rgbd_started) &&
 			rh.reflect_member("rgbd_multi_started", rgbd_multi_started) &&
+			rh.reflect_member("get_tracker_positions", get_tracker_positions) &&
 			rh.reflect_member("rgbd_protocol_path", rgbd_protocol_path);
 }
 void vr_rgbd::on_set(void* member_ptr)
@@ -802,7 +826,7 @@ void vr_rgbd::on_set(void* member_ptr)
 			if (rgbd_started)
 				start_rgbd();
 		}
-		if (member_ptr == &rgbd_multi_started && rgbd_multi_started != rgbd_inp.is_started())
+		if (member_ptr == &rgbd_multi_started && rgbd_multi_started != rgbd_inp.is_multi_started())
 		{
 			
 			if (rgbd_multi_started)
@@ -811,9 +835,13 @@ void vr_rgbd::on_set(void* member_ptr)
 			}
 			else
 			{
-				
+				std::cout<<"run there?"<<std::endl;
 				stop_multi_rgbd();
 			}
+		}
+		if (member_ptr == &get_tracker_positions)
+		{
+			set_rgbd_pos();
 		}
 
 
@@ -839,19 +867,21 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			if (ci == 0 && vrke.get_key() == vr::VR_DPAD_DOWN) {
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS :
-					rgbd_2_controller_orientation_start_calib = controller_orientation; // V^0 = V
-					rgbd_2_controller_position_start_calib = controller_position;       // r^0 = r
-					in_calibration = true;
-					update_member(&in_calibration);
+					//rgbd_2_controller_orientation_start_calib = controller_orientation; // V^0 = V
+					//rgbd_2_controller_position_start_calib = controller_position;       // r^0 = r
+					//in_calibration = true;
+					//update_member(&in_calibration);
 					break;
 				case cgv::gui::KA_RELEASE:
-					rgbd_2_controller_orientation = transpose(rgbd_2_controller_orientation_start_calib)*controller_orientation*rgbd_2_controller_orientation;
+					/*rgbd_2_controller_orientation = transpose(rgbd_2_controller_orientation_start_calib)*controller_orientation*rgbd_2_controller_orientation;
 					rgbd_2_controller_position = transpose(rgbd_2_controller_orientation_start_calib)*((controller_orientation*rgbd_2_controller_position + controller_position) - rgbd_2_controller_position_start_calib);
 					in_calibration = false;
-					update_member(&in_calibration);
+					update_member(&in_calibration);*/
 					break;
 				}
 			}
+			
+
 			if (ci == 0 && vrke.get_key() == vr::VR_DPAD_LEFT)
 			{
 				switch (vrke.get_action()) {
@@ -882,33 +912,33 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			{
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					if (camera_pos_1 == false) {
-						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-						camera_translation_1 = p;
-						std::cout<<"p positon:"<<p<< std::endl;
-						vec3 p1 = vec3(vrke.get_state().controller[1].pose[0], vrke.get_state().controller[1].pose[1], vrke.get_state().controller[1].pose[2]);
-						vec3 p2 = vec3(vrke.get_state().controller[1].pose[3], vrke.get_state().controller[1].pose[4], vrke.get_state().controller[1].pose[5]);
-						vec3 p3 = vec3(vrke.get_state().controller[1].pose[6], vrke.get_state().controller[1].pose[7], vrke.get_state().controller[1].pose[8]);
-						std::cout << "p1p2p3:"<< p1 << std::endl;
-						std::cout << "       "<< p2 << std::endl;
-						std::cout << "       "<< p3 << std::endl;
-						
-						//camera_pos_1 = true;
-					}else if(camera_pos_2 == false)
-					{
-						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-						camera_translation_2 = p;
+					//if (get_camera_pos_1 == false) {
+					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+					//	camera_translation_1 = p;
+					//	std::cout<<"p positon:"<<p<< std::endl;
+					//	vec3 p1 = vec3(vrke.get_state().controller[1].pose[0], vrke.get_state().controller[1].pose[1], vrke.get_state().controller[1].pose[2]);
+					//	vec3 p2 = vec3(vrke.get_state().controller[1].pose[3], vrke.get_state().controller[1].pose[4], vrke.get_state().controller[1].pose[5]);
+					//	vec3 p3 = vec3(vrke.get_state().controller[1].pose[6], vrke.get_state().controller[1].pose[7], vrke.get_state().controller[1].pose[8]);
+					//	std::cout << "p1p2p3:"<< p1 << std::endl;
+					//	std::cout << "       "<< p2 << std::endl;
+					//	std::cout << "       "<< p3 << std::endl;
+					//	
+					//	//get_camera_pos_1 = true;
+					//}else if(camera_pos_2 == false)
+					//{
+					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+					//	camera_translation_2 = p;
 
-						
+					//	
 
-						camera_pos_2 = true;
-					}
-					else if (camera_pos_3 == false)
-					{
-						vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-						camera_translation_3 = p;
-						camera_pos_3 = true;
-					}
+					//	camera_pos_2 = true;
+					//}
+					//else if (camera_pos_3 == false)
+					//{
+					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
+					//	camera_translation_3 = p;
+					//	camera_pos_3 = true;
+					//}
 					break;
 				case cgv::gui::KA_RELEASE:
 					
@@ -941,12 +971,36 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 		}
 		case cgv::gui::EID_POSE:
 			cgv::gui::vr_pose_event& vrpe = static_cast<cgv::gui::vr_pose_event&>(e);
+			
 			// check for controller pose events
 			int ci = vrpe.get_trackable_index();
-			if (ci == rgbd_controller_index) {
-				controller_orientation = vrpe.get_orientation();
-				controller_position = vrpe.get_position();
+			
+			//std::cout<<"ci:"<<ci<<std::endl;
+			if (ci == 2|| (no_controller=true&&ci==0))
+			{
+				
+				camera_pos_1=vrpe.get_position();
+				camera_ori_1 = vrpe.get_orientation();
+
 			}
+			if (ci == 3 || (no_controller = true && ci == 1))
+			{
+
+				camera_pos_2 = vrpe.get_position();
+				camera_ori_2 = vrpe.get_orientation();
+
+			}
+			if (ci == 4 || (no_controller = true && ci == 2))
+			{
+
+				camera_pos_3 = vrpe.get_position();
+				camera_ori_3 = vrpe.get_orientation();
+
+			}
+			//if (ci == rgbd_controller_index) {
+			//	//controller_orientation = vrpe.get_orientation();
+			//	//controller_position = vrpe.get_position();
+			//}
 			if (ci != -1) {
 				if (state[ci] == IS_GRAB) {
 					// in grab mode apply relative transformation to grabbed boxes
@@ -1113,26 +1167,72 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				glLineWidth(1);
 			}
 		}
-		// draw static boxes
-		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
-		renderer.set_render_style(style);
-		renderer.set_box_array(ctx, boxes);
-		renderer.set_color_array(ctx, box_colors);
-		if (renderer.validate_and_enable(ctx)) {
-			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-		}
-		renderer.disable(ctx);
 
-		// draw dynamic boxes 
-		renderer.set_render_style(movable_style);
-		renderer.set_box_array(ctx, movable_boxes);
-		renderer.set_color_array(ctx, movable_box_colors);
-		renderer.set_translation_array(ctx, movable_box_translations);
-		renderer.set_rotation_array(ctx, movable_box_rotations);
-		if (renderer.validate_and_enable(ctx)) {
-			glDrawArrays(GL_POINTS, 0, (GLsizei)movable_boxes.size());
-		}
-		renderer.disable(ctx);
+		/*std::vector<vec3> myline;
+		std::vector<rgb> mycolor;
+		
+			vec3 origin=(0,0,1);
+			vec3 end = (0, 0, 2);
+			vec3 origin1 = (0, 0, 3);
+			vec3 end1 = (0, 0, 4);
+			vec3 origin2 = (0, 0, 0);
+			vec3 end2 = (2, 2, 2);
+			myline.push_back(origin);
+			myline.push_back(end);
+			myline.push_back(origin1);
+			myline.push_back(end1);
+			myline.push_back(origin2);
+			myline.push_back(end2);
+			rgb mycol(1.0, 1.0, 1.0);
+			mycolor.push_back(mycol);
+			*/
+			
+			//
+			
+			
+				//cgv::render::shader_program& prog = ctx.ref_default_shader_program();
+				//int pi = prog.get_position_index();
+				//int ci = prog.get_color_index();
+				//cgv::render::attribute_array_binding::set_global_attribute_array(ctx, pi, myline);
+				//cgv::render::attribute_array_binding::enable_global_array(ctx, pi);
+				//cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ci, mycolor);
+				//cgv::render::attribute_array_binding::enable_global_array(ctx, ci);
+				//glLineWidth(3);
+				//prog.enable(ctx);
+				//glDrawArrays(GL_LINES, 0, (GLsizei)myline.size());
+				//prog.disable(ctx);
+				//cgv::render::attribute_array_binding::disable_global_array(ctx, pi);
+				//cgv::render::attribute_array_binding::disable_global_array(ctx, ci);
+				////glLineWidth(1);
+
+				//myline.clear();
+				//mycolor.clear();
+
+			
+
+
+
+
+		//// draw static boxes
+		//cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		//renderer.set_render_style(style);
+		//renderer.set_box_array(ctx, boxes);
+		//renderer.set_color_array(ctx, box_colors);
+		//if (renderer.validate_and_enable(ctx)) {
+		//	glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		//}
+		//renderer.disable(ctx);
+
+		//// draw dynamic boxes 
+		//renderer.set_render_style(movable_style);
+		//renderer.set_box_array(ctx, movable_boxes);
+		//renderer.set_color_array(ctx, movable_box_colors);
+		//renderer.set_translation_array(ctx, movable_box_translations);
+		//renderer.set_rotation_array(ctx, movable_box_rotations);
+		//if (renderer.validate_and_enable(ctx)) {
+		//	glDrawArrays(GL_POINTS, 0, (GLsizei)movable_boxes.size());
+		//}
+		//renderer.disable(ctx);
 
 		// draw intersection points
 		if (!intersection_points.empty()) {

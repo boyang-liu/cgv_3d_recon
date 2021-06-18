@@ -134,6 +134,7 @@ protected:
 	bool rgbd_started;
 	bool rgbd_multi_started;
 	std::string rgbd_protocol_path;
+	bool get_tracker_positions;
 	/// 
 	rgbd::rgbd_input rgbd_inp;
 
@@ -192,17 +193,26 @@ protected:
 	void stop_multi_rgbd();
 	/// stop rgbd device
 	void stop_rgbd();
+	void set_rgbd_pos();
+
+	bool get_camera_pos_1;
+	vec3 camera_pos_1 ;
+	mat3 camera_ori_1;
+	bool get_camera_pos_2;
+	vec3 camera_pos_2 ;
+	mat3 camera_ori_2;
+	bool get_camera_pos_3;
+	vec3 camera_pos_3;
+	mat3 camera_ori_3;
+	bool get_camera_pos;
+	std::vector<vec3> camera_pos;
+	std::vector<mat3> camera_ori;
+
+	bool no_controller;
 
 
-	bool camera_pos_1;
-	vec3 camera_translation_1 ;
-	bool camera_pos_2;
-	vec3 camera_translation_2 ;
-	bool camera_pos_3;
-	vec3 camera_translation_3 ;
-
-
-
+	int depth_stream_format_idx;
+	std::vector<rgbd::stream_format> depth_stream_formats;
 
 
 public:
