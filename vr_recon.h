@@ -209,7 +209,11 @@ protected:
 	std::vector<mat3> camera_ori;
 
 	bool no_controller;
-
+	std::vector<vec3> manualcorrect_translation;
+	float position_scale;
+	bool translationmode;
+	bool rotationmode;
+	int current_corrected_cam;
 
 	int depth_stream_format_idx;
 	std::vector<rgbd::stream_format> depth_stream_formats;
