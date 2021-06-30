@@ -186,7 +186,7 @@ void vr_rgbd::start_multi_rgbd()
 		std::cout << "they are not started" << std::endl;
 	for (int mc = 0;mc<rgbd_inp.get_nr_devices();mc++) {
 		manualcorrect_translation.push_back((0, 0, 0));
-		
+		manualcorrect_rotation.push_back((0, 0, 0));
 	}
 	current_corrected_cam =-1;
 
@@ -202,6 +202,7 @@ void vr_rgbd::stop_multi_rgbd()
 	rgbd_inp.detach();
 	rgbd_multi_started = rgbd_inp.stop();
 	manualcorrect_translation.clear();
+	manualcorrect_rotation.clear();
 	current_corrected_cam =-1;
 	translationmode = false;
 	rotationmode = false;
@@ -304,18 +305,14 @@ vr_rgbd::vr_rgbd()
 	get_camera_pos_3 = false;
 	camera_pos_3 = (0, 0, 0);
 	camera_ori_3.identity();
-	no_controller=true;
+	no_controller=false;
 
 	translationmode=false;
 	rotationmode=false;
 
+	rotation_scale = 0.1;
+	position_scale = 0.1;
 
-
-
-
-
-
-	position_scale = 0.5;
 }
 
 vr_rgbd::~vr_rgbd()
@@ -366,9 +363,22 @@ vr_rgbd::~vr_rgbd()
 		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
 		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
-		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);//,index
+		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);
 		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
 
+
+		//std::vector<mat3> my_rotation_matrix;
+		//mat3 mrm = camera_ori_1;
+		//mrm[5] += manualcorrect_rotation[index][2];
+		//mrm[4] = sqrt(1- mrm[5]* mrm[5]- mrm[3] * mrm[3]);
+		//mrm[8] += manualcorrect_rotation[index][2];
+		//mrm[7] = sqrt(1 - mrm[8] * mrm[8] - mrm[6] * mrm[6]);
+		
+		/*mrm[5] += manualcorrect_rotation[index][0];
+		mrm[4] = sqrt(1 - mrm[5] * mrm[5] - mrm[3] * mrm[3]);
+
+		mrm[5] += manualcorrect_rotation[index][1];
+		mrm[4] = sqrt(1 - mrm[5] * mrm[5] - mrm[3] * mrm[3]);*/
 
 		int i = 0;
 		for (int y = 0; y < depth_frame_2.height; ++y)
@@ -379,22 +389,41 @@ vr_rgbd::~vr_rgbd()
 							
 					if (index == 0 )
 					{
-						
-						p = camera_ori_1*(p+vec3(0.f, 0.f, -3.f));
-						p = -p;
+						float t;
+						t = p[1];
+						p[1] = p[2];
+						p[2] = -t;				
+						p = camera_ori_1 * p;
+						//p = mrm[index] * p;
+						p[1] = -p[1];		
 						p = p + camera_pos_1;
-						//p = p + manualcorrect_translation[index];
+						p = p + manualcorrect_translation[index];
 					}
 
 					if (index == 1)
 					{
+						float t;
+						t = p[1];
+						p[1] = p[2];
+						p[2] = -t;
 						p = camera_ori_2*p  ;
-
-						p = -p;
+						p[1] = -p[1];
 						p = p + camera_pos_2;
-						//p = p + manualcorrect_translation[index];
+						p = p + manualcorrect_translation[index];
 					}
-					
+
+					if (index == 2)
+					{
+						float t;
+						t = p[1];
+						p[1] = p[2];
+						p[2] = -t;
+						p = camera_ori_3 * p;
+						p[1] = -p[1];
+						p = p + camera_pos_3;
+						p = p + manualcorrect_translation[index];
+					}
+
 					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
 					vertex v;
 					//filter points without color for 32 bit formats
@@ -413,6 +442,74 @@ vr_rgbd::~vr_rgbd()
 	
 	}
 
+
+
+	//size_t vr_rgbd::construct_point_clouds() {
+	//	intermediate_pc.clear();
+	//	
+	//	for (int index = 0; index < rgbd_inp.nr_multi_de();index++) {
+	//	const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frames[index].frame_data.front());
+	//	const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frames[index].frame_data.front());
+	//	rgbd_inp.map_color_to_depth(depth_frames[index], color_frames[index], warped_color_frame_2, index);
+	//	colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
+	//	int i = 0;
+	//	for (int y = 0; y < depth_frames[index].height; ++y)
+	//		for (int x = 0; x < depth_frames[index].width; ++x) {
+	//			vec3 p;
+	//			if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
+	//				// flipping y to make it the same direction as in pixel y coordinate
+
+	//				if (index == 0)
+	//				{
+	//					float t;
+	//					t = p[1];
+	//					p[1] = p[2];
+	//					p[2] = -t;
+	//					p = camera_ori_1 * p;
+	//					p[1] = -p[1];
+	//					p = p + camera_pos_1;
+	//					p = p + manualcorrect_translation[index];
+	//				}
+	//				if (index == 1)
+	//				{
+	//					float t;
+	//					t = p[1];
+	//					p[1] = p[2];
+	//					p[2] = -t;
+	//					p = camera_ori_2 * p;
+	//					p[1] = -p[1];
+	//					p = p + camera_pos_2;
+	//					p = p + manualcorrect_translation[index];
+	//				}
+	//				if (index == 2)
+	//				{
+	//					float t;
+	//					t = p[1];
+	//					p[1] = p[2];
+	//					p[2] = -t;
+	//					p = camera_ori_3 * p;
+	//					p[1] = -p[1];
+	//					p = p + camera_pos_3;
+	//					p = p + manualcorrect_translation[index];
+	//				}
+	//				rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
+	//				vertex v;
+	//				//filter points without color for 32 bit formats
+	//				static const rgba8 filter_color = rgba8(0, 0, 0, 255);
+	//				if (!(c == filter_color)) {
+	//					v.color = c;
+	//					v.point = p;
+	//				}
+	//				intermediate_pc.push_back(v);
+	//			}
+	//			++i;
+	//		}
+
+
+	//	}
+	//	
+	//	return intermediate_pc.size();
+	//}
 
 
 	frame_type vr_rgbd::read_rgb_frame()    //should be a thread
@@ -562,12 +659,13 @@ vr_rgbd::~vr_rgbd()
 	void vr_rgbd::timer_event(double t, double dt)
 	{
 		// in case a point cloud is being constructed
+		
 		if (future_handle.valid()) {
 			// check for termination of thread
 			if (future_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
 				size_t N = future_handle.get();
 				// copy computed point cloud
-
+				
 
 				//if (record_this_frame(t)) {
 				//	if (registration_started) {
@@ -591,6 +689,7 @@ vr_rgbd::~vr_rgbd()
 				//else
 				current_pc = intermediate_pc;
 				post_redraw();
+				
 			}
 		}
 		//if (rgbd_inp.is_started()) {
@@ -648,7 +747,7 @@ vr_rgbd::~vr_rgbd()
 							controller_position_pc = controller_position;
 							
 						}
-						future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
+						//future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
 						//construct_point_cloud();
 						//current_pc = intermediate_pc;
 						//post_redraw();
@@ -658,73 +757,114 @@ vr_rgbd::~vr_rgbd()
 				}
 			//}
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		if (rgbd_inp.is_multi_started()) {
-			for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)
-			
-			{//
-				bool new_frame;
+
+			for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)			
+			{
+				/*bool new_frame;
 				bool found_frame = false;
 				bool depth_frame_changed = false;
 				bool color_frame_changed = false;
 				do {
-					new_frame = false;
+					new_frame = false;*/
 					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0, m);
-
-					if (new_color_frame_changed) {
-
+					/*if (new_color_frame_changed) {
 						++nr_color_frames;
 						color_frame_changed = new_color_frame_changed;
 						new_frame = true;
 						update_member(&nr_color_frames);
-					}
+					}*/
 					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0, m);
-					if (new_depth_frame_changed) {
-
+					/*if (new_depth_frame_changed) {
 						++nr_depth_frames;
 						depth_frame_changed = new_depth_frame_changed;
 						new_frame = true;
 						update_member(&nr_depth_frames);
-					}
-					if (new_frame)
+					}*/
+					/*if (new_frame)
 						found_frame = true;
-				} while (new_frame);
-
-
-				if (found_frame)
-					post_redraw();
-				if (color_frame.is_allocated() && depth_frame.is_allocated() &&
-					(color_frame_changed || depth_frame_changed)) {
-
-					//if (!future_handle.valid()) { //
-					//	if (!in_calibration) {
-					//		color_frame_2 = color_frame;
-					//		depth_frame_2 = depth_frame;
-
-					//	}
-					//	if (zoom_out && !zoom_in)
-					//	{
-					//		controller_orientation_pc = controller_orientation * 2;
-					//		controller_position_pc = controller_position;
-					//	}
-					//	else if (zoom_in && !zoom_out)
-					//	{
-					//		controller_orientation_pc = controller_orientation * 0.5;
-					//		controller_position_pc = controller_position;
-					//	}
-					//	else {
-					//		controller_orientation_pc = controller_orientation;
-					//		controller_position_pc = controller_position;
-					//	}					
-					//								
-					//}
+				} while (new_frame);*/
+				/*if (found_frame)
+					post_redraw();*/
+				if (color_frame.is_allocated() && depth_frame.is_allocated() //&&(color_frame_changed || depth_frame_changed)
+					) {
 					color_frame_2 = color_frame;
 					depth_frame_2 = depth_frame;
 					vr_rgbd::construct_multi_point_cloud(m);
+					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);
+					
 				}	
 			}
 			current_pc = intermediate_pc;post_redraw();
-
 		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		//if (rgbd_inp.is_multi_started()) {
+		//	//color_frames.clear();
+		//	//depth_frames.clear();
+		//	//color_frames_2.clear();
+		//	//depth_frames_2.clear();
+		//	for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)
+		//	{
+		//		
+		//		bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, mycolor_frame, 0, m);
+		//		bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, mydepth_frame, 0, m);
+		//		if (mycolor_frame.is_allocated() && mydepth_frame.is_allocated())
+		//		{
+		//			if (color_frames.size() == 0|| color_frames.size() == 1) {
+		//				color_frames.push_back(mycolor_frame);
+		//				depth_frames.push_back(mydepth_frame);}
+		//			else {
+		//				color_frames[m]=mycolor_frame;
+		//				depth_frames[m]=mydepth_frame;
+		//			}
+		//		}					
+		//	}			
+		//	if(color_frames.size()>0 && depth_frames.size() > 0 && color_frames.size()== depth_frames.size())
+		//	{
+		//		color_frames_2 = color_frames;
+		//		depth_frames_2 = depth_frames;				
+		//		if (!future_handle.valid()) 
+		//		{			
+		//		//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);
+		//		}			
+		//		vr_rgbd::construct_point_clouds();
+		//	}
+		//}
+		//	current_pc = intermediate_pc; 
+		//	post_redraw();
+		
 
 }
 
@@ -758,7 +898,8 @@ void vr_rgbd::create_gui()
 		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
 		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
-		connect_copy(add_control("position_scale", position_scale, "value_slider", "min=0.1;max=10;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
+		connect_copy(add_control("position_scale", position_scale, "value_slider", "min=0.05;max=10;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
+		connect_copy(add_control("rotation_scale", rotation_scale, "value_slider", "min=0.01;max=1;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
 
 
 
@@ -829,6 +970,7 @@ bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 			rh.reflect_member("rgbd_started", rgbd_started) &&
 			rh.reflect_member("rgbd_multi_started", rgbd_multi_started) &&
 			rh.reflect_member("position_scale", position_scale) &&
+			rh.reflect_member("rotation_scale", rotation_scale) &&
 			rh.reflect_member("get_tracker_positions", get_tracker_positions) &&
 			rh.reflect_member("rgbd_protocol_path", rgbd_protocol_path);
 }
@@ -894,9 +1036,14 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
 					if (translationmode&& current_corrected_cam !=-1)
+					{		
+						manualcorrect_translation[current_corrected_cam][2] += position_scale;
+
+					}
+					if (rotationmode && current_corrected_cam != -1)
 					{
-						
-						manualcorrect_translation[current_corrected_cam] += (position_scale, 0,0 );
+						manualcorrect_rotation[current_corrected_cam][2] += rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -912,8 +1059,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					//in_calibration = true;
 					//update_member(&in_calibration);
 					if (translationmode && current_corrected_cam != -1)
+					{	
+						manualcorrect_translation[current_corrected_cam][2] -= position_scale;
+					}
+					if (rotationmode && current_corrected_cam != -1)
 					{
-						manualcorrect_translation[current_corrected_cam] -= (position_scale, 0, 0);
+						manualcorrect_rotation[current_corrected_cam][2] -= rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -933,8 +1085,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					/*zoom_in = true;
 					update_member(&zoom_in);*/
 					if (translationmode && current_corrected_cam != -1)
+					{		
+						manualcorrect_translation[current_corrected_cam][0] += position_scale;
+					}
+					if (rotationmode && current_corrected_cam != -1)
 					{
-						manualcorrect_translation[current_corrected_cam] -= (0,position_scale , 0);
+						manualcorrect_rotation[current_corrected_cam][0] += rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -951,7 +1108,12 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					update_member(&zoom_out);*/
 					if (translationmode && current_corrected_cam != -1)
 					{
-						manualcorrect_translation[current_corrected_cam] += (0, position_scale, 0);
+						manualcorrect_translation[current_corrected_cam][0] -= position_scale;					
+					}
+					if (rotationmode && current_corrected_cam != -1)
+					{
+						manualcorrect_rotation[current_corrected_cam][0] -= rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -993,7 +1155,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					//}
 					if (translationmode && current_corrected_cam != -1)
 					{
-						manualcorrect_translation[current_corrected_cam] += (0, 0, position_scale);
+						manualcorrect_translation[current_corrected_cam][1] += position_scale;
+						
+					}
+					if (rotationmode && current_corrected_cam != -1)
+					{
+						manualcorrect_rotation[current_corrected_cam][1] += rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1008,7 +1176,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					
 					if (translationmode && current_corrected_cam != -1)
 					{
-						manualcorrect_translation[current_corrected_cam] -= (0, 0, position_scale);
+						manualcorrect_translation[current_corrected_cam][1] -= position_scale;
+						
+					}
+					if (rotationmode && current_corrected_cam != -1)
+					{
+						manualcorrect_rotation[current_corrected_cam][1] -= rotation_scale;
+
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1025,15 +1199,14 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
 				{
-				std::cout << "this is link controller" << std::endl;
-					
-					
-				
+				//std::cout << "this is link controller" << std::endl;
+					if (manualcorrect_rotation.size() == 0) {
+						std::cout << "no camera linked" << std::endl;
+						break;
+					}
 				}
 				break;
-
-
-					
+			
 				case cgv::gui::KA_RELEASE:
 
 					break;
@@ -1050,14 +1223,16 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						break;
 					}
 					if (translationmode) {
-						if (current_corrected_cam < manualcorrect_translation.size()-1)
+						if (current_corrected_cam < manualcorrect_translation.size())
 						{
-							current_corrected_cam += 1;
+							current_corrected_cam = current_corrected_cam+ 1;
 						}
-						if (current_corrected_cam == manualcorrect_translation.size() - 1)
+						if (current_corrected_cam == manualcorrect_translation.size() )
 						{
 							current_corrected_cam = 0;
 						}
+						std::cout << "manualcorrect_translation size :  " << manualcorrect_translation.size() << std::endl;
+						std::cout << "current camera is : camera " << current_corrected_cam << std::endl;
 					}
 					if (!translationmode){
 						translationmode = true;
@@ -1065,7 +1240,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						current_corrected_cam = 0;
 						std::cout << "cam::" << translationmode << std::endl;
 					}
-					std::cout << "current camera is : camera " << current_corrected_cam << std::endl;
+					
 
 
 					/*clear_all_frames = true;
@@ -1134,13 +1309,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				camera_ori_2 = vrpe.get_orientation();
 
 			}
-			/*if ((no_controller == false && ci == 4) || (no_controller == true && ci == 2))
+			if ((no_controller == false && ci == 4) || (no_controller == true && ci == 2))
 			{
 
 				camera_pos_3 = vrpe.get_position();
 				camera_ori_3 = vrpe.get_orientation();
 
-			}*/
+			}
 
 
 

@@ -63,8 +63,12 @@ protected:
 	/// internal members used for data storage
 	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
 	rgbd::frame_type color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
-	std::vector<frame_type> color_frames, depth_frames, warped_color_frames;
-	std::vector<frame_type> color_frames_2, depth_frames_2, warped_color_frames_2;
+
+
+	rgbd::frame_type mycolor_frame, mydepth_frame;
+
+	std::vector<rgbd::frame_type> color_frames, depth_frames, warped_color_frames;
+	std::vector<rgbd::frame_type> color_frames_2, depth_frames_2, warped_color_frames_2;
 	///
 	size_t nr_depth_frames;
 	size_t nr_color_frames;
@@ -210,13 +214,26 @@ protected:
 
 	bool no_controller;
 	std::vector<vec3> manualcorrect_translation;
+	std::vector<vec3> manualcorrect_rotation;
 	float position_scale;
+	float rotation_scale;
+
 	bool translationmode;
 	bool rotationmode;
 	int current_corrected_cam;
 
 	int depth_stream_format_idx;
 	std::vector<rgbd::stream_format> depth_stream_formats;
+
+	
+
+
+
+
+
+
+
+
 
 
 public:
@@ -225,7 +242,8 @@ public:
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//
-	
+	size_t construct_point_clouds();
+
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
