@@ -312,7 +312,7 @@ vr_rgbd::vr_rgbd()
 
 	rotation_scale = 0.1;
 	position_scale = 0.1;
-	mvp.identity();
+	//mvp.identity();
 }
 
 vr_rgbd::~vr_rgbd()
@@ -1395,10 +1395,11 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 		cgv::render::ref_sphere_renderer(ctx, 1);	
 
 		
-		if (!sky_prog.is_created()) {
+		//if (!sky_prog.is_created()) {
 			sky_prog.build_program(ctx, "sky.glpr");
-	
-		}
+			img_tex.create_from_images(ctx, "skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");
+			//tmp_tex.create_from_images(ctx, "skybox/BluePinkNebular_{xp,xn,yp,yn,zp,zn}.jpg");
+		//}
 		return true;
 
 		
@@ -1488,17 +1489,26 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				glLineWidth(1);
 			}
 		}
-		
-		if (sky_prog.is_created()) {
-			sky_prog.set_uniform(ctx,"mvp",mvp);
+		float max_scene_extent = 100;
+		//if (sky_prog.is_created()) {
+			glDepthMask(GL_FALSE);
+			glDisable(GL_CULL_FACE);
+			img_tex.enable(ctx, 1);
 			sky_prog.enable(ctx);
-
-
-			//glDisable(GL_CULL_FACE);
-			ctx.tesselate_unit_square();
-			//glEnable(GL_CULL_FACE);
+			sky_prog.set_uniform(ctx, "img_tex", 1);
+			ctx.push_modelview_matrix();
+			ctx.mul_modelview_matrix(cgv::math::scale4<double>(
+				max_scene_extent, max_scene_extent, max_scene_extent));
+			ctx.tesselate_unit_cube();
+			ctx.pop_modelview_matrix();
+			std::cout<<"111111111111111111"<<std::endl;
 			sky_prog.disable(ctx);
-		}
+			std::cout << "22222222222222222" << std::endl;
+			img_tex.disable(ctx);
+			
+			glEnable(GL_CULL_FACE);
+			glDepthMask(GL_TRUE);
+		//}
 
 
 

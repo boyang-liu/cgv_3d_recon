@@ -226,8 +226,9 @@ protected:
 	std::vector<rgbd::stream_format> depth_stream_formats;
 
 	cgv::render::shader_program sky_prog;
-	mat4 mvp;
-
+	cgv::render::texture img_tex;
+	//mat4 mvp;
+	//cgv::render::texture tmp_tex;
 
 
 
