@@ -225,8 +225,8 @@ protected:
 	int depth_stream_format_idx;
 	std::vector<rgbd::stream_format> depth_stream_formats;
 
-	
-
+	cgv::render::shader_program sky_prog;
+	mat4 mvp;
 
 
 
@@ -267,6 +267,7 @@ public:
 	bool handle(cgv::gui::event& e);
 	bool init(cgv::render::context& ctx);
 	void clear(cgv::render::context& ctx);
+
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
 	void draw(cgv::render::context& ctx);
 	enum DeviceMode {No_Device,Protocol,Has_Device};

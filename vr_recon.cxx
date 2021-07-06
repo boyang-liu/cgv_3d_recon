@@ -312,7 +312,7 @@ vr_rgbd::vr_rgbd()
 
 	rotation_scale = 0.1;
 	position_scale = 0.1;
-
+	mvp.identity();
 }
 
 vr_rgbd::~vr_rgbd()
@@ -1357,6 +1357,8 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 }
 bool vr_rgbd::init(cgv::render::context& ctx)
 {
+		//ctx.set_bg_color(0.7, 0.7, 0.8, 1.0);
+		
 		cgv::render::ref_point_renderer(ctx, 1);
 
 		if (!cgv::utils::has_option("NO_OPENVR"))
@@ -1388,18 +1390,32 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 
 			}
 		}
+
 		cgv::render::ref_box_renderer(ctx, 1);
-		cgv::render::ref_sphere_renderer(ctx, 1);		
+		cgv::render::ref_sphere_renderer(ctx, 1);	
+
+		
+		if (!sky_prog.is_created()) {
+			sky_prog.build_program(ctx, "sky.glpr");
+	
+		}
 		return true;
+
+		
+			
 }
 void vr_rgbd::clear(cgv::render::context& ctx)
 {
 		cgv::render::ref_point_renderer(ctx, -1);
 		cgv::render::ref_box_renderer(ctx, -1);
 		cgv::render::ref_sphere_renderer(ctx, -1);
+		sky_prog.destruct(ctx);
 }
+
+
 void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 {
+		
 		if (pc.empty())
 			return;
 		auto& pr = cgv::render::ref_point_renderer(ctx);
@@ -1472,6 +1488,28 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				glLineWidth(1);
 			}
 		}
+		
+		if (sky_prog.is_created()) {
+			sky_prog.set_uniform(ctx,"mvp",mvp);
+			sky_prog.enable(ctx);
+
+
+			//glDisable(GL_CULL_FACE);
+			ctx.tesselate_unit_square();
+			//glEnable(GL_CULL_FACE);
+			sky_prog.disable(ctx);
+		}
+
+
+
+
+
+
+
+
+
+
+
 
 		/*std::vector<vec3> myline;
 		std::vector<rgb> mycolor;
