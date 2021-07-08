@@ -34,8 +34,12 @@
 #include <vr_view_interactor.h>
 #include "intersection.h"
 #include "k4a/k4a.h"
-#include "multidevice.h"
 #include <plugins/rgbd_kinect_azure/rgbd_kinect_azure.h>
+
+
+
+
+
 using namespace rgbd;
 
 
@@ -228,8 +232,10 @@ protected:
 	cgv::render::shader_program sky_prog;
 	cgv::render::texture img_tex;
 	//mat4 mvp;
-	//cgv::render::texture tmp_tex;
-
+	char* cgv_data = getenv("CGV_DATA");
+	std::string data_dir = std::string(cgv_data);
+	bool generate_pc_from_rgbd;
+	point_cloud source_pc;
 
 
 
@@ -243,8 +249,11 @@ public:
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//
-	size_t construct_point_clouds();
+	//size_t construct_point_clouds();
 
+	void save_current_pc();
+	void load_current_pc();
+	void clear_current_point_cloud();
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
@@ -283,6 +292,6 @@ private:
 	//std::vector<int> device_indices ;
 protected:
 	void device_select();
-	void set_devices();
-	void capture_multi_device();
+	//void set_devices();
+	//void capture_multi_device();
 };

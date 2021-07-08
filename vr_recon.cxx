@@ -22,7 +22,7 @@
 #include <cgv/type/standard_types.h>
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
-#include "multidevice.h"
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -198,15 +198,19 @@ void vr_rgbd::stop_multi_rgbd()
 	std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 	if (!rgbd_inp.is_multi_started())
 		return;
-	rgbd_inp.stop();//
+	//rgbd_inp.stop();//
+	
+	rgbd_multi_started = !rgbd_inp.stop();
 	rgbd_inp.detach();
-	rgbd_multi_started = rgbd_inp.stop();
+	
+	
 	manualcorrect_translation.clear();
 	manualcorrect_rotation.clear();
 	current_corrected_cam =-1;
 	translationmode = false;
 	rotationmode = false;
 	std::cout << "nr of attached devices"<<rgbd_inp.nr_multi_de() << std::endl;
+	current_pc.clear();
 	update_member(&rgbd_multi_started);
 }
 
@@ -312,6 +316,7 @@ vr_rgbd::vr_rgbd()
 
 	rotation_scale = 0.1;
 	position_scale = 0.1;
+	generate_pc_from_rgbd = true;
 	//mvp.identity();
 }
 
@@ -432,6 +437,7 @@ vr_rgbd::~vr_rgbd()
 						v.color = c;
 						v.point = p;
 					}
+					if (i == 1)std::cout<<"ssssssssss:"<<v.color<<std::endl;
 					intermediate_pc.push_back(v);
 				}
 				++i;
@@ -510,6 +516,106 @@ vr_rgbd::~vr_rgbd()
 	//	
 	//	return intermediate_pc.size();
 	//}
+
+	void vr_rgbd::save_current_pc()
+	{
+		/*if (current_pc.size()==0){
+			std::cout<<"no pointcloud in the scene"<<std::endl;
+			return;
+		}*/
+		point_cloud cur;
+
+
+
+
+		vec3 a = (15, 16, 14);
+		//rgb a = (1.0,1.0,1.0);
+		vec3 b = (1, 1, 1);
+		vertex v;
+		v.color = (2, 2, 6);
+		v.point = b;
+
+		//rgb a = (15, 16, 14, 255);
+		////rgb a = (1.0, 1.0, 1.0);
+		//vec3 b = (1, 1, 1);
+		//vertex v;
+		//v.color = a;
+		//v.point = b;
+
+		vector<vertex> mypc;
+		mypc.push_back(v);
+		
+		//std::cout<<"aaaaaaaaaaaaaaaaaaa"<<current_pc[0].color<<std::endl;
+		for (int i = 0; i < mypc.size(); i++)
+		{
+			cur.add_point(mypc[i].point, mypc[i].color);
+		}
+		
+		
+		
+		/*for(int i=0;i< current_pc.size();i++)
+		{
+			cur.add_point(current_pc[i].point, current_pc[i].color);
+		}*/
+		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (ply,bpc,apc,obj):*.ply;*.bpc;*.apc;*.obj");
+		if (fn.empty())
+			return;
+		FILE* fp = fopen(fn.c_str(), "wb");
+		if (!fp)
+			return;
+		cur.write_ply(fn);
+
+
+
+		/*
+		unsigned int n = (unsigned int)mypc.size();
+		bool success =
+			fwrite(&n, sizeof(unsigned int), 1, fp) == 1 &&
+			fwrite(&m1, sizeof(unsigned int), 1, fp) == 1 &&
+			fwrite(&P[0][0], sizeof(vec3), n, fp) == n;
+		if (C.size() == n)
+			success = success && (fwrite(&C[0][0], sizeof(rgba8), n, fp) == n);*/
+		fclose(fp);
+
+		return;
+		
+
+
+	}
+
+	void vr_rgbd::load_current_pc() 
+	{
+		//std::cout << "0000000000000000000current::"<< intermediate_pc[1].color << std::endl;
+		std::string fn = cgv::gui::file_open_dialog("source point cloud(*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
+		if (fn.empty())
+			return;
+		clear_current_point_cloud();
+		source_pc.read(fn);
+		std::cout << "reading pc has been done." << std::endl;
+		//std::cout << "sssssssssssssssss." <<source_pc.has_colors()<< std::endl; 
+		for (int i = 0l; i < source_pc.get_nr_points(); i++)
+		{
+			vertex v;
+			v.point = source_pc.P[i];
+			v.color = source_pc.C[i];
+			current_pc.push_back(v);
+			std::cout << "source_pc.P:"<< source_pc.P[i] << std::endl;
+			std::cout << "source_pc.C:" << source_pc.C[i] << std::endl;
+		}
+		post_redraw();
+		return;
+	}
+	void vr_rgbd::clear_current_point_cloud() 
+	{
+		
+		generate_pc_from_rgbd = false;
+		stop_multi_rgbd();
+		current_pc.clear();
+	}
+
+
+
+
 
 
 	frame_type vr_rgbd::read_rgb_frame()    //should be a thread
@@ -765,7 +871,14 @@ vr_rgbd::~vr_rgbd()
 					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
 				}	
 			}
+			if (generate_pc_from_rgbd) 
+			{
 			current_pc = intermediate_pc;post_redraw();
+			}
+			else {
+				current_pc.clear();
+			}
+			
 		}
 
 
@@ -854,8 +967,8 @@ void vr_rgbd::create_gui()
 		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
 		connect_copy(add_control("position_scale", position_scale, "value_slider", "min=0.05;max=10;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
 		connect_copy(add_control("rotation_scale", rotation_scale, "value_slider", "min=0.01;max=1;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
-
-
+		connect_copy(add_button("save pointcloud")->click, rebind(this, &vr_rgbd::save_current_pc));
+		connect_copy(add_button("load pointcloud")->click, rebind(this, &vr_rgbd::load_current_pc));
 
 
 		add_member_control(this, "record_frame", record_frame, "check");
@@ -957,7 +1070,7 @@ void vr_rgbd::on_set(void* member_ptr)
 			}
 			else
 			{
-				std::cout<<"run there?"<<std::endl;
+				//std::cout<<"run there?"<<std::endl;
 				stop_multi_rgbd();
 			}
 		}
@@ -1395,11 +1508,12 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 		cgv::render::ref_sphere_renderer(ctx, 1);	
 
 		
-		//if (!sky_prog.is_created()) {
-			sky_prog.build_program(ctx, "sky.glpr");
-			img_tex.create_from_images(ctx, "skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");
-			//tmp_tex.create_from_images(ctx, "skybox/BluePinkNebular_{xp,xn,yp,yn,zp,zn}.jpg");
-		//}
+		if (!sky_prog.is_created()) {
+			sky_prog.build_program(ctx, "glsl/sky.glpr");
+			img_tex.create_from_images(ctx, data_dir + "/skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");//
+			
+		}
+		
 		return true;
 
 		
@@ -1490,7 +1604,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			}
 		}
 		float max_scene_extent = 100;
-		//if (sky_prog.is_created()) {
+		if (sky_prog.is_created()) {
 			glDepthMask(GL_FALSE);
 			glDisable(GL_CULL_FACE);
 			img_tex.enable(ctx, 1);
@@ -1501,14 +1615,11 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				max_scene_extent, max_scene_extent, max_scene_extent));
 			ctx.tesselate_unit_cube();
 			ctx.pop_modelview_matrix();
-			std::cout<<"111111111111111111"<<std::endl;
 			sky_prog.disable(ctx);
-			std::cout << "22222222222222222" << std::endl;
 			img_tex.disable(ctx);
-			
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
-		//}
+		}
 
 
 
