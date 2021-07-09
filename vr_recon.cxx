@@ -437,7 +437,7 @@ vr_rgbd::~vr_rgbd()
 						v.color = c;
 						v.point = p;
 					}
-					if (i == 1)std::cout<<"ssssssssss:"<<v.color<<std::endl;
+					//if (i == 1)std::cout<<"ssssssssss:"<<v.color<<std::endl;
 					intermediate_pc.push_back(v);
 				}
 				++i;
@@ -529,12 +529,15 @@ vr_rgbd::~vr_rgbd()
 
 
 		vec3 a = (15, 16, 14);
-		//rgb a = (1.0,1.0,1.0);
-		vec3 b = (1, 1, 1);
+		vec3 a2 = (18, 18, 18);
+		rgba8 b = rgba8(255, 0, 0, 255);
+		//vec3 b = (1, 1, 1);
 		vertex v;
-		v.color = (2, 2, 6);
-		v.point = b;
-
+		v.color = b;
+		v.point = a;
+		vertex v2;
+		v2.color = b;
+		v2.point = a2;
 		//rgb a = (15, 16, 14, 255);
 		////rgb a = (1.0, 1.0, 1.0);
 		//vec3 b = (1, 1, 1);
@@ -544,7 +547,7 @@ vr_rgbd::~vr_rgbd()
 
 		vector<vertex> mypc;
 		mypc.push_back(v);
-		
+		mypc.push_back(v2);
 		//std::cout<<"aaaaaaaaaaaaaaaaaaa"<<current_pc[0].color<<std::endl;
 		for (int i = 0; i < mypc.size(); i++)
 		{
@@ -563,7 +566,7 @@ vr_rgbd::~vr_rgbd()
 		FILE* fp = fopen(fn.c_str(), "wb");
 		if (!fp)
 			return;
-		cur.write_ply(fn);
+		cur.write(fn);
 
 
 
@@ -592,18 +595,20 @@ vr_rgbd::~vr_rgbd()
 		clear_current_point_cloud();
 		source_pc.read(fn);
 		std::cout << "reading pc has been done." << std::endl;
-		//std::cout << "sssssssssssssssss." <<source_pc.has_colors()<< std::endl; 
-		for (int i = 0l; i < source_pc.get_nr_points(); i++)
+		std::cout << "sssssssssssssssss." <<source_pc.has_colors()<< std::endl; 
+		vector<vertex> aaa;
+		for (int i = 0; i < source_pc.get_nr_points(); i++)
 		{
 			vertex v;
 			v.point = source_pc.P[i];
 			v.color = source_pc.C[i];
-			current_pc.push_back(v);
-			std::cout << "source_pc.P:"<< source_pc.P[i] << std::endl;
-			std::cout << "source_pc.C:" << source_pc.C[i] << std::endl;
+			aaa.push_back(v);
+		//	std::cout << "source_pc.P:"<< source_pc.P[i] << std::endl;
+		//	std::cout << "source_pc.C:" << source_pc.C[i] << std::endl;
 		}
+		current_pc = aaa;
 		post_redraw();
-		return;
+		//return;
 	}
 	void vr_rgbd::clear_current_point_cloud() 
 	{
