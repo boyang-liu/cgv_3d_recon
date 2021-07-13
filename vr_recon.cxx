@@ -22,7 +22,7 @@
 #include <cgv/type/standard_types.h>
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
-
+#include "rgbd_pointcloud.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -523,50 +523,37 @@ vr_rgbd::~vr_rgbd()
 			std::cout<<"no pointcloud in the scene"<<std::endl;
 			return;
 		}*/
-		point_cloud cur;
+		rgbd_pointcloud cur;
 
+		std::vector<float> a;
+		a.push_back(2);
+		a.push_back(3);
+		a.push_back(4);
 
-
-
-		vec3 a = (15, 16, 14);
-		vec3 a2 = (18, 18, 18);
+		vec3 ww ;
+		ww[0] = 2;
+		ww[1] = 3;
+		ww[2] = 4;
 		rgba8 b = rgba8(255, 0, 0, 255);
-		//vec3 b = (1, 1, 1);
-		vertex v;
-		v.color = b;
-		v.point = a;
-		vertex v2;
-		v2.color = b;
-		v2.point = a2;
-		//rgb a = (15, 16, 14, 255);
-		////rgb a = (1.0, 1.0, 1.0);
-		//vec3 b = (1, 1, 1);
-		//vertex v;
-		//v.color = a;
-		//v.point = b;
-
-		vector<vertex> mypc;
-		mypc.push_back(v);
-		mypc.push_back(v2);
-		//std::cout<<"aaaaaaaaaaaaaaaaaaa"<<current_pc[0].color<<std::endl;
-		for (int i = 0; i < mypc.size(); i++)
-		{
-			cur.add_point(mypc[i].point, mypc[i].color);
-		}
-		
+		std::cout << "sssssssssssssssssssssss:"<<a[0] << std::endl;
+		std::cout << "sssssssssssssssssssssss:" << a[1] << std::endl;
+		std::cout << "sssssssssssssssssssssss:" << a[2] << std::endl;
+		std::cout << "sssssssssssssssssssssss:" << ww << std::endl;
+		cur.add_point(ww, b);
+		//cur.add_point(a2, b);
 		
 		
 		/*for(int i=0;i< current_pc.size();i++)
 		{
 			cur.add_point(current_pc[i].point, current_pc[i].color);
 		}*/
-		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (ply,bpc,apc,obj):*.ply;*.bpc;*.apc;*.obj");
+		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		if (fn.empty())
 			return;
 		FILE* fp = fopen(fn.c_str(), "wb");
 		if (!fp)
 			return;
-		cur.write(fn);
+		cur.write_lbypc(fn);
 
 
 
@@ -588,27 +575,26 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::load_current_pc() 
 	{
-		//std::cout << "0000000000000000000current::"<< intermediate_pc[1].color << std::endl;
-		std::string fn = cgv::gui::file_open_dialog("source point cloud(*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
+		
+		std::string fn = cgv::gui::file_open_dialog("source point cloud(*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
 		if (fn.empty())
 			return;
 		clear_current_point_cloud();
-		source_pc.read(fn);
-		std::cout << "reading pc has been done." << std::endl;
-		std::cout << "sssssssssssssssss." <<source_pc.has_colors()<< std::endl; 
+		source_pc.read_lbypc(fn);
 		vector<vertex> aaa;
-		for (int i = 0; i < source_pc.get_nr_points(); i++)
+		for (int i = 0; i < source_pc.get_nr_Points(); i++)
 		{
 			vertex v;
-			v.point = source_pc.P[i];
-			v.color = source_pc.C[i];
+			v.point = source_pc.Points[i];
+			v.color = source_pc.Colors[i];
 			aaa.push_back(v);
-		//	std::cout << "source_pc.P:"<< source_pc.P[i] << std::endl;
-		//	std::cout << "source_pc.C:" << source_pc.C[i] << std::endl;
+
+			std::cout << "pointcloud in the scene:" << source_pc.Points[i] << std::endl;
+			std::cout << "pointcloud in the scene:" << source_pc.Colors[i] << std::endl;
 		}
 		current_pc = aaa;
 		post_redraw();
-		//return;
+		
 	}
 	void vr_rgbd::clear_current_point_cloud() 
 	{

@@ -36,7 +36,7 @@
 #include "k4a/k4a.h"
 #include <plugins/rgbd_kinect_azure/rgbd_kinect_azure.h>
 
-
+#include "rgbd_pointcloud.h"
 
 
 
@@ -58,7 +58,7 @@ protected:
 		IS_OVER,
 		IS_GRAB
 	};
-
+	
 	struct vertex : public cgv::render::render_types
 	{
 		vec3  point;
@@ -235,8 +235,8 @@ protected:
 	char* cgv_data = getenv("CGV_DATA");
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
-	point_cloud source_pc;
-
+	rgbd_pointcloud source_pc;
+	
 
 
 
