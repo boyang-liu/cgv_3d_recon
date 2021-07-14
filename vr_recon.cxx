@@ -189,7 +189,7 @@ void vr_rgbd::start_multi_rgbd()
 		manualcorrect_rotation.push_back((0, 0, 0));
 	}
 	current_corrected_cam =-1;
-
+	cur_pc.resize(rgbd_inp.get_nr_devices());
 	update_member(&rgbd_multi_started);
 	
 }
@@ -363,8 +363,6 @@ vr_rgbd::~vr_rgbd()
 			
 		if(index ==0)
 			intermediate_pc.clear();
-		//if (index == 1)
-			//return intermediate_pc.size();
 		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
 		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
@@ -386,6 +384,7 @@ vr_rgbd::~vr_rgbd()
 		mrm[4] = sqrt(1 - mrm[5] * mrm[5] - mrm[3] * mrm[3]);*/
 
 		int i = 0;
+		std::vector<vertex> temppc;
 		for (int y = 0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {
 				vec3 p;
@@ -403,6 +402,7 @@ vr_rgbd::~vr_rgbd()
 						p[1] = -p[1];		
 						p = p + camera_pos_1;
 						p = p + manualcorrect_translation[index];
+
 					}
 
 					if (index == 1)
@@ -437,12 +437,13 @@ vr_rgbd::~vr_rgbd()
 						v.color = c;
 						v.point = p;
 					}
-					//if (i == 1)std::cout<<"ssssssssss:"<<v.color<<std::endl;
+									
+					temppc.push_back(v);			
 					intermediate_pc.push_back(v);
 				}
 				++i;
 			}
-		
+		cur_pc[index] = temppc;
 		
 		return intermediate_pc.size();
 	
@@ -519,54 +520,36 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::save_current_pc()
 	{
-		/*if (current_pc.size()==0){
+
+		if (current_pc.size()==0){
 			std::cout<<"no pointcloud in the scene"<<std::endl;
 			return;
-		}*/
-		rgbd_pointcloud cur;
+		}
 
-		std::vector<float> a;
-		a.push_back(2);
-		a.push_back(3);
-		a.push_back(4);
 
-		vec3 ww ;
-		ww[0] = 2;
-		ww[1] = 3;
-		ww[2] = 4;
-		rgba8 b = rgba8(255, 0, 0, 255);
-		std::cout << "sssssssssssssssssssssss:"<<a[0] << std::endl;
-		std::cout << "sssssssssssssssssssssss:" << a[1] << std::endl;
-		std::cout << "sssssssssssssssssssssss:" << a[2] << std::endl;
-		std::cout << "sssssssssssssssssssssss:" << ww << std::endl;
-		cur.add_point(ww, b);
-		//cur.add_point(a2, b);
-		
-		
-		/*for(int i=0;i< current_pc.size();i++)
+		rgbd_pointcloud my_pc;
+		if (save_time == rgbd_inp.get_nr_devices()) {
+		for (int i =0;i<current_pc.size();i++) 
 		{
-			cur.add_point(current_pc[i].point, current_pc[i].color);
-		}*/
+			my_pc.add_point(current_pc[i].point, current_pc[i].color);
+		}
+		save_time = 0;
+		}
+		else {
+			for (int i = 0; i < cur_pc[save_time].size(); i++)
+			{
+				my_pc.add_point(cur_pc[save_time][i].point, cur_pc[save_time][i].color);
+			}
+			save_time++;
+		}
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		if (fn.empty())
 			return;
 		FILE* fp = fopen(fn.c_str(), "wb");
 		if (!fp)
 			return;
-		cur.write_lbypc(fn);
-
-
-
-		/*
-		unsigned int n = (unsigned int)mypc.size();
-		bool success =
-			fwrite(&n, sizeof(unsigned int), 1, fp) == 1 &&
-			fwrite(&m1, sizeof(unsigned int), 1, fp) == 1 &&
-			fwrite(&P[0][0], sizeof(vec3), n, fp) == n;
-		if (C.size() == n)
-			success = success && (fwrite(&C[0][0], sizeof(rgba8), n, fp) == n);*/
+		my_pc.write_pc(fn);	
 		fclose(fp);
-
 		return;
 		
 
@@ -580,19 +563,16 @@ vr_rgbd::~vr_rgbd()
 		if (fn.empty())
 			return;
 		clear_current_point_cloud();
-		source_pc.read_lbypc(fn);
-		vector<vertex> aaa;
+		source_pc.read_pc(fn);
+		vector<vertex> temp_pc;
 		for (int i = 0; i < source_pc.get_nr_Points(); i++)
 		{
 			vertex v;
 			v.point = source_pc.Points[i];
 			v.color = source_pc.Colors[i];
-			aaa.push_back(v);
-
-			std::cout << "pointcloud in the scene:" << source_pc.Points[i] << std::endl;
-			std::cout << "pointcloud in the scene:" << source_pc.Colors[i] << std::endl;
+			temp_pc.push_back(v);
 		}
-		current_pc = aaa;
+		current_pc = temp_pc;
 		post_redraw();
 		
 	}

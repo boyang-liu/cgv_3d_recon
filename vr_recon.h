@@ -90,6 +90,7 @@ protected:
 	int key_frame_step;
 	/// intermediate point cloud and to be rendered point cloud
 	std::vector<vertex> intermediate_pc, current_pc;
+	std::vector<std::vector<vertex>> cur_pc;
 	/// list of recorded point clouds
 	std::vector<std::vector<vertex> > recorded_pcs;
 	/// translations of recorded point clouds
@@ -238,7 +239,7 @@ protected:
 	rgbd_pointcloud source_pc;
 	
 
-
+	int save_time = 0;
 
 
 

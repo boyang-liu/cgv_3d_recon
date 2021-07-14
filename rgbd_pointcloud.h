@@ -35,23 +35,28 @@
 
 
 
-class rgbd_pointcloud:public cgv::render::drawable
+class rgbd_pointcloud :public cgv::render::drawable
 {
 
 public:
-	bool write(const std::string& file_name);
-	size_t add_point(const vec3& p);
-	size_t add_point(const vec3& p,const rgba8& c);
-	bool read_lbypc(const std::string& file_name);
-	bool write_lbypc(const std::string& file_name);
-	int get_nr_Points();
 	std::vector<vec3> Points;
 	std::vector<rgba8> Colors;
+
+	bool write_pc(const std::string& file_name);
+	bool read_pc(const std::string& file_name);
+	size_t add_point(const vec3& p);
+	size_t add_point(const vec3& p, const rgba8& c);
+	bool read_lbypc(const std::string& file_name);
+	bool write_lbypc(const std::string& file_name);
+	bool read_txt(const std::string& file_name);
+	bool write_txt(const std::string& file_name);
+	int get_nr_Points();
+
 protected:
-	
+
 	//bool read(const std::string& file_name);
-	
+
 private:
-	
+
 };
 
