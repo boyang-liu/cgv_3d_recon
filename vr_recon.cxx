@@ -598,7 +598,7 @@ vr_rgbd::~vr_rgbd()
 		return depth_frame;
 	}
 	///cast vertex to point_cloud
-	void vr_rgbd::copy_pointcloud(const std::vector<vertex> input, point_cloud &output){
+	/*void vr_rgbd::copy_pointcloud(const std::vector<vertex> input, point_cloud &output){
 		for (unsigned int i = 0; i < input.size(); i++){
 			point_cloud_types::Pnt temp;
 			temp[0] = input.at(i).point[0];
@@ -611,44 +611,44 @@ vr_rgbd::~vr_rgbd()
 			output.P.push_back(temp);
 			output.C.push_back(tempcolor);
 		}
-	}
+	}*/
 	///cast point_cloud to vertex
-	void vr_rgbd::pc2vertex(const point_cloud &input, std::vector<vertex> &output) {
-		for (unsigned int i = 0; i < input.get_nr_points(); i++) {
-			vertex temp;
-			temp.point[0] = input.pnt(i).x();
-			temp.point[1] = input.pnt(i).y();
-			temp.point[2] = input.pnt(i).z();
-			/*temp.color[0] = input.clr(i)[0];
-			temp.color[1] = input.clr(i)[1];
-			temp.color[2] = input.clr(i)[2];*/
-			temp.color[0] = 0.5;
-			temp.color[1] = 0.0;
-			temp.color[2] = 0.0;
-			output.push_back(temp);
-		}
-	}
+	//void vr_rgbd::pc2vertex(const point_cloud &input, std::vector<vertex> &output) {
+	//	for (unsigned int i = 0; i < input.get_nr_points(); i++) {
+	//		vertex temp;
+	//		temp.point[0] = input.pnt(i).x();
+	//		temp.point[1] = input.pnt(i).y();
+	//		temp.point[2] = input.pnt(i).z();
+	//		/*temp.color[0] = input.clr(i)[0];
+	//		temp.color[1] = input.clr(i)[1];
+	//		temp.color[2] = input.clr(i)[2];*/
+	//		temp.color[0] = 0.5;
+	//		temp.color[1] = 0.0;
+	//		temp.color[2] = 0.0;
+	//		output.push_back(temp);
+	//	}
+	//}
 	///here should be const point cloud
-	void vr_rgbd::write_pcs_to_disk(int i)
-	{
-		if (!intermediate_pc.empty())
-		{
-			//define point cloud type, wirte to disk
-			point_cloud *pc_save = new point_cloud();
-			pc_save->has_clrs = true;
-			copy_pointcloud(intermediate_pc, *pc_save);
-			///pathname
-			std::string filename = pc_file_path + std::to_string(i) + ".obj";
-			pc_save->write(filename);
-		}
-	}
-	size_t vr_rgbd::read_pc_queue(const std::string filename, std::string content)
-	{
-		cgv::utils::file::read(filename, content, false);
-		//read pcs from disk
-		return 0;
-	}
-	void vr_rgbd::registrationPointCloud() {
+	//void vr_rgbd::write_pcs_to_disk(int i)
+	//{
+	//	if (!intermediate_pc.empty())
+	//	{
+	//		//define point cloud type, wirte to disk
+	//		point_cloud *pc_save = new point_cloud();
+	//		pc_save->has_clrs = true;
+	//		copy_pointcloud(intermediate_pc, *pc_save);
+	//		///pathname
+	//		std::string filename = pc_file_path + std::to_string(i) + ".obj";
+	//		pc_save->write(filename);
+	//	}
+	//}
+	//size_t vr_rgbd::read_pc_queue(const std::string filename, std::string content)
+	//{
+	//	cgv::utils::file::read(filename, content, false);
+	//	//read pcs from disk
+	//	return 0;
+	//}
+	/*void vr_rgbd::registrationPointCloud() {
 		cgv::pointcloud::ICP *icp = new cgv::pointcloud::ICP();
 		if (recorded_pcs.size() >= 1) {
 			cgv::math::fmat<float, 3, 3> r;
@@ -676,52 +676,52 @@ vr_rgbd::~vr_rgbd()
 			pc2vertex(*sourcePC, intermediate_pc);
 			std::cout << "size: " << recorded_pcs.size() << " "<< intermediate_pc.size()<<std::endl;
 		}		
-	}
+	}*/
 
-	void vr_rgbd::generate_rdm_pc(point_cloud &pc1, point_cloud& pc2) {
-		mat3 rotate_m;
-		rotate_m.identity();
-		double theta = M_PI / 8;  // The angle of rotation in radians
-		rotate_m.set_col(0, vec3(std::cos(theta), -sin(theta), 0));
-		rotate_m.set_col(1, vec3(sin(theta), std::cos(theta), 0));
-		rotate_m.set_col(2, vec3(0, 0, 1));
-		for (int i = 0; i < 10000; i++) {
-			point_cloud_types::Pnt origin;
-			origin.zeros();
-			origin.x() = 1024 * rand() / (RAND_MAX + 1.0f);
-			origin.y() = 1024 * rand() / (RAND_MAX + 1.0f);
-			origin.z() = 1024 * rand() / (RAND_MAX + 1.0f);
-			pc1.pnt(i) = origin;
-			origin = rotate_m * origin;
-			pc2.pnt(i) = origin + vec3(0.0, 0.4, 0.4);
-		}
-	}
+	//void vr_rgbd::generate_rdm_pc(point_cloud &pc1, point_cloud& pc2) {
+	//	mat3 rotate_m;
+	//	rotate_m.identity();
+	//	double theta = M_PI / 8;  // The angle of rotation in radians
+	//	rotate_m.set_col(0, vec3(std::cos(theta), -sin(theta), 0));
+	//	rotate_m.set_col(1, vec3(sin(theta), std::cos(theta), 0));
+	//	rotate_m.set_col(2, vec3(0, 0, 1));
+	//	for (int i = 0; i < 10000; i++) {
+	//		point_cloud_types::Pnt origin;
+	//		origin.zeros();
+	//		origin.x() = 1024 * rand() / (RAND_MAX + 1.0f);
+	//		origin.y() = 1024 * rand() / (RAND_MAX + 1.0f);
+	//		origin.z() = 1024 * rand() / (RAND_MAX + 1.0f);
+	//		pc1.pnt(i) = origin;
+	//		origin = rotate_m * origin;
+	//		pc2.pnt(i) = origin + vec3(0.0, 0.4, 0.4);
+	//	}
+	//}
 
-	void  vr_rgbd::test_icp() {
-		cgv::pointcloud::ICP* icp = new cgv::pointcloud::ICP();
-		cgv::math::fmat<float, 3, 3> r;
-		cgv::math::fvec<float, 3> t;
-		r.identity();
-		t.zeros();
-		point_cloud* sourcePC = new point_cloud();
-		point_cloud* targetPC = new point_cloud();
-		sourcePC->resize(10000);
-		targetPC->resize(10000);
-		generate_rdm_pc(*sourcePC, *targetPC);
-		icp->set_source_cloud(*sourcePC);
-		icp->set_target_cloud(*targetPC);
-		//icp->set_source_cloud(*targetPC);
-		//icp->set_target_cloud(*sourcePC);
-		icp->set_iterations(5);
-		icp->set_num_random(3);
-		icp->set_eps(1e-10);
-		icp->reg_icp(r, t);
-	}
+	//void  vr_rgbd::test_icp() {
+	//	cgv::pointcloud::ICP* icp = new cgv::pointcloud::ICP();
+	//	cgv::math::fmat<float, 3, 3> r;
+	//	cgv::math::fvec<float, 3> t;
+	//	r.identity();
+	//	t.zeros();
+	//	point_cloud* sourcePC = new point_cloud();
+	//	point_cloud* targetPC = new point_cloud();
+	//	sourcePC->resize(10000);
+	//	targetPC->resize(10000);
+	//	generate_rdm_pc(*sourcePC, *targetPC);
+	//	icp->set_source_cloud(*sourcePC);
+	//	icp->set_target_cloud(*targetPC);
+	//	//icp->set_source_cloud(*targetPC);
+	//	//icp->set_target_cloud(*sourcePC);
+	//	icp->set_iterations(5);
+	//	icp->set_num_random(3);
+	//	icp->set_eps(1e-10);
+	//	icp->reg_icp(r, t);
+	//}
 
-	void vr_rgbd::construct_TSDtree()
-	{
-		//using pc queue to construct the TSDtree
-	}
+	//void vr_rgbd::construct_TSDtree()
+	//{
+	//	//using pc queue to construct the TSDtree
+	//}
 	bool vr_rgbd::record_this_frame(double t)
 	{
 		if (!(record_frame || record_all_frames || trigger_is_pressed))

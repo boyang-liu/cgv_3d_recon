@@ -21,8 +21,8 @@
 #include <future>
 #include <iostream>
 #include <chrono>
-#include <point_cloud/point_cloud.h>
-#include <point_cloud/ICP.h>
+//#include <point_cloud/point_cloud.h>
+//#include <point_cloud/ICP.h>
 #include <cg_vr/vr_events.h>
 #include <vr/vr_state.h>
 #include <vr/vr_kit.h>
@@ -35,7 +35,7 @@
 #include "intersection.h"
 #include "k4a/k4a.h"
 #include <plugins/rgbd_kinect_azure/rgbd_kinect_azure.h>
-
+#include "ICP.h"
 #include "rgbd_pointcloud.h"
 
 
@@ -259,15 +259,15 @@ public:
 	//should be a thread
 	frame_type read_depth_frame();
 	///cast vertex to point_cloud
-	void copy_pointcloud(const std::vector<vertex> input, point_cloud& output);
+	//void copy_pointcloud(const std::vector<vertex> input, point_cloud& output);
 	///cast point_cloud to vertex
-	void pc2vertex(const point_cloud& input, std::vector<vertex>& output);
-	void write_pcs_to_disk(int i);
-	size_t read_pc_queue(const std::string filename, std::string content);
-	void registrationPointCloud();
-	void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
-	void  test_icp();
-	void construct_TSDtree();
+	//void pc2vertex(const point_cloud& input, std::vector<vertex>& output);
+	//void write_pcs_to_disk(int i);
+	//size_t read_pc_queue(const std::string filename, std::string content);
+	//void registrationPointCloud();
+	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
+	//void  test_icp();
+	//void construct_TSDtree();
 	bool record_this_frame(double t);
 	void timer_event(double t, double dt);
 	std::string get_type_name() const;

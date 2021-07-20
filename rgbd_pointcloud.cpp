@@ -62,8 +62,8 @@ bool rgbd_pointcloud::write_lbypc(const std::string& file_name)
 	// write the header
 	success = success && fwrite(&n, sizeof(int), 1, fp);
 	// write the content 
-	success = success && fwrite(&Points[0], sizeof(vec3), n, fp) == n;
-	success = success && fwrite(&Colors[0], sizeof(rgba8), n, fp) == n;
+	success = success && fwrite(&Points[0], sizeof(Pnt), n, fp) == n;
+	success = success && fwrite(&Colors[0], sizeof(Rgba), n, fp) == n;
 
 
 
@@ -87,9 +87,9 @@ bool rgbd_pointcloud::read_lbypc(const std::string& file_name)
 	success = success && fread(&nr, sizeof(int), 1, fp) == 1;
 	//success = success && fread(&flags, sizeof(cgv::type::uint32_type), 1, fp) == 1;
 	Points.resize(nr);
-	success = success && fread(&Points[0][0], sizeof(vec3), nr, fp) == nr;
+	success = success && fread(&Points[0][0], sizeof(Pnt), nr, fp) == nr;
 	Colors.resize(nr);
-	success = success && fread(&Colors[0][0], sizeof(rgba8), nr, fp) == nr;
+	success = success && fread(&Colors[0][0], sizeof(Rgba), nr, fp) == nr;
 
 	return fclose(fp) == 0 && success;
 
@@ -120,8 +120,8 @@ bool rgbd_pointcloud::read_txt(const std::string& file_name)
 			continue;
 
 		if (true) {
-			vec3 p;
-			rgba8 c;
+			Pnt p;
+			Rgba c;
 			char tmp = lines[i].end[0];
 			content[lines[i].end - content.c_str()] = 0;
 			if (sscanf(lines[i].begin, "%f %f %f %d %d %d %d", &p[0], &p[1], &p[2], &c[0], &c[1], &c[2], &c[3]) == 7) {
@@ -180,20 +180,15 @@ bool rgbd_pointcloud::write_txt(const std::string& file_name)
 
 
 
-size_t rgbd_pointcloud::add_point(const vec3& p)
+size_t rgbd_pointcloud::add_point(const Pnt& p)
 {
 	Points.push_back(p);
-	Colors.push_back(rgba8(0, 0, 0, 255));
+	Colors.push_back(Rgba(0, 0, 0, 255));
 	return Points.size();
 }
-size_t rgbd_pointcloud::add_point(const vec3& p, const rgba8& c)
+size_t rgbd_pointcloud::add_point(const Pnt& p, const Rgba& c)
 {
 	Points.push_back(p);
 	Colors.push_back(c);
 	return Points.size();
-}
-int rgbd_pointcloud::get_nr_Points()
-{
-	return Points.size();
-
 }
