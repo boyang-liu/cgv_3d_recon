@@ -105,6 +105,9 @@ public:
 	std::vector<Pnt> Points;
 	std::vector<Rgba> Colors;
 
+	std::vector<int> labels;
+	std::vector<Rgba> renderColors;
+
 	bool write_pc(const std::string& file_name);
 	bool read_pc(const std::string& file_name);
 	size_t add_point(const Pnt& p);
@@ -115,6 +118,10 @@ public:
 	bool write_txt(const std::string& file_name);
 	Cnt get_nr_Points() const { return (Cnt)Points.size(); };
 	const Pnt& pnt(size_t i) const { return Points[i]; }
+	Pnt& pnt(size_t i) { return Points[i]; }
+	void resize(size_t nr_points);
+	void clear();
+	//void get_rendercolor();
 protected:
 
 	//bool read(const std::string& file_name);

@@ -192,3 +192,18 @@ size_t rgbd_pointcloud::add_point(const Pnt& p, const Rgba& c)
 	Colors.push_back(c);
 	return Points.size();
 }
+void rgbd_pointcloud::resize(size_t nr_points) 
+{
+	Points.resize(nr_points);
+	Colors.resize(nr_points);
+	labels.resize(nr_points);
+	renderColors.resize(nr_points);
+}
+
+void rgbd_pointcloud::clear()
+{
+	Points.clear();
+	Colors.clear();
+	labels.clear();
+	renderColors.clear();
+}
