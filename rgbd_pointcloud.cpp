@@ -196,8 +196,8 @@ void rgbd_pointcloud::resize(size_t nr_points)
 {
 	Points.resize(nr_points);
 	Colors.resize(nr_points);
-	labels.resize(nr_points);
-	renderColors.resize(nr_points);
+	//labels.resize(nr_points);
+	//renderColors.resize(nr_points);
 }
 
 void rgbd_pointcloud::clear()
@@ -206,4 +206,17 @@ void rgbd_pointcloud::clear()
 	Colors.clear();
 	labels.clear();
 	renderColors.clear();
+}
+void rgbd_pointcloud::set_render_color() 
+{
+	
+	renderColors = Colors;
+	
+	if (labels.size() > 0) {
+		for (int i =0;i<labels.size();i++) 
+		{
+			renderColors[labels[i]]= (255, 0, 0, 255);
+		}
+	}
+	return ;
 }

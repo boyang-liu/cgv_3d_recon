@@ -222,9 +222,12 @@ protected:
 	std::vector<vec3> manualcorrect_rotation;
 	float position_scale;
 	float rotation_scale;
-
+	//controller mode for immersive interaction
 	bool translationmode;
 	bool rotationmode;
+
+	bool selectPointsmode;
+
 	int current_corrected_cam;
 
 	int depth_stream_format_idx;
@@ -264,7 +267,8 @@ public:
 	//void pc2vertex(const point_cloud& input, std::vector<vertex>& output);
 	//void write_pcs_to_disk(int i);
 	//size_t read_pc_queue(const std::string filename, std::string content);
-	//void registrationPointCloud();
+	
+	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
 	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
 	//void  test_icp();
 	//void construct_TSDtree();

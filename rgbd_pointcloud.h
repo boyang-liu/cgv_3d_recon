@@ -102,11 +102,7 @@ class rgbd_pointcloud : public point_cloud_types//:public cgv::render::drawable
 {
 
 public:
-	std::vector<Pnt> Points;
-	std::vector<Rgba> Colors;
-
-	std::vector<int> labels;
-	std::vector<Rgba> renderColors;
+	
 
 	bool write_pc(const std::string& file_name);
 	bool read_pc(const std::string& file_name);
@@ -116,16 +112,32 @@ public:
 	bool write_lbypc(const std::string& file_name);
 	bool read_txt(const std::string& file_name);
 	bool write_txt(const std::string& file_name);
+
 	Cnt get_nr_Points() const { return (Cnt)Points.size(); };
 	const Pnt& pnt(size_t i) const { return Points[i]; }
 	Pnt& pnt(size_t i) { return Points[i]; }
+
 	void resize(size_t nr_points);
 	void clear();
-	//void get_rendercolor();
+	void set_render_color();
+
+	const Rgba& clr(size_t i) const { return Colors[i] ; }
+	/// return i-th color as reference
+	Rgba& clr(size_t i) { return Colors[i]; }
+
+	const Rgba& render_clr(size_t i) const { return renderColors[i]; }
+	
+
+	const Cnt& lab(size_t i) const { return labels[i]; }
+	std::vector<Cnt> labels;
 protected:
 
 	//bool read(const std::string& file_name);
+	std::vector<Pnt> Points;
+	std::vector<Rgba> Colors;
 
+	
+	std::vector<Rgba> renderColors;
 private:
 
 };

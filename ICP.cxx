@@ -91,8 +91,11 @@
 			Sigma.zeros();
 
 			rgbd_pointcloud S, Q;
-			S.resize(sourceCloud->get_nr_Points());
-			Q.resize(sourceCloud->get_nr_Points());
+			//S.resize(sourceCloud->get_nr_Points());
+			//Q.resize(sourceCloud->get_nr_Points());
+
+			S.resize(sourceCloud->labels.size());
+			Q.resize(sourceCloud->labels.size());
 
 			/// sample the source point cloud
 			 
@@ -100,7 +103,7 @@
 
 
 
-			if (numRandomSamples > 0) {
+			/*if (numRandomSamples > 0) {
 				std::srand(std::time(0));
 				for (int i = 0; i < numRandomSamples; i++)
 					S.pnt(i) = sourceCloud->pnt(std::rand() % sourceCloud->get_nr_Points());
@@ -108,10 +111,13 @@
 			else {
 				for (int i = 0; i < sourceCloud->get_nr_Points(); i++)
 					S.pnt(i) = sourceCloud->pnt(i);
+			}*/
+
+			for (int i =0;i<sourceCloud->labels.size();i++) 
+			{
+				S.pnt(i) = sourceCloud->pnt(sourceCloud->labels[i]);
 			}
-
-
-
+			
 
 
 

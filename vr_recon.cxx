@@ -23,6 +23,7 @@
 #include <cgv/math/ftransform.h>
 #include <cgv/math/svd.h>
 #include "rgbd_pointcloud.h"
+#include "ICP.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -317,6 +318,8 @@ vr_rgbd::vr_rgbd()
 	rotation_scale = 0.1;
 	position_scale = 0.1;
 	generate_pc_from_rgbd = true;
+	selectPointsmode = false;
+
 	//mvp.identity();
 }
 
@@ -568,8 +571,8 @@ vr_rgbd::~vr_rgbd()
 		for (int i = 0; i < source_pc.get_nr_Points(); i++)
 		{
 			vertex v;
-			v.point = source_pc.Points[i];
-			v.color = source_pc.Colors[i];
+			v.point = source_pc.pnt(i);
+			v.color = source_pc.clr(i);
 			temp_pc.push_back(v);
 		}
 		current_pc = temp_pc;
@@ -648,35 +651,25 @@ vr_rgbd::~vr_rgbd()
 	//	//read pcs from disk
 	//	return 0;
 	//}
-	/*void vr_rgbd::registrationPointCloud() {
-		cgv::pointcloud::ICP *icp = new cgv::pointcloud::ICP();
-		if (recorded_pcs.size() >= 1) {
-			cgv::math::fmat<float, 3, 3> r;
-			cgv::math::fvec<float, 3> t;
-			r.identity();
-			t.zeros();
-			point_cloud *sourcePC = new point_cloud();
-			point_cloud* sourcecopy = new point_cloud();
-			point_cloud *targetPC = new point_cloud();
-			sourcePC->resize(intermediate_pc.size());
-			targetPC->resize(recorded_pcs.front().size());
-			sourcecopy->resize(intermediate_pc.size());
-			copy_pointcloud(recorded_pcs.front(), *targetPC);
-			copy_pointcloud(intermediate_pc, *sourcePC);
-			icp->set_source_cloud(*sourcePC);
-			icp->set_target_cloud(*targetPC);
-			icp->set_iterations(5);
-			icp->set_eps(1e-10);
-			icp->reg_icp(r, t);
-			for (int i = 0; i < sourcePC->get_nr_points(); i++)
-			{
-				sourcePC->pnt(i) = r * sourcePC->pnt(i) + t;
-			}
-			intermediate_pc.clear();
-			pc2vertex(*sourcePC, intermediate_pc);
-			std::cout << "size: " << recorded_pcs.size() << " "<< intermediate_pc.size()<<std::endl;
-		}		
-	}*/
+	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+		ICP *icp = new ICP();
+		
+		/*cgv::math::fmat<float, 3, 3> r;
+		cgv::math::fvec<float, 3> t;*/
+		r.identity();
+		t.zeros();
+		icp->set_source_cloud(source);
+		icp->set_target_cloud(target);
+		icp->set_iterations(20);
+		icp->set_eps(1e-10);
+		icp->reg_icp(r, t);
+		/*for (int i = 0; i < source.get_nr_Points(); i++)
+		{
+			source.pnt(i) = r * source.pnt(i) + t;
+		}*/
+		return;
+				
+	}
 
 	//void vr_rgbd::generate_rdm_pc(point_cloud &pc1, point_cloud& pc2) {
 	//	mat3 rotate_m;
@@ -1073,16 +1066,22 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			if (ci == 1 && vrke.get_key() == vr::VR_DPAD_UP) {
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					if (translationmode&& current_corrected_cam !=-1)
-					{		
-						manualcorrect_translation[current_corrected_cam][2] += position_scale;
 
-					}
-					if (rotationmode && current_corrected_cam != -1)
-					{
-						manualcorrect_rotation[current_corrected_cam][2] += rotation_scale;
 
+					if (translationmode) {
+						if ( current_corrected_cam !=-1)
+						{		
+							manualcorrect_translation[current_corrected_cam][2] += position_scale;
+						}
 					}
+
+					if (rotationmode) {
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][2] += rotation_scale;
+						}
+					}
+
 					break;
 				case cgv::gui::KA_RELEASE:
 					
@@ -1096,14 +1095,21 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					//rgbd_2_controller_position_start_calib = controller_position;       // r^0 = r
 					//in_calibration = true;
 					//update_member(&in_calibration);
-					if (translationmode && current_corrected_cam != -1)
-					{	
-						manualcorrect_translation[current_corrected_cam][2] -= position_scale;
-					}
-					if (rotationmode && current_corrected_cam != -1)
-					{
-						manualcorrect_rotation[current_corrected_cam][2] -= rotation_scale;
 
+					if (translationmode) 
+					{
+						if ( current_corrected_cam != -1)
+						{
+							manualcorrect_translation[current_corrected_cam][2] -= position_scale;
+						}					
+					}
+					if (rotationmode)
+					{
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][2] -= rotation_scale;
+
+						}
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1122,15 +1128,23 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				case cgv::gui::KA_PRESS :
 					/*zoom_in = true;
 					update_member(&zoom_in);*/
-					if (translationmode && current_corrected_cam != -1)
-					{		
-						manualcorrect_translation[current_corrected_cam][0] += position_scale;
-					}
-					if (rotationmode && current_corrected_cam != -1)
-					{
-						manualcorrect_rotation[current_corrected_cam][0] += rotation_scale;
 
+					if (translationmode)
+					{
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_translation[current_corrected_cam][0] += position_scale;
+						}
 					}
+					if (rotationmode)
+					{
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][0] += rotation_scale;
+
+						}
+					}
+
 					break;
 				case cgv::gui::KA_RELEASE:
 					/*zoom_in = false;
@@ -1144,14 +1158,20 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				case cgv::gui::KA_PRESS:
 					/*zoom_out = true;
 					update_member(&zoom_out);*/
-					if (translationmode && current_corrected_cam != -1)
+					if (translationmode)
 					{
-						manualcorrect_translation[current_corrected_cam][0] -= position_scale;					
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_translation[current_corrected_cam][0] -= position_scale;
+						}
 					}
-					if (rotationmode && current_corrected_cam != -1)
+					if (rotationmode)
 					{
-						manualcorrect_rotation[current_corrected_cam][0] -= rotation_scale;
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][0] -= rotation_scale;
 
+						}
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1164,42 +1184,21 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			{
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					//if (get_camera_pos_1 == false) {
-					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-					//	camera_translation_1 = p;
-					//	std::cout<<"p positon:"<<p<< std::endl;
-					//	vec3 p1 = vec3(vrke.get_state().controller[1].pose[0], vrke.get_state().controller[1].pose[1], vrke.get_state().controller[1].pose[2]);
-					//	vec3 p2 = vec3(vrke.get_state().controller[1].pose[3], vrke.get_state().controller[1].pose[4], vrke.get_state().controller[1].pose[5]);
-					//	vec3 p3 = vec3(vrke.get_state().controller[1].pose[6], vrke.get_state().controller[1].pose[7], vrke.get_state().controller[1].pose[8]);
-					//	std::cout << "p1p2p3:"<< p1 << std::endl;
-					//	std::cout << "       "<< p2 << std::endl;
-					//	std::cout << "       "<< p3 << std::endl;
-					//	
-					//	//get_camera_pos_1 = true;
-					//}else if(camera_pos_2 == false)
-					//{
-					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-					//	camera_translation_2 = p;
-
-					//	
-
-					//	camera_pos_2 = true;
-					//}
-					//else if (camera_pos_3 == false)
-					//{
-					//	vec3 p = vec3(vrke.get_state().controller[1].pose[9], vrke.get_state().controller[1].pose[10], vrke.get_state().controller[1].pose[11]);
-					//	camera_translation_3 = p;
-					//	camera_pos_3 = true;
-					//}
-					if (translationmode && current_corrected_cam != -1)
+					if (translationmode)
 					{
-						manualcorrect_translation[current_corrected_cam][1] += position_scale;
-						
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_translation[current_corrected_cam][1] += position_scale;
+
+						}
 					}
-					if (rotationmode && current_corrected_cam != -1)
+					if (rotationmode)
 					{
-						manualcorrect_rotation[current_corrected_cam][1] += rotation_scale;
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][1] += rotation_scale;
 
+						}
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1211,16 +1210,21 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			{
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					
-					if (translationmode && current_corrected_cam != -1)
+					if (translationmode)
 					{
-						manualcorrect_translation[current_corrected_cam][1] -= position_scale;
-						
-					}
-					if (rotationmode && current_corrected_cam != -1)
-					{
-						manualcorrect_rotation[current_corrected_cam][1] -= rotation_scale;
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_translation[current_corrected_cam][1] -= position_scale;
 
+						}
+					}
+					if (rotationmode)
+					{
+						if (current_corrected_cam != -1)
+						{
+							manualcorrect_rotation[current_corrected_cam][1] -= rotation_scale;
+
+						}
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1237,7 +1241,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
 				{
-				//std::cout << "this is link controller" << std::endl;
 					if (manualcorrect_rotation.size() == 0) {
 						std::cout << "no camera linked" << std::endl;
 						break;
@@ -1260,7 +1263,8 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						std::cout << "no camera linked" << std::endl;
 						break;
 					}
-					if (translationmode) {
+
+					/*if (translationmode) {
 						if (current_corrected_cam < manualcorrect_translation.size())
 						{
 							current_corrected_cam = current_corrected_cam+ 1;
@@ -1277,7 +1281,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						rotationmode = false;
 						current_corrected_cam = 0;
 						std::cout << "cam::" << translationmode << std::endl;
-					}
+					}*/
 					
 
 
@@ -1515,6 +1519,8 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
+	
+
 		if (show_points) {
 			auto& pr = cgv::render::ref_point_renderer(ctx);
 			pr.set_render_style(point_style);
@@ -1542,6 +1548,12 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					rgb c(float(1 - ci), 0.5f*(int)state[ci], float(ci));
 					C.push_back(c);
 					C.push_back(c);
+
+					/*if (ci == 0 && selectPointsmode) 
+					{
+					render
+					}*/
+
 				}
 				for (int ci = 2; ci < 5; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
 					vec3 ray_origin, ray_direction;
