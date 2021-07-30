@@ -523,7 +523,7 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::save_current_pc()
 	{
-
+		
 		if (current_pc.size()==0){
 			std::cout<<"no pointcloud in the scene"<<std::endl;
 			return;
@@ -587,7 +587,24 @@ vr_rgbd::~vr_rgbd()
 		current_pc.clear();
 	}
 
-
+	void vr_rgbd::temp_test() {
+		
+		for (int i = 0; i < 10; i++)
+		{
+			for (int ii = 0; ii < 10; ii++) {
+				for (int iii = 0; iii < 10; iii++) {
+					vertex v;
+					v.point =vec3(i,ii,iii) ;
+					v.color = rgba8(255,255,0,255);
+					test_pc.push_back(v);
+				}
+			}
+		}
+		//current_pc = test_pc;
+		rgbd_pointcloud pc01;
+		generate_pc(test_pc,pc01);
+		start_select_points(pc01);
+	}
 
 
 
@@ -670,6 +687,29 @@ vr_rgbd::~vr_rgbd()
 		return;
 				
 	}
+	void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud &pc1) {
+		pc1.clear();
+		for (int i = 0; i < rgbd_points.size(); i++)
+		{
+			pc1.add_point(rgbd_points[i].point, rgbd_points[i].color);
+		}
+		return;
+	}
+	void vr_rgbd::start_select_points(rgbd_pointcloud& pc1) {
+		
+		tree = std::make_shared<ann_tree>();
+		tree->build(pc1);
+		int index;
+		index=tree->find_closest(vec3(11, 11, 11));
+		std::cout<<"find_closest:"<<index<<std::endl;
+		std::cout<<"position    :" << pc1.pnt(index) << std::endl;
+		
+		
+	}
+
+
+
+
 
 	//void vr_rgbd::generate_rdm_pc(point_cloud &pc1, point_cloud& pc2) {
 	//	mat3 rotate_m;
@@ -933,7 +973,7 @@ void vr_rgbd::create_gui()
 		connect_copy(add_control("rotation_scale", rotation_scale, "value_slider", "min=0.01;max=1;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
 		connect_copy(add_button("save pointcloud")->click, rebind(this, &vr_rgbd::save_current_pc));
 		connect_copy(add_button("load pointcloud")->click, rebind(this, &vr_rgbd::load_current_pc));
-
+		connect_copy(add_button("temp test")->click, rebind(this, &vr_rgbd::temp_test));
 
 		add_member_control(this, "record_frame", record_frame, "check");
 		add_member_control(this, "record_all_frames", record_all_frames, "check");
@@ -1526,7 +1566,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			pr.set_render_style(point_style);
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 			draw_pc(ctx, current_pc);
-
+			draw_pc(ctx,test_pc);
+				
 			size_t begin = 0;
 			size_t end = recorded_pcs.size();
 			if (end > max_nr_shown_recorded_pcs)

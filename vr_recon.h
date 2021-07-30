@@ -89,8 +89,10 @@ protected:
 	bool save_pointcloud;
 	int key_frame_step;
 	/// intermediate point cloud and to be rendered point cloud
-	std::vector<vertex> intermediate_pc, current_pc;
+	std::vector<vertex> intermediate_pc, current_pc, test_pc;
 	std::vector<std::vector<vertex>> cur_pc;
+
+
 	/// list of recorded point clouds
 	std::vector<std::vector<vertex> > recorded_pcs;
 	/// translations of recorded point clouds
@@ -240,7 +242,7 @@ protected:
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
 	rgbd_pointcloud source_pc;
-	
+	std::shared_ptr<ann_tree> tree;
 
 	int save_time = 0;
 
@@ -258,6 +260,9 @@ public:
 	void save_current_pc();
 	void load_current_pc();
 	void clear_current_point_cloud();
+
+	void temp_test();
+
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
@@ -269,6 +274,11 @@ public:
 	//size_t read_pc_queue(const std::string filename, std::string content);
 	
 	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
+	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
+	void start_select_points(rgbd_pointcloud& pc1);
+
+
+
 	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
 	//void  test_icp();
 	//void construct_TSDtree();
