@@ -30,7 +30,8 @@ public:
 	/// addition query method to find the closest neighbor
 	Idx find_closest(const Pnt& p) const;
 	/// knn query that returns pointers to points
-	void find_closest_points(const Pnt& p, Idx k, std::vector<const Pnt*>& knn) const;
+	void find_closest_points(const Pnt& p, Idx k, std::vector<int>& knn) const;
+	int find_fixed_radius_points(const Pnt& p, Crd k, std::vector<int>& knn)const;
 };
 
 #include <cgv/config/lib_end.h>

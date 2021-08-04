@@ -220,3 +220,12 @@ void rgbd_pointcloud::set_render_color()
 	}
 	return ;
 }
+void rgbd_pointcloud::merge_labels(std::vector<int>& a) {
+	sort(a.begin(), a.end());
+	sort(labels.begin(), labels.end());
+	std::vector<int> result;
+	std::set_union(std::begin(a), std::end(a), 
+	std::begin(labels), std::end(labels), 
+	std::back_inserter(result));
+	labels = result;
+}

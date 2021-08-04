@@ -191,6 +191,14 @@ void vr_rgbd::start_multi_rgbd()
 	}
 	current_corrected_cam =-1;
 	cur_pc.resize(rgbd_inp.get_nr_devices());
+	rgbdpc.resize(rgbd_inp.get_nr_devices());
+	cam_rotation.resize(rgbd_inp.get_nr_devices());
+	cam_translation.resize(rgbd_inp.get_nr_devices());
+	for (int i = 0;i< cam_rotation.size();i++) {
+		cam_rotation[i].identity();
+		cam_translation[i] = vec3(0, 0, 0);
+	}
+	
 	update_member(&rgbd_multi_started);
 	
 }
@@ -319,8 +327,11 @@ vr_rgbd::vr_rgbd()
 	position_scale = 0.1;
 	generate_pc_from_rgbd = true;
 	selectPointsmode = false;
-
+	currentselectingpc = 0;
+	Radius_SelectMode = 0.5;
 	//mvp.identity();
+	
+
 }
 
 vr_rgbd::~vr_rgbd()
@@ -575,7 +586,11 @@ vr_rgbd::~vr_rgbd()
 			v.color = source_pc.clr(i);
 			temp_pc.push_back(v);
 		}
+
+		rgbdpc.push_back(source_pc);
+
 		current_pc = temp_pc;
+
 		post_redraw();
 		
 	}
@@ -603,9 +618,51 @@ vr_rgbd::~vr_rgbd()
 		//current_pc = test_pc;
 		rgbd_pointcloud pc01;
 		generate_pc(test_pc,pc01);
-		start_select_points(pc01);
+		vec3 q = vec3(11, 11, 11);
+		select_feature_points(pc01,q,Radius_SelectMode);
 	}
+	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+		ICP* icp = new ICP();
 
+		/*cgv::math::fmat<float, 3, 3> r;
+		cgv::math::fvec<float, 3> t;*/
+		r.identity();
+		t.zeros();
+		icp->set_source_cloud(source);
+		icp->set_target_cloud(target);
+		icp->set_iterations(20);
+		icp->set_eps(1e-10);
+		icp->reg_icp(r, t);
+		/*for (int i = 0; i < source.get_nr_Points(); i++)
+		{
+			source.pnt(i) = r * source.pnt(i) + t;
+		}*/
+		return;
+
+	}
+	void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud& pc1) {
+		pc1.clear();
+		for (int i = 0; i < rgbd_points.size(); i++)
+		{
+			pc1.add_point(rgbd_points[i].point, rgbd_points[i].color);
+		}
+		return;
+	}
+	void vr_rgbd::select_feature_points(rgbd_pointcloud& pc1,vec3 p,float radius) {
+
+		tree = std::make_shared<ann_tree>();
+		tree->build(pc1);
+		std::vector<int> temp_knn;	
+		int NrPointinRadius = tree->find_fixed_radius_points(p, radius, temp_knn);
+		tree->find_closest_points(p, NrPointinRadius, knn);
+		pc1.merge_labels(knn);
+		pc1.set_render_color();
+	}
+	void vr_rgbd::start_select_points() {
+		for (int i = 0; i < rgbdpc.size(); i++)
+			generate_pc(cur_pc[i], rgbdpc[i]);
+
+	}
 
 
 
@@ -617,6 +674,7 @@ vr_rgbd::~vr_rgbd()
 	{
 		return depth_frame;
 	}
+	
 	///cast vertex to point_cloud
 	/*void vr_rgbd::copy_pointcloud(const std::vector<vertex> input, point_cloud &output){
 		for (unsigned int i = 0; i < input.size(); i++){
@@ -668,44 +726,7 @@ vr_rgbd::~vr_rgbd()
 	//	//read pcs from disk
 	//	return 0;
 	//}
-	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
-		ICP *icp = new ICP();
-		
-		/*cgv::math::fmat<float, 3, 3> r;
-		cgv::math::fvec<float, 3> t;*/
-		r.identity();
-		t.zeros();
-		icp->set_source_cloud(source);
-		icp->set_target_cloud(target);
-		icp->set_iterations(20);
-		icp->set_eps(1e-10);
-		icp->reg_icp(r, t);
-		/*for (int i = 0; i < source.get_nr_Points(); i++)
-		{
-			source.pnt(i) = r * source.pnt(i) + t;
-		}*/
-		return;
-				
-	}
-	void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud &pc1) {
-		pc1.clear();
-		for (int i = 0; i < rgbd_points.size(); i++)
-		{
-			pc1.add_point(rgbd_points[i].point, rgbd_points[i].color);
-		}
-		return;
-	}
-	void vr_rgbd::start_select_points(rgbd_pointcloud& pc1) {
-		
-		tree = std::make_shared<ann_tree>();
-		tree->build(pc1);
-		int index;
-		index=tree->find_closest(vec3(11, 11, 11));
-		std::cout<<"find_closest:"<<index<<std::endl;
-		std::cout<<"position    :" << pc1.pnt(index) << std::endl;
-		
-		
-	}
+	
 
 
 
@@ -1121,6 +1142,15 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 							manualcorrect_rotation[current_corrected_cam][2] += rotation_scale;
 						}
 					}
+
+					if (selectPointsmode) {
+						vec3 ray_origin, ray_direction,ray_end;
+						vrke.get_state().controller[0].put_ray(&ray_origin(0), &ray_direction(0));												
+						ray_end=ray_origin + ray_length * ray_direction;					
+						select_feature_points(rgbdpc[currentselectingpc], ray_end,Radius_SelectMode);
+						registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
+					}
+
 
 					break;
 				case cgv::gui::KA_RELEASE:

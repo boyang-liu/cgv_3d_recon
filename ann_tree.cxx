@@ -121,7 +121,7 @@ ann_tree::Idx ann_tree::find_closest(const Pnt& p) const
 	ann->ps->annkSearch(const_cast<ANNpoint>(&p[0]), 1, (ANNidxArray)&result, &dist);
 	return result;
 }
-void ann_tree::find_closest_points(const Pnt& p, Idx k, std::vector<const Pnt*>& knn) const
+void ann_tree::find_closest_points(const Pnt& p, Idx k, std::vector<int>& knn) const
 {
 	ann_struct* ann = static_cast<ann_struct*>(ann_impl);
 	if (!ann) {
@@ -131,9 +131,34 @@ void ann_tree::find_closest_points(const Pnt& p, Idx k, std::vector<const Pnt*>&
 	knn.resize(k);
 	ANNdistArray dist_array = new ANNdist[k];
 	ANNidxArray index_array = new ANNidx[k];
-	ann->ps->annkSearch(const_cast<ANNpoint>(&p[0]), 1, (ANNidxArray)&index_array, dist_array);
-	for (Idx i = 0; i < k; ++i)
-		knn[i] = reinterpret_cast<const Pnt*>(ann->ps->thePoints()[index_array[i]]);
+	
+	ann->ps->annkSearch(const_cast<ANNpoint>(&p[0]), k, index_array, dist_array);
+
+	for (Idx i = 0; i < k; ++i) {
+		knn[i] = index_array[i];
+	}
+
 	delete[] dist_array;
 	delete[] index_array;
+
+
+
+
+}
+int ann_tree::find_fixed_radius_points(const Pnt& p, Crd k, std::vector<int>& knn) const
+{
+	ann_struct* ann = static_cast<ann_struct*>(ann_impl);
+	if (!ann) {
+		std::cerr << "no ann_tree built" << std::endl;
+		return -1;
+	}
+	ANNdistArray dist_array = new ANNdist[10];
+	ANNidxArray index_array = new ANNidx[10];
+	int nr_p;
+	float squared_radius = k * k;
+	nr_p = ann->ps->annkFRSearch(const_cast<ANNpoint>(&p[0]), squared_radius, 1, index_array, dist_array);//, 100, index_array, dist_array
+
+	delete[] dist_array;
+	delete[] index_array;
+	return nr_p;
 }

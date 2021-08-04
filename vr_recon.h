@@ -245,10 +245,12 @@ protected:
 	std::shared_ptr<ann_tree> tree;
 
 	int save_time = 0;
-
-
-
-
+	int currentselectingpc;
+	std::vector<rgbd_pointcloud> rgbdpc;
+	std::vector<int> knn;
+	float Radius_SelectMode;
+	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
+	std::vector < cgv::math::fvec<float, 3>> cam_translation;
 public:
 	vr_rgbd();
 	~vr_rgbd();
@@ -275,8 +277,8 @@ public:
 	
 	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
 	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
-	void start_select_points(rgbd_pointcloud& pc1);
-
+	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
+	void start_select_points();
 
 
 	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
