@@ -130,6 +130,7 @@ public:
 
 	const Cnt& lab(size_t i) const { return labels[i]; }
 	std::vector<int> labels;
+
 protected:
 
 	//bool read(const std::string& file_name);

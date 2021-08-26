@@ -280,7 +280,7 @@ vr_rgbd::vr_rgbd()
 	vr_view_ptr = 0;
 	ray_length = 2;
 	connect(cgv::gui::ref_vr_server().on_device_change, this, &vr_rgbd::on_device_change);
-
+	sphere_distance=0.2;
 	srs.radius = 0.005f;
 	state[0] = state[1] = state[2] = state[3] = IS_NONE;
 	rgbd_started = false;
@@ -328,7 +328,7 @@ vr_rgbd::vr_rgbd()
 	generate_pc_from_rgbd = true;
 	selectPointsmode = false;
 	currentselectingpc = 0;
-	Radius_SelectMode = 0.5;
+	Radius_SelectMode = 0.1;
 	//mvp.identity();
 	
 
@@ -593,6 +593,8 @@ vr_rgbd::~vr_rgbd()
 
 		post_redraw();
 		
+		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;
+
 	}
 	void vr_rgbd::clear_current_point_cloud() 
 	{
@@ -620,6 +622,7 @@ vr_rgbd::~vr_rgbd()
 		generate_pc(test_pc,pc01);
 		vec3 q = vec3(11, 11, 11);
 		select_feature_points(pc01,q,Radius_SelectMode);
+		
 	}
 	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
 		ICP* icp = new ICP();
@@ -1145,10 +1148,11 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 					if (selectPointsmode) {
 						vec3 ray_origin, ray_direction,ray_end;
+						
 						vrke.get_state().controller[0].put_ray(&ray_origin(0), &ray_direction(0));												
-						ray_end=ray_origin + ray_length * ray_direction;					
+						ray_end=ray_origin + sphere_distance*ray_direction;
 						select_feature_points(rgbdpc[currentselectingpc], ray_end,Radius_SelectMode);
-						registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
+						//registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
 					}
 
 
@@ -1181,6 +1185,10 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 						}
 					}
+					if (selectPointsmode) {
+						//registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
+					}
+					
 					break;
 				case cgv::gui::KA_RELEASE:
 					/*rgbd_2_controller_orientation = transpose(rgbd_2_controller_orientation_start_calib)*controller_orientation*rgbd_2_controller_orientation;
@@ -1214,6 +1222,9 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 						}
 					}
+					if (selectPointsmode) {
+						Radius_SelectMode = Radius_SelectMode * 0.9;
+						}
 
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1243,6 +1254,10 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 						}
 					}
+					if (selectPointsmode) {
+						Radius_SelectMode = Radius_SelectMode * 1.11;
+					}
+
 					break;
 				case cgv::gui::KA_RELEASE:
 					/*zoom_out = false;
@@ -1311,10 +1326,10 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
 				{
-					if (manualcorrect_rotation.size() == 0) {
+					/*if (manualcorrect_rotation.size() == 0) {
 						std::cout << "no camera linked" << std::endl;
 						break;
-					}
+					}*/
 				}
 				break;
 			
@@ -1329,11 +1344,12 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				case cgv::gui::KA_PRESS:
 				{
 					
-					if (manualcorrect_translation.size() == 0) {
+					/*if (manualcorrect_translation.size() == 0) {
 						std::cout << "no camera linked" << std::endl;
 						break;
-					}
-
+					}*/
+					selectPointsmode = true;
+					std::cout<< "selectPointsmode :"<< selectPointsmode <<std::endl;
 					/*if (translationmode) {
 						if (current_corrected_cam < manualcorrect_translation.size())
 						{
@@ -1585,7 +1601,23 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 			glDrawArrays(GL_POINTS, 0, (GLsizei)pc.size());
 			pr.disable(ctx);
 		}
+
+		//std::cout<<"front:"<< pc.front()<<std::endl;
+		//std::cout << "front:" << pc.front().point << std::endl;
 }
+
+void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
+	if (pc.get_nr_Points()==0)
+		return;
+	auto& pr = cgv::render::ref_point_renderer(ctx);
+	pr.set_position_array(ctx, &pc.pnt(0), pc.get_nr_Points(), sizeof(vec3));
+	pr.set_color_array(ctx, &pc.clr(0), pc.get_nr_Points(), sizeof(rgba));
+	/*if (pr.validate_and_enable(ctx)) {
+		glDrawArrays(GL_POINTS, 0, (GLsizei)pc.get_nr_Points());
+		pr.disable(ctx);
+	}*/
+}
+
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
@@ -1595,9 +1627,14 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			auto& pr = cgv::render::ref_point_renderer(ctx);
 			pr.set_render_style(point_style);
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
-			draw_pc(ctx, current_pc);
+
+			//draw_pc(ctx, current_pc);
+
 			draw_pc(ctx,test_pc);
-				
+
+			if (rgbdpc.size() != 0)
+				draw_rgbdpc(ctx, rgbdpc[0]);
+
 			size_t begin = 0;
 			size_t end = recorded_pcs.size();
 			if (end > max_nr_shown_recorded_pcs)
@@ -1606,26 +1643,53 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			for (size_t i=begin; i<end; ++i)
 				draw_pc(ctx, recorded_pcs[i]);
 		}
+		
+
 		if (vr_view_ptr) {
 			std::vector<vec3> P;
 			std::vector<rgb> C;
 			const vr::vr_kit_state* state_ptr = vr_view_ptr->get_current_vr_state();
 			if (state_ptr) {
-				for (int ci = 0; ci < 2; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
-					vec3 ray_origin, ray_direction;
-					state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
-					P.push_back(ray_origin);
-					P.push_back(ray_origin + ray_length * ray_direction);
-					rgb c(float(1 - ci), 0.5f*(int)state[ci], float(ci));
-					C.push_back(c);
-					C.push_back(c);
-
-					/*if (ci == 0 && selectPointsmode) 
+				if (!selectPointsmode) {
+					for (int ci = 0; ci < 2; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
+						vec3 ray_origin, ray_direction;
+						state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
+						P.push_back(ray_origin);
+						P.push_back(ray_origin + ray_length * ray_direction);
+						rgb c(float(1 - ci), 0.5f*(int)state[ci], float(ci));
+						C.push_back(c);
+						C.push_back(c);
+				
+					}
+				}
+				else {
+					if (state_ptr->controller[1].status == vr::VRS_TRACKED) 
 					{
-					render
-					}*/
+						vec3 ray_origin, ray_direction;
+						std::vector<vec4> sphere;
+						std::vector<rgb> color;
+						state_ptr->controller[1].put_ray(&ray_origin(0), &ray_direction(0));
+						vec3 sphere_center = ray_origin + sphere_distance * ray_direction;
+
+
+						sphere.push_back(vec4(sphere_center, Radius_SelectMode));
+						color.push_back(rgb(0, 0, 1));
+						cgv::render::sphere_renderer& sr = ref_sphere_renderer(ctx);
+						glEnable(GL_BLEND);
+						glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+						//sr.set_render_style(sphere_style);
+						sr.set_color_array(ctx, color);
+						sr.set_sphere_array(ctx, sphere);
+						sr.render(ctx, 0, 1);
+						sphere.clear();
+						color.clear();
+						glDisable(GL_BLEND);
+					
+					}
 
 				}
+
+				
 				for (int ci = 2; ci < 5; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
 					vec3 ray_origin, ray_direction;
 					state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));

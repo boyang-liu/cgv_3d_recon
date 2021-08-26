@@ -249,8 +249,14 @@ protected:
 	std::vector<rgbd_pointcloud> rgbdpc;
 	std::vector<int> knn;
 	float Radius_SelectMode;
+	float sphere_distance ;
+
+
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
 	std::vector < cgv::math::fvec<float, 3>> cam_translation;
+
+
+
 public:
 	vr_rgbd();
 	~vr_rgbd();
@@ -296,6 +302,8 @@ public:
 	void clear(cgv::render::context& ctx);
 
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
+	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
+
 	void draw(cgv::render::context& ctx);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
