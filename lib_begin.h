@@ -1,4 +1,4 @@
-#ifdef PC_CLEANING_TOOL_EXPORTS
+#ifdef RGBD_CONTROL_EXPORTS
 #	define CGV_EXPORTS
 #endif
 

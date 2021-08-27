@@ -215,7 +215,7 @@ void rgbd_pointcloud::set_render_color()
 	if (labels.size() > 0) {
 		for (int i =0;i<labels.size();i++) 
 		{
-			renderColors[labels[i]]= (255, 0, 0, 255);
+			renderColors[labels[i]]= Rgba(255, 0, 0, 255);
 		}
 	}
 	return ;

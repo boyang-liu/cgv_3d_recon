@@ -283,6 +283,7 @@ public:
 	
 	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
 	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
+	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void start_select_points();
 

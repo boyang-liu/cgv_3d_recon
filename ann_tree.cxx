@@ -123,6 +123,7 @@ ann_tree::Idx ann_tree::find_closest(const Pnt& p) const
 }
 void ann_tree::find_closest_points(const Pnt& p, Idx k, std::vector<int>& knn) const
 {
+	knn.clear();
 	ann_struct* ann = static_cast<ann_struct*>(ann_impl);
 	if (!ann) {
 		std::cerr << "no ann_tree built" << std::endl;

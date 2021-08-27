@@ -617,20 +617,27 @@ vr_rgbd::~vr_rgbd()
 				}
 			}
 		}
-		//current_pc = test_pc;
+		current_pc = test_pc;
 		rgbd_pointcloud pc01;
 		generate_pc(test_pc,pc01);
 		vec3 q = vec3(11, 11, 11);
-		select_feature_points(pc01,q,Radius_SelectMode);
+		//select_feature_points(pc01,q,Radius_SelectMode);
+
+
 		
 	}
 	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+
+		std::cout << "run there!"  << std::endl;
 		ICP* icp = new ICP();
 
 		/*cgv::math::fmat<float, 3, 3> r;
 		cgv::math::fvec<float, 3> t;*/
 		r.identity();
 		t.zeros();
+
+		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
+		
 		icp->set_source_cloud(source);
 		icp->set_target_cloud(target);
 		icp->set_iterations(20);
@@ -640,6 +647,9 @@ vr_rgbd::~vr_rgbd()
 		{
 			source.pnt(i) = r * source.pnt(i) + t;
 		}*/
+
+		std::cout<<"rotation"<<r<<std::endl;
+		std::cout << "translation" << t << std::endl;
 		return;
 
 	}
@@ -651,16 +661,34 @@ vr_rgbd::~vr_rgbd()
 		}
 		return;
 	}
-	void vr_rgbd::select_feature_points(rgbd_pointcloud& pc1,vec3 p,float radius) {
-
+	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1) {
+		tree.reset();
 		tree = std::make_shared<ann_tree>();
 		tree->build(pc1);
+	
+	}
+	void vr_rgbd::select_feature_points(rgbd_pointcloud& pc1,vec3 p,float radius) {
+		
+		
 		std::vector<int> temp_knn;	
 		int NrPointinRadius = tree->find_fixed_radius_points(p, radius, temp_knn);
+		//std::cout << "NrPointinRadius :" << NrPointinRadius << std::endl;
 		tree->find_closest_points(p, NrPointinRadius, knn);
+		//std::cout << "knn size!!!!!!!!!!!!!" << knn.size() << std::endl;
+
+		
+
 		pc1.merge_labels(knn);
 		pc1.set_render_color();
+		
+		for (int j = 0; j < knn.size(); j++) 
+		{
+			
+			current_pc[knn[j]].color = rgba8(255, 255, 0, 255);
+		}
+		
 	}
+
 	void vr_rgbd::start_select_points() {
 		for (int i = 0; i < rgbdpc.size(); i++)
 			generate_pc(cur_pc[i], rgbdpc[i]);
@@ -1149,10 +1177,11 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					if (selectPointsmode) {
 						vec3 ray_origin, ray_direction,ray_end;
 						
-						vrke.get_state().controller[0].put_ray(&ray_origin(0), &ray_direction(0));												
+						vrke.get_state().controller[1].put_ray(&ray_origin(0), &ray_direction(0));												
 						ray_end=ray_origin + sphere_distance*ray_direction;
-						select_feature_points(rgbdpc[currentselectingpc], ray_end,Radius_SelectMode);
-						//registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
+						
+						select_feature_points(rgbdpc[0],ray_end,Radius_SelectMode);
+					
 					}
 
 
@@ -1186,7 +1215,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						}
 					}
 					if (selectPointsmode) {
-						//registerPointCloud(rgbdpc[currentselectingpc + 1], rgbdpc[currentselectingpc], cam_rotation[currentselectingpc], cam_translation[currentselectingpc]);
+						registerPointCloud(rgbdpc[1], rgbdpc[0], cam_rotation[0], cam_translation[0]);
 					}
 					
 					break;
@@ -1350,6 +1379,11 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					}*/
 					selectPointsmode = true;
 					std::cout<< "selectPointsmode :"<< selectPointsmode <<std::endl;
+					if(rgbdpc.size()==0)
+						std::cout << "no point cloud" << std::endl;
+					else
+						build_tree_feature_points(rgbdpc[0]);
+
 					/*if (translationmode) {
 						if (current_corrected_cam < manualcorrect_translation.size())
 						{
@@ -1607,15 +1641,7 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 }
 
 void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
-	if (pc.get_nr_Points()==0)
-		return;
-	auto& pr = cgv::render::ref_point_renderer(ctx);
-	pr.set_position_array(ctx, &pc.pnt(0), pc.get_nr_Points(), sizeof(vec3));
-	pr.set_color_array(ctx, &pc.clr(0), pc.get_nr_Points(), sizeof(rgba));
-	/*if (pr.validate_and_enable(ctx)) {
-		glDrawArrays(GL_POINTS, 0, (GLsizei)pc.get_nr_Points());
-		pr.disable(ctx);
-	}*/
+	
 }
 
 
@@ -1628,12 +1654,19 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			pr.set_render_style(point_style);
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 
-			//draw_pc(ctx, current_pc);
+			
+			draw_pc(ctx, current_pc);
+			/*if(rgbdpc.size()!=0){
+			if (rgbdpc[0].labels.size() != 0) 
+			{
+				for (int i = 0; i < rgbdpc[0].labels.size(); i++)
+					test_pc[rgbdpc[0].lab(i)].color = (255, 0, 0, 255);
+			}}*/
+			//draw_pc(ctx,test_pc);
 
-			draw_pc(ctx,test_pc);
 
-			if (rgbdpc.size() != 0)
-				draw_rgbdpc(ctx, rgbdpc[0]);
+			//if (rgbdpc.size() != 0)
+				//draw_rgbdpc(ctx, rgbdpc[0]);
 
 			size_t begin = 0;
 			size_t end = recorded_pcs.size();
@@ -1740,7 +1773,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 
 
-
+		
 
 
 
