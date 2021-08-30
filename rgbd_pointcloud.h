@@ -127,9 +127,13 @@ public:
 
 	const Rgba& render_clr(size_t i) const { return renderColors[i]; }
 	
-
+	
 	const Cnt& lab(size_t i) const { return labels[i]; }
 	std::vector<int> labels;
+
+	const std::vector<Pnt>& getPoints() const { return Points; }
+	const std::vector<Rgba>& getColors() const { return Colors; }
+	const std::vector<Rgba>& getrenderColors() const { return renderColors; }
 
 protected:
 

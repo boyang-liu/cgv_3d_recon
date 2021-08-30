@@ -24,6 +24,8 @@
 #include <cgv/math/svd.h>
 #include "rgbd_pointcloud.h"
 #include "ICP.h"
+#include "PCBoundingbox.h"
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -192,6 +194,7 @@ void vr_rgbd::start_multi_rgbd()
 	current_corrected_cam =-1;
 	cur_pc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc.resize(rgbd_inp.get_nr_devices());
+	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
 	cam_rotation.resize(rgbd_inp.get_nr_devices());
 	cam_translation.resize(rgbd_inp.get_nr_devices());
 	for (int i = 0;i< cam_rotation.size();i++) {
@@ -327,9 +330,13 @@ vr_rgbd::vr_rgbd()
 	position_scale = 0.1;
 	generate_pc_from_rgbd = true;
 	selectPointsmode = false;
+	setboundingboxmode = false;
+	boundingboxisfixed = false;
 	currentselectingpc = 0;
 	Radius_SelectMode = 0.1;
-	//mvp.identity();
+	
+	BoundingBoxlength = 2.0;
+	BoundingBoxheight = 2.0;
 	
 
 }
@@ -542,7 +549,7 @@ vr_rgbd::~vr_rgbd()
 
 
 		rgbd_pointcloud my_pc;
-		if (save_time == rgbd_inp.get_nr_devices()) {
+		/*if (save_time == rgbd_inp.get_nr_devices()) {
 		for (int i =0;i<current_pc.size();i++) 
 		{
 			my_pc.add_point(current_pc[i].point, current_pc[i].color);
@@ -555,7 +562,10 @@ vr_rgbd::~vr_rgbd()
 				my_pc.add_point(cur_pc[save_time][i].point, cur_pc[save_time][i].color);
 			}
 			save_time++;
-		}
+		}*/
+		
+		my_pc = rgbdpc_in_box[0];
+
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		if (fn.empty())
 			return;
@@ -588,8 +598,16 @@ vr_rgbd::~vr_rgbd()
 		}
 
 		rgbdpc.push_back(source_pc);
-
+		rgbdpc_in_box.resize(rgbdpc.size());
 		current_pc = temp_pc;
+
+		cam_rotation.resize(rgbdpc.size());
+		cam_translation.resize(rgbdpc.size());
+		for (int i = 0; i < cam_rotation.size(); i++) {
+			cam_rotation[i].identity();
+			cam_translation[i] = vec3(0, 0, 0);
+		}
+
 
 		post_redraw();
 		
@@ -630,18 +648,27 @@ vr_rgbd::~vr_rgbd()
 
 		std::cout << "run there!"  << std::endl;
 		ICP* icp = new ICP();
-
+		std::cout << "run there!33333333333333333333" << std::endl;
 		/*cgv::math::fmat<float, 3, 3> r;
 		cgv::math::fvec<float, 3> t;*/
 		r.identity();
+		std::cout << "11111111111111111111111" << std::endl;
 		t.zeros();
-
+		std::cout << "2222222222222222222222222"  << std::endl;
 		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
-		
-		icp->set_source_cloud(source);
+		rgbd_pointcloud labelpoints;
+		for (int i = 0;i<source.labels.size();i++) {
+			labelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+		}
+		std::cout << "run there!33333333333333333333" << std::endl;
+		icp->set_source_cloud(labelpoints);
+		std::cout << "run there!4444444444444444" << std::endl;
 		icp->set_target_cloud(target);
+		std::cout << "run there!55555555555555555" << std::endl;
 		icp->set_iterations(20);
 		icp->set_eps(1e-10);
+
+		std::cout << "run there!222222222222222222" << std::endl;
 		icp->reg_icp(r, t);
 		/*for (int i = 0; i < source.get_nr_Points(); i++)
 		{
@@ -1182,6 +1209,12 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						
 						select_feature_points(rgbdpc[0],ray_end,Radius_SelectMode);
 					
+					}if (setboundingboxmode) {
+						if(boundingboxisfixed)
+							boundingboxisfixed = false;
+						else
+							boundingboxisfixed = true;
+
 					}
 
 
@@ -1377,12 +1410,25 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						std::cout << "no camera linked" << std::endl;
 						break;
 					}*/
+					if (!selectPointsmode ) {
 					selectPointsmode = true;
+					setboundingboxmode = false;
 					std::cout<< "selectPointsmode :"<< selectPointsmode <<std::endl;
 					if(rgbdpc.size()==0)
 						std::cout << "no point cloud" << std::endl;
 					else
 						build_tree_feature_points(rgbdpc[0]);
+					
+					for (int i=0;i< rgbdpc.size();i++) {
+						rgbdpc[i].set_render_color();
+					}}
+					else {
+						selectPointsmode = false;
+						setboundingboxmode = true;
+						std::cout << "setboundingboxmode :" << setboundingboxmode << std::endl;
+
+					}
+					
 
 					/*if (translationmode) {
 						if (current_corrected_cam < manualcorrect_translation.size())
@@ -1563,6 +1609,8 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 		}
 		return false;
 }
+
+
 bool vr_rgbd::init(cgv::render::context& ctx)
 {
 		//ctx.set_bg_color(0.7, 0.7, 0.8, 1.0);
@@ -1621,6 +1669,81 @@ void vr_rgbd::clear(cgv::render::context& ctx)
 		cgv::render::ref_sphere_renderer(ctx, -1);
 		sky_prog.destruct(ctx);
 }
+rgbd_pointcloud vr_rgbd::setboundingbox(rgbd_pointcloud pc1, vec3 pos1, vec3 pos2) //pos1 <pos2
+{
+	rgbd_pointcloud pc2;
+	//pc2.clear();
+	for (int i = 0; i < pc1.get_nr_Points(); i++)
+	{
+		if (pc1.pnt(i)[0] > pos1[0] && pc1.pnt(i)[0] < pos2[0])
+			if (pc1.pnt(i)[1] > pos1[1] && pc1.pnt(i)[1] < pos2[1])
+				if (pc1.pnt(i)[2] > pos1[2] && pc1.pnt(i)[2] < pos2[2])
+					pc2.add_point(pc1.pnt(i), pc1.clr(i));
+	}
+
+	return  pc2;
+}
+void vr_rgbd::draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2)
+{
+	std::vector<vec3> P;
+	std::vector<rgb> C;
+	P.push_back(pos1);
+	P.push_back(pos1 + vec3(pos2[0]- pos1[0], 0, 0));
+	P.push_back(pos1);
+	P.push_back(pos1 + vec3(0, pos2[1] - pos1[1], 0));
+	P.push_back(pos1);
+	P.push_back(pos1 + vec3(0, 0, pos2[2] - pos1[2]));
+
+	P.push_back(P[1]);
+	P.push_back(P[1] + vec3(0, pos2[1] - pos1[1], 0));
+	P.push_back(P[1]);
+	P.push_back(P[1] + vec3(0, 0, pos2[2]-pos1[2]));
+
+	P.push_back(P[3]);
+	P.push_back(P[3] + vec3(pos2[0] - pos1[0], 0, 0));
+	P.push_back(P[3]);
+	P.push_back(P[3] + vec3(0, 0, pos2[2] - pos1[2]));
+
+	P.push_back(P[5]);
+	P.push_back(P[5] + vec3(pos2[0] - pos1[0], 0, 0));
+	P.push_back(P[5]);
+	P.push_back(P[5] + vec3(0, pos2[1] - pos1[1], 0));
+
+	P.push_back(P[7]);
+	P.push_back(pos2);
+	P.push_back(P[9]);
+	P.push_back(pos2);
+	P.push_back(P[13]);
+	P.push_back(pos2);
+	rgb c(0.5, 0.5, 0.5);
+	for (int i = 0; i <= 24; i++)
+		C.push_back(c);
+	cgv::render::shader_program& prog = ctx.ref_default_shader_program();
+	int pi = prog.get_position_index();
+	int ci = prog.get_color_index();
+	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, pi, P);
+	cgv::render::attribute_array_binding::enable_global_array(ctx, pi);
+	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ci, C);
+	cgv::render::attribute_array_binding::enable_global_array(ctx, ci);
+	glLineWidth(3);
+	prog.enable(ctx);
+	glDrawArrays(GL_LINES, 0, (GLsizei)P.size());
+	prog.disable(ctx);
+	cgv::render::attribute_array_binding::disable_global_array(ctx, pi);
+	cgv::render::attribute_array_binding::disable_global_array(ctx, ci);
+	glLineWidth(1);
+
+
+	//// draw static boxes
+	//	cgv::render::surface_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+	//	renderer.set_render_style(style);
+	//	renderer.set_box_array(ctx, boxes);
+	//	renderer.set_color_array(ctx, box_colors);
+	//	if (renderer.validate_and_enable(ctx)) {
+	//		glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+	//	}
+	//	renderer.disable(ctx);
+}
 
 
 void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
@@ -1641,9 +1764,29 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 }
 
 void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
-	
-}
+	if (pc.get_nr_Points()==0)
+		return;
+	auto& pr = cgv::render::ref_point_renderer(ctx);
+	pr.set_position_array(ctx, pc.getPoints());
+	pr.set_color_array(ctx, pc.getColors());
+	if (pr.validate_and_enable(ctx)) {
+		glDrawArrays(GL_POINTS, 0, (GLsizei)pc.get_nr_Points());
+		pr.disable(ctx);
+	}
 
+}
+void vr_rgbd::draw_selectmode_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc) {
+	if (pc.get_nr_Points() == 0)
+		return;
+	auto& pr = cgv::render::ref_point_renderer(ctx);
+	pr.set_position_array(ctx, pc.getPoints());
+	pr.set_color_array(ctx, pc.getrenderColors());
+	if (pr.validate_and_enable(ctx)) {
+		glDrawArrays(GL_POINTS, 0, (GLsizei)pc.get_nr_Points());
+		pr.disable(ctx);
+	}
+
+}
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
@@ -1655,7 +1798,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 
 			
-			draw_pc(ctx, current_pc);
+			//draw_pc(ctx, current_pc);
 			/*if(rgbdpc.size()!=0){
 			if (rgbdpc[0].labels.size() != 0) 
 			{
@@ -1664,9 +1807,13 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			}}*/
 			//draw_pc(ctx,test_pc);
 
+			
 
-			//if (rgbdpc.size() != 0)
-				//draw_rgbdpc(ctx, rgbdpc[0]);
+
+
+
+			
+			
 
 			size_t begin = 0;
 			size_t end = recorded_pcs.size();
@@ -1683,20 +1830,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			std::vector<rgb> C;
 			const vr::vr_kit_state* state_ptr = vr_view_ptr->get_current_vr_state();
 			if (state_ptr) {
-				if (!selectPointsmode) {
-					for (int ci = 0; ci < 2; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
-						vec3 ray_origin, ray_direction;
-						state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
-						P.push_back(ray_origin);
-						P.push_back(ray_origin + ray_length * ray_direction);
-						rgb c(float(1 - ci), 0.5f*(int)state[ci], float(ci));
-						C.push_back(c);
-						C.push_back(c);
-				
-					}
-				}
-				else {
-					if (state_ptr->controller[1].status == vr::VRS_TRACKED) 
+				if (selectPointsmode ) {
+					if (state_ptr->controller[1].status == vr::VRS_TRACKED)
 					{
 						vec3 ray_origin, ray_direction;
 						std::vector<vec4> sphere;
@@ -1717,9 +1852,49 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 						sphere.clear();
 						color.clear();
 						glDisable(GL_BLEND);
+
+					}
+				}
+				else if (setboundingboxmode&& !boundingboxisfixed) {
+					vec3 ray_origin, ray_direction;
+					state_ptr->controller[1].put_ray(&ray_origin(0), &ray_direction(0));
+					vec3 box_center = ray_origin + ray_length * ray_direction;
+
+					vec3 pos1, pos2;
+					pos1 = box_center - vec3(BoundingBoxlength /2, BoundingBoxlength / 2, BoundingBoxheight / 2);
+					pos2 = box_center + vec3(BoundingBoxlength / 2, BoundingBoxlength / 2, BoundingBoxheight / 2);
 					
+					draw_boudingbox(ctx, pos1, pos2);
+					pcbb.pos1 = pos1;
+					pcbb.pos2 = pos2;
+
+					if (rgbdpc.size() > 0) {
+					for (int i = 0; i < rgbdpc.size(); i++) {
+						rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], pos1, pos2);
+					}
+					}
+					
+
+
+
+				}
+				else {
+					if (boundingboxisfixed) {
+						draw_boudingbox(ctx, pcbb.pos1, pcbb.pos2);
 					}
 
+
+
+					for (int ci = 0; ci < 2; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
+						vec3 ray_origin, ray_direction;
+						state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
+						P.push_back(ray_origin);
+						P.push_back(ray_origin + ray_length * ray_direction);
+						rgb c(float(1 - ci), 0.5f * (int)state[ci], float(ci));
+						C.push_back(c);
+						C.push_back(c);
+
+					}
 				}
 
 				
@@ -1754,6 +1929,28 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				glLineWidth(1);
 			}
 		}
+
+		if (setboundingboxmode) {
+			if (rgbdpc_in_box.size() != 0) {
+				for (int i = 0; i < rgbdpc_in_box.size(); i++)
+					draw_rgbdpc(ctx, rgbdpc_in_box[i]);
+			}
+		}
+		else if (selectPointsmode) {
+			if (rgbdpc.size() != 0) {
+				for (int i = 0; i < rgbdpc.size(); i++)
+					draw_selectmode_rgbdpc(ctx, rgbdpc[i]);
+			}
+		}
+		else{
+		if (rgbdpc.size() != 0) {
+			for (int i = 0; i < rgbdpc.size(); i++)
+				draw_rgbdpc(ctx, rgbdpc[i]);
+		}
+		}
+
+
+
 		float max_scene_extent = 100;
 		if (sky_prog.is_created()) {
 			glDepthMask(GL_FALSE);
@@ -1771,17 +1968,6 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
 		}
-
-
-		
-
-
-
-
-
-
-
-
 
 		/*std::vector<vec3> myline;
 		std::vector<rgb> mycolor;

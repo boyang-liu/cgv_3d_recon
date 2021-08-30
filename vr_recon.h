@@ -37,7 +37,7 @@
 #include <plugins/rgbd_kinect_azure/rgbd_kinect_azure.h>
 #include "ICP.h"
 #include "rgbd_pointcloud.h"
-
+#include "PCBoundingbox.h"
 
 
 using namespace rgbd;
@@ -227,8 +227,9 @@ protected:
 	//controller mode for immersive interaction
 	bool translationmode;
 	bool rotationmode;
-
+	bool setboundingboxmode;
 	bool selectPointsmode;
+	bool boundingboxisfixed;
 
 	int current_corrected_cam;
 
@@ -247,15 +248,18 @@ protected:
 	int save_time = 0;
 	int currentselectingpc;
 	std::vector<rgbd_pointcloud> rgbdpc;
+	std::vector<rgbd_pointcloud> rgbdpc_in_box;
 	std::vector<int> knn;
 	float Radius_SelectMode;
 	float sphere_distance ;
-
-
+	
+	float BoundingBoxlength;
+	float BoundingBoxheight;
+	PCBoundingbox pcbb;
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
 	std::vector < cgv::math::fvec<float, 3>> cam_translation;
 
-
+	
 
 public:
 	vr_rgbd();
@@ -301,10 +305,11 @@ public:
 	bool handle(cgv::gui::event& e);
 	bool init(cgv::render::context& ctx);
 	void clear(cgv::render::context& ctx);
-
+	rgbd_pointcloud setboundingbox(rgbd_pointcloud pc1, vec3 pos1, vec3 pos2);
+	void draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2);
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
-
+	void draw_selectmode_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw(cgv::render::context& ctx);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
