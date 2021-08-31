@@ -134,6 +134,9 @@ public:
 	const std::vector<Pnt>& getPoints() const { return Points; }
 	const std::vector<Rgba>& getColors() const { return Colors; }
 	const std::vector<Rgba>& getrenderColors() const { return renderColors; }
+	void do_transformation(Mat& rotation_mat, Pnt translation_vec);
+	void rgbd_pointcloud::do_transformation(Mat& rotation_mat);
+	void rgbd_pointcloud::do_transformation(Pnt translation_vec);
 
 protected:
 

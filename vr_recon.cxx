@@ -542,7 +542,7 @@ vr_rgbd::~vr_rgbd()
 	void vr_rgbd::save_current_pc()
 	{
 		
-		if (current_pc.size()==0){
+		if (rgbdpc.size()==0){
 			std::cout<<"no pointcloud in the scene"<<std::endl;
 			return;
 		}
@@ -563,16 +563,22 @@ vr_rgbd::~vr_rgbd()
 			}
 			save_time++;
 		}*/
-		
-		my_pc = rgbdpc_in_box[0];
-
+		my_pc= rgbdpc_in_box[0];
+		if (rgbdpc.size() > 0) 
+		{
+		for (int i = 1; i < rgbdpc.size(); i++) 
+			for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
+				my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));		
+		}
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		if (fn.empty())
 			return;
 		FILE* fp = fopen(fn.c_str(), "wb");
 		if (!fp)
 			return;
-		my_pc.write_pc(fn);	
+		
+			my_pc.write_pc(fn);	
+		
 		fclose(fp);
 		return;
 		
@@ -587,20 +593,13 @@ vr_rgbd::~vr_rgbd()
 		if (fn.empty())
 			return;
 		clear_current_point_cloud();
-		source_pc.read_pc(fn);
-		vector<vertex> temp_pc;
-		for (int i = 0; i < source_pc.get_nr_Points(); i++)
-		{
-			vertex v;
-			v.point = source_pc.pnt(i);
-			v.color = source_pc.clr(i);
-			temp_pc.push_back(v);
-		}
 
+		rgbd_pointcloud source_pc;
+		source_pc.read_pc(fn);
+	
 		rgbdpc.push_back(source_pc);
 		rgbdpc_in_box.resize(rgbdpc.size());
-		current_pc = temp_pc;
-
+		
 		cam_rotation.resize(rgbdpc.size());
 		cam_translation.resize(rgbdpc.size());
 		for (int i = 0; i < cam_rotation.size(); i++) {
@@ -647,28 +646,21 @@ vr_rgbd::~vr_rgbd()
 	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
 
 		std::cout << "run there!"  << std::endl;
-		ICP* icp = new ICP();
-		std::cout << "run there!33333333333333333333" << std::endl;
+		ICP* icp = new ICP();	
 		/*cgv::math::fmat<float, 3, 3> r;
 		cgv::math::fvec<float, 3> t;*/
-		r.identity();
-		std::cout << "11111111111111111111111" << std::endl;
+		r.identity();	
 		t.zeros();
-		std::cout << "2222222222222222222222222"  << std::endl;
 		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
 		rgbd_pointcloud labelpoints;
 		for (int i = 0;i<source.labels.size();i++) {
 			labelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
 		}
-		std::cout << "run there!33333333333333333333" << std::endl;
 		icp->set_source_cloud(labelpoints);
-		std::cout << "run there!4444444444444444" << std::endl;
 		icp->set_target_cloud(target);
-		std::cout << "run there!55555555555555555" << std::endl;
 		icp->set_iterations(20);
 		icp->set_eps(1e-10);
-
-		std::cout << "run there!222222222222222222" << std::endl;
+		std::cout << "run there!" << std::endl;
 		icp->reg_icp(r, t);
 		/*for (int i = 0; i < source.get_nr_Points(); i++)
 		{
@@ -677,6 +669,8 @@ vr_rgbd::~vr_rgbd()
 
 		std::cout<<"rotation"<<r<<std::endl;
 		std::cout << "translation" << t << std::endl;
+
+		rgbdpc[0].do_transformation(r,t);
 		return;
 
 	}
@@ -708,11 +702,11 @@ vr_rgbd::~vr_rgbd()
 		pc1.merge_labels(knn);
 		pc1.set_render_color();
 		
-		for (int j = 0; j < knn.size(); j++) 
+		/*for (int j = 0; j < knn.size(); j++) 
 		{
 			
 			current_pc[knn[j]].color = rgba8(255, 255, 0, 255);
-		}
+		}*/
 		
 	}
 
@@ -1798,7 +1792,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 
 			
-			//draw_pc(ctx, current_pc);
+			draw_pc(ctx, current_pc);
 			/*if(rgbdpc.size()!=0){
 			if (rgbdpc[0].labels.size() != 0) 
 			{

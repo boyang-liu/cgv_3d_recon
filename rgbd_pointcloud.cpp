@@ -229,3 +229,45 @@ void rgbd_pointcloud::merge_labels(std::vector<int>& a) {
 	std::back_inserter(result));
 	labels = result;
 }
+void rgbd_pointcloud::do_transformation(Mat& rotation_mat,Pnt translation_vec) {
+
+	
+	if(get_nr_Points()==0)
+	{
+		std::cout<<"no point cloud"<<std::endl;
+		return;
+	}
+	for (int i = 0; i < get_nr_Points(); i++)
+	{
+		Points[i] = rotation_mat * Points[i] + translation_vec;
+	}
+
+}
+void rgbd_pointcloud::do_transformation(Mat& rotation_mat) {
+
+
+	if (get_nr_Points() == 0)
+	{
+		std::cout << "no point cloud" << std::endl;
+		return;
+	}
+	for (int i = 0; i < get_nr_Points(); i++)
+	{
+		Points[i] = rotation_mat * Points[i] ;
+	}
+
+}
+void rgbd_pointcloud::do_transformation( Pnt translation_vec) {
+
+
+	if (get_nr_Points() == 0)
+	{
+		std::cout << "no point cloud" << std::endl;
+		return;
+	}
+	for (int i = 0; i < get_nr_Points(); i++)
+	{
+		Points[i] =  translation_vec;
+	}
+
+}

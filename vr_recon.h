@@ -242,7 +242,7 @@ protected:
 	char* cgv_data = getenv("CGV_DATA");
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
-	rgbd_pointcloud source_pc;
+	
 	std::shared_ptr<ann_tree> tree;
 
 	int save_time = 0;
