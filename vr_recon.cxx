@@ -54,6 +54,9 @@ std::string get_stream_format_enum(const std::vector<rgbd::stream_format>& sfs)
 
 
 
+
+
+
 void vr_rgbd::compute_intersections(const vec3& origin, const vec3& direction, int ci, const rgb& color)
 {
 	for (size_t i = 0; i < movable_boxes.size(); ++i) {
@@ -197,6 +200,7 @@ void vr_rgbd::start_multi_rgbd()
 	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
 	cam_rotation.resize(rgbd_inp.get_nr_devices());
 	cam_translation.resize(rgbd_inp.get_nr_devices());
+	trees.resize(rgbd_inp.get_nr_devices());
 	for (int i = 0;i< cam_rotation.size();i++) {
 		cam_rotation[i].identity();
 		cam_translation[i] = vec3(0, 0, 0);
@@ -332,7 +336,7 @@ vr_rgbd::vr_rgbd()
 	selectPointsmode = false;
 	setboundingboxmode = false;
 	boundingboxisfixed = false;
-	currentselectingpc = 0;
+	currentpointcloud = 0;
 	Radius_SelectMode = 0.1;
 	
 	BoundingBoxlength = 2.0;
@@ -556,20 +560,24 @@ vr_rgbd::~vr_rgbd()
 		}
 		save_time = 0;
 		}
-		else {
-			for (int i = 0; i < cur_pc[save_time].size(); i++)
-			{
-				my_pc.add_point(cur_pc[save_time][i].point, cur_pc[save_time][i].color);
-			}
-			save_time++;
-		}*/
-		my_pc= rgbdpc_in_box[0];
+		else*/ //{
+			for (int i = 0; i < rgbdpc.size(); i++)
+			//{
+				for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
+					my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));
+			//}
+			//save_time++;
+		//}
+
+		/*my_pc= rgbdpc_in_box[0];
 		if (rgbdpc.size() > 0) 
 		{
 		for (int i = 1; i < rgbdpc.size(); i++) 
 			for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
 				my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));		
-		}
+		}*/
+
+
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		if (fn.empty())
 			return;
@@ -607,7 +615,7 @@ vr_rgbd::~vr_rgbd()
 			cam_translation[i] = vec3(0, 0, 0);
 		}
 
-
+		trees.resize(rgbdpc.size());
 		post_redraw();
 		
 		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;
@@ -623,7 +631,7 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 		
-		for (int i = 0; i < 10; i++)
+		/*for (int i = 0; i < 10; i++)
 		{
 			for (int ii = 0; ii < 10; ii++) {
 				for (int iii = 0; iii < 10; iii++) {
@@ -637,27 +645,49 @@ vr_rgbd::~vr_rgbd()
 		current_pc = test_pc;
 		rgbd_pointcloud pc01;
 		generate_pc(test_pc,pc01);
-		vec3 q = vec3(11, 11, 11);
+		vec3 q = vec3(11, 11, 11);*/
 		//select_feature_points(pc01,q,Radius_SelectMode);
+
+		cgv::math::fmat<float, 3, 3> r;
+		cgv::math::fvec<float, 3> t;
+		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
+			rgbdpc[0].labels.push_back(i);
+		for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
+			rgbdpc[1].labels.push_back(i);
+		registerPointCloud(rgbdpc[1], rgbdpc[0], r, t);
+
 
 
 		
 	}
-	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+	void vr_rgbd::clear_pc() {
+		rgbdpc.clear();
+	}
 
-		std::cout << "run there!"  << std::endl;
-		ICP* icp = new ICP();	
+	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+
+		ICP* icp = new ICP();
 		/*cgv::math::fmat<float, 3, 3> r;
 		cgv::math::fvec<float, 3> t;*/
-		r.identity();	
+		r.identity();
 		t.zeros();
 		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
-		rgbd_pointcloud labelpoints;
-		for (int i = 0;i<source.labels.size();i++) {
-			labelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+		std::cout << "target.labels.size():" << target.labels.size() << std::endl;
+		if (source.labels.size() == 0 || target.labels.size() == 0) {
+			std::cout <<"there is no label points in source or target pc"<<std::endl;
+			return;
 		}
-		icp->set_source_cloud(labelpoints);
-		icp->set_target_cloud(target);
+			
+		rgbd_pointcloud sourcelabelpoints,targetlabelpoints;
+		for (int i = 0;i<source.labels.size();i++) {
+			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+		}
+		for (int i = 0; i < target.labels.size(); i++) {
+			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
+		}
+		
+		icp->set_source_cloud(sourcelabelpoints);
+		icp->set_target_cloud(targetlabelpoints);
 		icp->set_iterations(20);
 		icp->set_eps(1e-10);
 		std::cout << "run there!" << std::endl;
@@ -669,8 +699,12 @@ vr_rgbd::~vr_rgbd()
 
 		std::cout<<"rotation"<<r<<std::endl;
 		std::cout << "translation" << t << std::endl;
-
-		rgbdpc[0].do_transformation(r,t);
+		for (int i=0;i<4;i++) 
+			std::cout << "point:" << source.pnt(i) << std::endl;
+		
+		source.do_transformation(r,t);
+		for (int i = 0; i < 4; i++)
+			std::cout << "point:" << source.pnt(i) << std::endl;
 		return;
 
 	}
@@ -682,19 +716,19 @@ vr_rgbd::~vr_rgbd()
 		}
 		return;
 	}
-	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1) {
-		tree.reset();
-		tree = std::make_shared<ann_tree>();
-		tree->build(pc1);
+	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1,int i) {
+		trees[i].reset();
+		trees[i] = std::make_shared<ann_tree>();
+		trees[i]->build(pc1);
 	
 	}
 	void vr_rgbd::select_feature_points(rgbd_pointcloud& pc1,vec3 p,float radius) {
 		
 		
 		std::vector<int> temp_knn;	
-		int NrPointinRadius = tree->find_fixed_radius_points(p, radius, temp_knn);
+		int NrPointinRadius = trees[currentpointcloud]->find_fixed_radius_points(p, radius, temp_knn);
 		//std::cout << "NrPointinRadius :" << NrPointinRadius << std::endl;
-		tree->find_closest_points(p, NrPointinRadius, knn);
+		trees[currentpointcloud]->find_closest_points(p, NrPointinRadius, knn);
 		//std::cout << "knn size!!!!!!!!!!!!!" << knn.size() << std::endl;
 
 		
@@ -1030,7 +1064,7 @@ void vr_rgbd::create_gui()
 		device_def += "'";
 		num_devices = n;
 
-
+		
 
 		connect_copy(add_control("device", (DummyEnum&)device_idx, "dropdown", device_def)->value_change, rebind(this, &vr_rgbd::device_select));
 
@@ -1047,6 +1081,8 @@ void vr_rgbd::create_gui()
 		connect_copy(add_button("save pointcloud")->click, rebind(this, &vr_rgbd::save_current_pc));
 		connect_copy(add_button("load pointcloud")->click, rebind(this, &vr_rgbd::load_current_pc));
 		connect_copy(add_button("temp test")->click, rebind(this, &vr_rgbd::temp_test));
+		connect_copy(add_button("clear pc")->click, rebind(this, &vr_rgbd::clear_pc));
+
 
 		add_member_control(this, "record_frame", record_frame, "check");
 		add_member_control(this, "record_all_frames", record_all_frames, "check");
@@ -1201,7 +1237,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						vrke.get_state().controller[1].put_ray(&ray_origin(0), &ray_direction(0));												
 						ray_end=ray_origin + sphere_distance*ray_direction;
 						
-						select_feature_points(rgbdpc[0],ray_end,Radius_SelectMode);
+						select_feature_points(rgbdpc[currentpointcloud],ray_end,Radius_SelectMode);
 					
 					}if (setboundingboxmode) {
 						if(boundingboxisfixed)
@@ -1242,7 +1278,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						}
 					}
 					if (selectPointsmode) {
-						registerPointCloud(rgbdpc[1], rgbdpc[0], cam_rotation[0], cam_translation[0]);
+						registerPointCloud(rgbdpc[(currentpointcloud+1)%rgbdpc.size()], rgbdpc[currentpointcloud], cam_rotation[0], cam_translation[0]);
 					}
 					
 					break;
@@ -1341,6 +1377,11 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 						}
 					}
+					if (selectPointsmode)
+					{
+						currentpointcloud = (currentpointcloud + 1) % rgbdpc.size();
+					}
+					
 					break;
 				case cgv::gui::KA_RELEASE:
 					
@@ -1366,6 +1407,10 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 							manualcorrect_rotation[current_corrected_cam][1] -= rotation_scale;
 
 						}
+					}
+					if (selectPointsmode)
+					{
+						currentpointcloud = (currentpointcloud + rgbdpc.size()-1) % rgbdpc.size();
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1411,7 +1456,8 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					if(rgbdpc.size()==0)
 						std::cout << "no point cloud" << std::endl;
 					else
-						build_tree_feature_points(rgbdpc[0]);
+						for(int j=0;j<rgbdpc.size();j++)
+							build_tree_feature_points(rgbdpc[j],j);
 					
 					for (int i=0;i< rgbdpc.size();i++) {
 						rgbdpc[i].set_render_color();
@@ -1932,9 +1978,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 		else if (selectPointsmode) {
 			if (rgbdpc.size() != 0) {
-				for (int i = 0; i < rgbdpc.size(); i++)
-					draw_selectmode_rgbdpc(ctx, rgbdpc[i]);
+				draw_selectmode_rgbdpc(ctx, rgbdpc[currentpointcloud]);
 			}
+					
+			
 		}
 		else{
 		if (rgbdpc.size() != 0) {

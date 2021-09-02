@@ -243,10 +243,10 @@ protected:
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
 	
-	std::shared_ptr<ann_tree> tree;
+	std::vector<std::shared_ptr<ann_tree>> trees;
 
 	int save_time = 0;
-	int currentselectingpc;
+	int currentpointcloud;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
 	std::vector<int> knn;
@@ -274,7 +274,7 @@ public:
 	void clear_current_point_cloud();
 
 	void temp_test();
-
+	void clear_pc();
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
@@ -285,9 +285,9 @@ public:
 	//void write_pcs_to_disk(int i);
 	//size_t read_pc_queue(const std::string filename, std::string content);
 	
-	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
+	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
 	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
-	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1);
+	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void start_select_points();
 
