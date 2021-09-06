@@ -553,19 +553,18 @@ vr_rgbd::~vr_rgbd()
 
 
 		rgbd_pointcloud my_pc;
-		/*if (save_time == rgbd_inp.get_nr_devices()) {
+		//if (save_time == rgbd_inp.get_nr_devices()) {
 		for (int i =0;i<current_pc.size();i++) 
 		{
 			my_pc.add_point(current_pc[i].point, current_pc[i].color);
 		}
-		save_time = 0;
-		}
-		else*/ //{
-			for (int i = 0; i < rgbdpc.size(); i++)
-			//{
-				for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
-					my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));
-			//}
+		//save_time = 0;
+		//}
+		/*else*/ //{
+			//for (int i = 0; i < rgbdpc.size(); i++)
+				//for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
+				//	my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));
+			
 			//save_time++;
 		//}
 
@@ -648,17 +647,129 @@ vr_rgbd::~vr_rgbd()
 		vec3 q = vec3(11, 11, 11);*/
 		//select_feature_points(pc01,q,Radius_SelectMode);
 
-		cgv::math::fmat<float, 3, 3> r;
-		cgv::math::fvec<float, 3> t;
-		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
-			rgbdpc[0].labels.push_back(i);
+
+
+		cgv::math::fmat<float, 3, 3> r1,r2,r3,r4;
+		cgv::math::fvec<float, 3> t1,t2,t3,t4;
+
+		/*r1(0, 0) = 0.952418;
+		r1(0, 1) = -0.143504;
+		r1(0, 2) = 0.268898;
+		r1(1, 0) = 0.198909;
+		r1(1, 1) = 0.961104;
+		r1(1, 2) = -0.191608;
+		r1(2, 0) = -0.230942;
+		r1(2, 1) = 0.235977;
+		r1(2, 2) = 0.943917;
+		 
+		t1(0) = -0.203763;
+		t1(1) = 0.386837;
+		t1(2) = -0.511605;
+
+		r2(0, 0) = 0.961163 ;
+		r2(0, 1) = 0.189122 ;
+		r2(0, 2) = -0.200989;
+		r2(1, 0) = -0.153666 ;
+		r2(1, 1) = 0.971689 ;
+		r2(1, 2) = 0.17946;
+		r2(2, 0) = 0.229238 ;
+		r2(2, 1) = -0.141605 ;
+		r2(2, 2) = 0.963015;
+
+		t2(0) = - 0.073599;
+		t2(1) = -0.41059 ;
+		t2(2) = 0.584258;
 		for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
-			rgbdpc[1].labels.push_back(i);
-		registerPointCloud(rgbdpc[1], rgbdpc[0], r, t);
+		{
+			rgbdpc[1].pnt(i)=r1*rgbdpc[1].pnt(i) + t1;
+			rgbdpc[1].pnt(i) = r2 * rgbdpc[1].pnt(i) + t2;
+
+		}*/
 
 
 
-		
+
+		r1(0, 0) = 0.952418;
+		r1(0, 1) = 0.198909;
+		r1(0, 2) = -0.230942;
+		r1(1, 0) = -0.143503;
+		r1(1, 1) = 0.961104;
+		r1(1, 2) = 0.235977;
+		r1(2, 0) = 0.268897;
+		r1(2, 1) = -0.191607;
+		r1(2, 2) = 0.943918;
+
+		t1(0) = -0.203763;
+		t1(1) = 0.386837;
+		t1(2) = -0.511605;
+
+		r2(0, 0) = 0.961165;
+		r2(0, 1) = -0.153666;
+		r2(0, 2) = 0.229239;
+		r2(1, 0) = 0.189122;
+		r2(1, 1) = 0.971690;
+		r2(1, 2) = -0.141605;
+		r2(2, 0) = -0.200988;
+		r2(2, 1) = 0.179459;
+		r2(2, 2) = 0.963015;
+
+		t2(0) = -0.073599;
+		t2(1) = -0.41059;
+		t2(2) = 0.584258;
+		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
+		{
+			rgbdpc[0].pnt(i) = r2 * (rgbdpc[0].pnt(i) - t2);
+			rgbdpc[0].pnt(i) = r1 * (rgbdpc[0].pnt(i) - t1);
+
+		}
+
+
+		/*r3(0, 0) = 0.990595 ;
+		r3(0, 1) = -0.125282 ;
+		r3(0, 2) = -0.0550185
+			;
+		r3(1, 0) = 0.127902 ;
+		r3(1, 1) = 0.990673 ;
+		r3(1, 2) = 0.0469851
+			;
+		r3(2, 0) = 0.0486189 ;
+		r3(2, 1) = -0.0535801 ;
+		r3(2, 2) = 0.997379;
+
+		t3(0) = -0.232942 ;
+		t3(1) = 0.421966 ;
+		t3(2) = 0.098693;
+
+		r4(0, 0) = 0.997146 ;
+		r4(0, 1) = 0.0740373 ;
+		r4(0, 2) = 0.0146868
+			;
+		r4(1, 0) = -0.0736217 ;
+		r4(1, 1) = 0.996919 ;
+		r4(1, 2) = -0.0270362
+			;
+		r4(2, 0) = -0.0166432 ;
+		r4(2, 1) = 0.0258777 ;
+		r4(2, 2) = 0.999526;
+
+		t4(0) = -0.0116226 ;
+		t4(1) = -0.213213 ;
+		t4(2) = -0.0494034;
+
+		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
+		{
+			rgbdpc[0].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
+			rgbdpc[0].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
+
+		}
+		for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
+		{
+			rgbdpc[1].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
+			rgbdpc[1].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
+
+		}*/
+
+
 	}
 	void vr_rgbd::clear_pc() {
 		rgbdpc.clear();
@@ -681,9 +792,11 @@ vr_rgbd::~vr_rgbd()
 		rgbd_pointcloud sourcelabelpoints,targetlabelpoints;
 		for (int i = 0;i<source.labels.size();i++) {
 			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+			std::cout << "source labels:" << source.lab(i) << std::endl;
 		}
 		for (int i = 0; i < target.labels.size(); i++) {
 			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
+			std::cout << "target labels:" << target.lab(i) << std::endl;
 		}
 		
 		icp->set_source_cloud(sourcelabelpoints);
@@ -699,12 +812,12 @@ vr_rgbd::~vr_rgbd()
 
 		std::cout<<"rotation"<<r<<std::endl;
 		std::cout << "translation" << t << std::endl;
-		for (int i=0;i<4;i++) 
+	/*	for (int i=0;i<4;i++) 
 			std::cout << "point:" << source.pnt(i) << std::endl;
-		
+		*/
 		source.do_transformation(r,t);
-		for (int i = 0; i < 4; i++)
-			std::cout << "point:" << source.pnt(i) << std::endl;
+		/*for (int i = 0; i < 4; i++)
+			std::cout << "point:" << source.pnt(i) << std::endl;*/
 		return;
 
 	}
