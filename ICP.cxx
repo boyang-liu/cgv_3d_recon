@@ -148,8 +148,8 @@
 				Mat rotation_update_mat = fU * cgv::math::transpose(fV);
 				Dir translation_update_vec = target_center - rotation_update_mat * source_center;
 
-				std::cout << "rotation_update_mat:" << rotation_update_mat << std::endl;
-				std::cout << "translation_update_vec:" << translation_update_vec << std::endl;
+				//std::cout << "rotation_update_mat:" << rotation_update_mat << std::endl;
+				//std::cout << "translation_update_vec:" << translation_update_vec << std::endl;
 				///calculate error function E(R,t)
 				for (int i = 0; i < S.get_nr_Points(); i++) {
 					///transform Pi to R*Pi + t

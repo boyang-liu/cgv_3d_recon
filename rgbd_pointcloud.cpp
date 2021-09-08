@@ -229,6 +229,29 @@ void rgbd_pointcloud::merge_labels(std::vector<int>& a) {
 	std::back_inserter(result));
 	labels = result;
 }
+void rgbd_pointcloud::delete_labels(std::vector<int>& a) {
+	if (labels.size() == 0)
+		return;
+	int current = 0;
+	std::vector<int> newlabels;
+	sort(a.begin(), a.end());
+	for(int i=0; i<labels.size();i++)
+	{
+		newlabels.push_back(lab(i));
+		for (int j = 0; j < a.size(); j++) {
+			if (lab(i) == a[j])
+			{
+				newlabels.pop_back();
+				break;
+			}
+			
+		}
+		
+	}
+	labels = newlabels;
+}
+
+
 void rgbd_pointcloud::do_transformation(Mat& rotation_mat,Pnt translation_vec) {
 
 	

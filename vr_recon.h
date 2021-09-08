@@ -259,7 +259,14 @@ protected:
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
 	std::vector < cgv::math::fvec<float, 3>> cam_translation;
 
-	
+
+
+
+
+	//mat3 testmat;
+	//vec3 testtran;
+
+
 
 public:
 	vr_rgbd();
@@ -289,6 +296,7 @@ public:
 	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
 	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
+	void cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void start_select_points();
 
 

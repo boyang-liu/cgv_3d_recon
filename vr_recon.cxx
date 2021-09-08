@@ -342,6 +342,9 @@ vr_rgbd::vr_rgbd()
 	BoundingBoxlength = 2.0;
 	BoundingBoxheight = 2.0;
 	
+	//testmat.identity();
+	//testtran=vec3(0,0,0);
+
 
 }
 
@@ -554,12 +557,14 @@ vr_rgbd::~vr_rgbd()
 
 		rgbd_pointcloud my_pc;
 		//if (save_time == rgbd_inp.get_nr_devices()) {
-		for (int i =0;i<current_pc.size();i++) 
+
+		/*for (int i =0;i<current_pc.size();i++) 
 		{
 			my_pc.add_point(current_pc[i].point, current_pc[i].color);
-		}
+		}*/
 		//save_time = 0;
 		//}
+
 		/*else*/ //{
 			//for (int i = 0; i < rgbdpc.size(); i++)
 				//for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
@@ -568,13 +573,13 @@ vr_rgbd::~vr_rgbd()
 			//save_time++;
 		//}
 
-		/*my_pc= rgbdpc_in_box[0];
+		//my_pc= rgbdpc_in_box[0];
 		if (rgbdpc.size() > 0) 
 		{
 		for (int i = 1; i < rgbdpc.size(); i++) 
 			for (int j = 0; j < rgbdpc[i].get_nr_Points(); j++)
 				my_pc.add_point(rgbdpc[i].pnt(j), rgbdpc[i].clr(j));		
-		}*/
+		}
 
 
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
@@ -647,46 +652,8 @@ vr_rgbd::~vr_rgbd()
 		vec3 q = vec3(11, 11, 11);*/
 		//select_feature_points(pc01,q,Radius_SelectMode);
 
-
-
 		cgv::math::fmat<float, 3, 3> r1,r2,r3,r4;
 		cgv::math::fvec<float, 3> t1,t2,t3,t4;
-
-		/*r1(0, 0) = 0.952418;
-		r1(0, 1) = -0.143504;
-		r1(0, 2) = 0.268898;
-		r1(1, 0) = 0.198909;
-		r1(1, 1) = 0.961104;
-		r1(1, 2) = -0.191608;
-		r1(2, 0) = -0.230942;
-		r1(2, 1) = 0.235977;
-		r1(2, 2) = 0.943917;
-		 
-		t1(0) = -0.203763;
-		t1(1) = 0.386837;
-		t1(2) = -0.511605;
-
-		r2(0, 0) = 0.961163 ;
-		r2(0, 1) = 0.189122 ;
-		r2(0, 2) = -0.200989;
-		r2(1, 0) = -0.153666 ;
-		r2(1, 1) = 0.971689 ;
-		r2(1, 2) = 0.17946;
-		r2(2, 0) = 0.229238 ;
-		r2(2, 1) = -0.141605 ;
-		r2(2, 2) = 0.963015;
-
-		t2(0) = - 0.073599;
-		t2(1) = -0.41059 ;
-		t2(2) = 0.584258;
-		for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
-		{
-			rgbdpc[1].pnt(i)=r1*rgbdpc[1].pnt(i) + t1;
-			rgbdpc[1].pnt(i) = r2 * rgbdpc[1].pnt(i) + t2;
-
-		}*/
-
-
 
 
 		r1(0, 0) = 0.952418;
@@ -758,14 +725,14 @@ vr_rgbd::~vr_rgbd()
 
 		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
 		{
-			rgbdpc[0].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
 			rgbdpc[0].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
+			rgbdpc[0].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
 
-		}
-		for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
+		}*/
+		/*for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
 		{
-			rgbdpc[1].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
 			rgbdpc[1].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
+			rgbdpc[1].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
 
 		}*/
 
@@ -792,11 +759,11 @@ vr_rgbd::~vr_rgbd()
 		rgbd_pointcloud sourcelabelpoints,targetlabelpoints;
 		for (int i = 0;i<source.labels.size();i++) {
 			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
-			std::cout << "source labels:" << source.lab(i) << std::endl;
+			//std::cout << "source labels:" << source.lab(i) << std::endl;
 		}
 		for (int i = 0; i < target.labels.size(); i++) {
 			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
-			std::cout << "target labels:" << target.lab(i) << std::endl;
+			//std::cout << "target labels:" << target.lab(i) << std::endl;
 		}
 		
 		icp->set_source_cloud(sourcelabelpoints);
@@ -805,19 +772,16 @@ vr_rgbd::~vr_rgbd()
 		icp->set_eps(1e-10);
 		std::cout << "run there!" << std::endl;
 		icp->reg_icp(r, t);
-		/*for (int i = 0; i < source.get_nr_Points(); i++)
-		{
-			source.pnt(i) = r * source.pnt(i) + t;
-		}*/
+		
 
 		std::cout<<"rotation"<<r<<std::endl;
 		std::cout << "translation" << t << std::endl;
-	/*	for (int i=0;i<4;i++) 
-			std::cout << "point:" << source.pnt(i) << std::endl;
-		*/
+	
 		source.do_transformation(r,t);
-		/*for (int i = 0; i < 4; i++)
-			std::cout << "point:" << source.pnt(i) << std::endl;*/
+		
+		//testmat = testmat * r;
+		//testvec = testvec +t;
+		
 		return;
 
 	}
@@ -844,18 +808,25 @@ vr_rgbd::~vr_rgbd()
 		trees[currentpointcloud]->find_closest_points(p, NrPointinRadius, knn);
 		//std::cout << "knn size!!!!!!!!!!!!!" << knn.size() << std::endl;
 
-		
-
 		pc1.merge_labels(knn);
 		pc1.set_render_color();
-		
-		/*for (int j = 0; j < knn.size(); j++) 
-		{
-			
-			current_pc[knn[j]].color = rgba8(255, 255, 0, 255);
-		}*/
-		
+
+		std::cout << "labels:" << pc1.labels.size() << std::endl;
+				
 	}
+	void vr_rgbd::cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius)
+	{
+		std::vector<int> temp_knn;
+		int NrPointinRadius = trees[currentpointcloud]->find_fixed_radius_points(p, radius, temp_knn);
+		//std::cout << "NrPointinRadius :" << NrPointinRadius << std::endl;
+		trees[currentpointcloud]->find_closest_points(p, NrPointinRadius, knn);
+		//std::cout << "knn size!!!!!!!!!!!!!" << knn.size() << std::endl;
+		pc1.delete_labels(knn);
+		pc1.set_render_color();
+		
+		std::cout << "labels:" << pc1.labels.size() << std::endl;
+	}
+
 
 	void vr_rgbd::start_select_points() {
 		for (int i = 0; i < rgbdpc.size(); i++)
@@ -1351,7 +1322,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						ray_end=ray_origin + sphere_distance*ray_direction;
 						
 						select_feature_points(rgbdpc[currentpointcloud],ray_end,Radius_SelectMode);
-					
+						std::cout<< "currentpointcloud :"<< currentpointcloud <<std::endl;
 					}if (setboundingboxmode) {
 						if(boundingboxisfixed)
 							boundingboxisfixed = false;
@@ -1391,15 +1362,17 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						}
 					}
 					if (selectPointsmode) {
-						registerPointCloud(rgbdpc[(currentpointcloud+1)%rgbdpc.size()], rgbdpc[currentpointcloud], cam_rotation[0], cam_translation[0]);
+						vec3 ray_origin, ray_direction, ray_end;
+
+						vrke.get_state().controller[1].put_ray(&ray_origin(0), &ray_direction(0));
+						ray_end = ray_origin + sphere_distance * ray_direction;
+
+						cancell_selected_feature_points(rgbdpc[currentpointcloud], ray_end, Radius_SelectMode);
 					}
 					
 					break;
 				case cgv::gui::KA_RELEASE:
-					/*rgbd_2_controller_orientation = transpose(rgbd_2_controller_orientation_start_calib)*controller_orientation*rgbd_2_controller_orientation;
-					rgbd_2_controller_position = transpose(rgbd_2_controller_orientation_start_calib)*((controller_orientation*rgbd_2_controller_position + controller_position) - rgbd_2_controller_position_start_calib);
-					in_calibration = false;
-					update_member(&in_calibration);*/
+					
 					break;
 				}
 			}
@@ -1532,7 +1505,28 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				}
 			}
 
-			
+			if (ci == 0 && vrke.get_key() == vr::VR_DPAD_RIGHT)
+			{
+				switch (vrke.get_action()) {
+				case cgv::gui::KA_PRESS:
+					
+					if (selectPointsmode) {
+						cgv::math::fmat<float, 3, 3> r;
+						cgv::math::fvec<float, 3> t;
+						r.identity();
+						t = vec3(0,0,0);
+						registerPointCloud(rgbdpc[(currentpointcloud + 1) % rgbdpc.size()], rgbdpc[currentpointcloud], r, t);
+						build_tree_feature_points(rgbdpc[currentpointcloud], currentpointcloud);
+						cam_rotation[currentpointcloud] = r * cam_rotation[currentpointcloud];
+						cam_translation[currentpointcloud] = r * cam_translation[currentpointcloud] + t;
+
+					}
+					break;
+				case cgv::gui::KA_RELEASE:
+
+					break;
+				}
+			}
 
 
 			if (ci == 0 && vrke.get_key() == vr::VR_MENU)
@@ -1562,7 +1556,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						std::cout << "no camera linked" << std::endl;
 						break;
 					}*/
-					if (!selectPointsmode ) {
+					if(setboundingboxmode)
+					{
+						selectPointsmode = false;
+						setboundingboxmode = false;
+						std::cout << "no mode " << std::endl;
+					}
+					else if (!selectPointsmode ) {
 					selectPointsmode = true;
 					setboundingboxmode = false;
 					std::cout<< "selectPointsmode :"<< selectPointsmode <<std::endl;
@@ -1575,12 +1575,13 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					for (int i=0;i< rgbdpc.size();i++) {
 						rgbdpc[i].set_render_color();
 					}}
-					else {
+					else if (!setboundingboxmode) {
 						selectPointsmode = false;
 						setboundingboxmode = true;
 						std::cout << "setboundingboxmode :" << setboundingboxmode << std::endl;
-
+					
 					}
+					
 					
 
 					/*if (translationmode) {

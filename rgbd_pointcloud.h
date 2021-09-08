@@ -121,6 +121,8 @@ public:
 	void clear();
 	void set_render_color();
 	void merge_labels(std::vector<int>& a);
+	void delete_labels(std::vector<int>& a);
+
 	const Rgba& clr(size_t i) const { return Colors[i] ; }
 	/// return i-th color as reference
 	Rgba& clr(size_t i) { return Colors[i]; }
