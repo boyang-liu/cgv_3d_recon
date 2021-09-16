@@ -140,6 +140,9 @@ public:
 	void rgbd_pointcloud::do_transformation(Mat& rotation_mat);
 	void rgbd_pointcloud::do_transformation(Pnt translation_vec);
 
+	void append(const rgbd_pointcloud& pc);
+
+
 protected:
 
 	//bool read(const std::string& file_name);

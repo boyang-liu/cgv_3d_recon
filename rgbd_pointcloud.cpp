@@ -294,3 +294,23 @@ void rgbd_pointcloud::do_transformation( Pnt translation_vec) {
 	}
 
 }
+
+void  rgbd_pointcloud::append(const rgbd_pointcloud& pc) {
+	if (pc.get_nr_Points() == 0)
+		return;
+	Cnt old_n = (Cnt)Points.size();
+	Cnt n = (Cnt)Points.size() + pc.get_nr_Points();
+	Points.resize(n);
+	std::copy(pc.Points.begin(), pc.Points.end(), Points.begin() + old_n);
+	Colors.resize(n);
+	std::copy(pc.Colors.begin(), pc.Colors.end(), Colors.begin() + old_n);
+
+	if (pc.labels.size() == 0)
+		return;
+	Cnt old_l = (Cnt)labels.size();
+	Cnt l = (Cnt)labels.size() + pc.labels.size();
+
+	for (int i = old_l; i < l; i++)
+		labels[i] = pc.lab(i) + old_l;
+	return;
+}

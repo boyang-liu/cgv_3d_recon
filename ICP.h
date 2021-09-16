@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include "rgbd_pointcloud.h"
 #include "ann_tree.h"

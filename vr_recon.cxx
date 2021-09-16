@@ -25,7 +25,7 @@
 #include "rgbd_pointcloud.h"
 #include "ICP.h"
 #include "PCBoundingbox.h"
-
+#include "GoICP.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -652,7 +652,7 @@ vr_rgbd::~vr_rgbd()
 		vec3 q = vec3(11, 11, 11);*/
 		//select_feature_points(pc01,q,Radius_SelectMode);
 
-		cgv::math::fmat<float, 3, 3> r1,r2,r3,r4;
+		/*cgv::math::fmat<float, 3, 3> r1,r2,r3,r4;
 		cgv::math::fvec<float, 3> t1,t2,t3,t4;
 
 
@@ -688,7 +688,7 @@ vr_rgbd::~vr_rgbd()
 			rgbdpc[0].pnt(i) = r2 * (rgbdpc[0].pnt(i) - t2);
 			rgbdpc[0].pnt(i) = r1 * (rgbdpc[0].pnt(i) - t1);
 
-		}
+		}*/
 
 
 		/*r3(0, 0) = 0.990595 ;
@@ -736,53 +736,82 @@ vr_rgbd::~vr_rgbd()
 
 		}*/
 
+	rgbd_pointcloud a,b;
+	a.add_point(vec3(0, 0, 0));
+	a.add_point(vec3(1, 0, 0));
+	a.add_point(vec3(2, 0, 0));
+	a.add_point(vec3(0, 0, 0));
+	a.add_point(vec3(0, 1, 0));
+	a.add_point(vec3(0, 2, 0));
+	
+
+	b.add_point(vec3(2, 2, 2));
+	b.add_point(vec3(2, 3, 2));
+	b.add_point(vec3(2, 4, 2));
+	b.add_point(vec3(2, 2, 2));
+	b.add_point(vec3(2, 2, 3));
+	b.add_point(vec3(2, 2, 4));
+	cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
+	registerPointCloud(a, b, r, t);
+	
 
 	}
 	void vr_rgbd::clear_pc() {
 		rgbdpc.clear();
 	}
 
-	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
+	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud& source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t) {
 
-		ICP* icp = new ICP();
-		/*cgv::math::fmat<float, 3, 3> r;
-		cgv::math::fvec<float, 3> t;*/
-		r.identity();
-		t.zeros();
-		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
-		std::cout << "target.labels.size():" << target.labels.size() << std::endl;
-		if (source.labels.size() == 0 || target.labels.size() == 0) {
-			std::cout <<"there is no label points in source or target pc"<<std::endl;
-			return;
-		}
-			
-		rgbd_pointcloud sourcelabelpoints,targetlabelpoints;
-		for (int i = 0;i<source.labels.size();i++) {
-			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
-			//std::cout << "source labels:" << source.lab(i) << std::endl;
-		}
-		for (int i = 0; i < target.labels.size(); i++) {
-			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
-			//std::cout << "target labels:" << target.lab(i) << std::endl;
-		}
-		
-		icp->set_source_cloud(sourcelabelpoints);
-		icp->set_target_cloud(targetlabelpoints);
-		icp->set_iterations(20);
-		icp->set_eps(1e-10);
-		std::cout << "run there!" << std::endl;
-		icp->reg_icp(r, t);
-		
+		//ICP* icp = new ICP();
+		///*cgv::math::fmat<float, 3, 3> r;
+		//cgv::math::fvec<float, 3> t;*/
+		//r.identity();
+		//t.zeros();
+		//std::cout << "source.labels.size():" << source.labels.size() << std::endl;
+		//std::cout << "target.labels.size():" << target.labels.size() << std::endl;
+		//if (source.labels.size() == 0 || target.labels.size() == 0) {
+		//	std::cout << "there is no label points in source or target pc" << std::endl;
+		//	return;
+		//}
 
-		std::cout<<"rotation"<<r<<std::endl;
-		std::cout << "translation" << t << std::endl;
-	
-		source.do_transformation(r,t);
+		//rgbd_pointcloud sourcelabelpoints, targetlabelpoints;
+		//for (int i = 0; i < source.labels.size(); i++) {
+		//	sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+		//	//std::cout << "source labels:" << source.lab(i) << std::endl;
+		//}
+		//for (int i = 0; i < target.labels.size(); i++) {
+		//	targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
+		//	//std::cout << "target labels:" << target.lab(i) << std::endl;
+		//}
+
+		//icp->set_source_cloud(sourcelabelpoints);
+		//icp->set_target_cloud(targetlabelpoints);
+		//icp->set_iterations(20);
+		//icp->set_eps(1e-10);
+		//std::cout << "run there!" << std::endl;
+		//icp->reg_icp(r, t);
+
+
+		//std::cout << "rotation" << r << std::endl;
+		//std::cout << "translation" << t << std::endl;
+
+		//source.do_transformation(r, t);
+
+		////testmat = testmat * r;
+		////testvec = testvec +t;
+
+		//return;
+
+		GoICP mygoicp;
 		
-		//testmat = testmat * r;
-		//testvec = testvec +t;
+		mygoicp.initializeRegistration(source);
+		mygoicp.initializeDistanceComputation(target);
 		
-		return;
+		std::cout << "mygoicp.registerPointcloud() :" << mygoicp.registerPointcloud() << std::endl;
+
+
+
+
 
 	}
 	void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud& pc1) {
@@ -811,7 +840,7 @@ vr_rgbd::~vr_rgbd()
 		pc1.merge_labels(knn);
 		pc1.set_render_color();
 
-		std::cout << "labels:" << pc1.labels.size() << std::endl;
+		//std::cout << "labels:" << pc1.labels.size() << std::endl;
 				
 	}
 	void vr_rgbd::cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius)
@@ -824,7 +853,7 @@ vr_rgbd::~vr_rgbd()
 		pc1.delete_labels(knn);
 		pc1.set_render_color();
 		
-		std::cout << "labels:" << pc1.labels.size() << std::endl;
+		//std::cout << "labels:" << pc1.labels.size() << std::endl;
 	}
 
 
@@ -1322,7 +1351,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						ray_end=ray_origin + sphere_distance*ray_direction;
 						
 						select_feature_points(rgbdpc[currentpointcloud],ray_end,Radius_SelectMode);
-						std::cout<< "currentpointcloud :"<< currentpointcloud <<std::endl;
+						//std::cout<< "currentpointcloud :"<< currentpointcloud <<std::endl;
 					}if (setboundingboxmode) {
 						if(boundingboxisfixed)
 							boundingboxisfixed = false;

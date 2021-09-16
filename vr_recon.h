@@ -38,7 +38,7 @@
 #include "ICP.h"
 #include "rgbd_pointcloud.h"
 #include "PCBoundingbox.h"
-
+#include "GoICP.h"
 
 using namespace rgbd;
 
