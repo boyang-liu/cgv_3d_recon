@@ -259,7 +259,8 @@ protected:
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
 	std::vector < cgv::math::fvec<float, 3>> cam_translation;
 
-
+	vec3 viewpoint1 =vec3(0,0,0);
+	vec3 viewpoint2 = vec3(0, 0, 0);
 
 
 

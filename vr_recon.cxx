@@ -397,20 +397,10 @@ vr_rgbd::~vr_rgbd()
 		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);
 		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
 
-
-		//std::vector<mat3> my_rotation_matrix;
-		//mat3 mrm = camera_ori_1;
-		//mrm[5] += manualcorrect_rotation[index][2];
-		//mrm[4] = sqrt(1- mrm[5]* mrm[5]- mrm[3] * mrm[3]);
-		//mrm[8] += manualcorrect_rotation[index][2];
-		//mrm[7] = sqrt(1 - mrm[8] * mrm[8] - mrm[6] * mrm[6]);
-		
-		/*mrm[5] += manualcorrect_rotation[index][0];
-		mrm[4] = sqrt(1 - mrm[5] * mrm[5] - mrm[3] * mrm[3]);
-
-		mrm[5] += manualcorrect_rotation[index][1];
-		mrm[4] = sqrt(1 - mrm[5] * mrm[5] - mrm[3] * mrm[3]);*/
-
+		viewpoint1 = vec3(0, -1, 0);
+		viewpoint2 = vec3(0, -1, 0);
+		int z1, z2, z3, z4;
+		int iii = 0;
 		int i = 0;
 		std::vector<vertex> temppc;
 		for (int y = 0; y < depth_frame_2.height; ++y)
@@ -426,13 +416,39 @@ vr_rgbd::~vr_rgbd()
 						p[1] = p[2];
 						p[2] = -t;				
 						p = camera_ori_1 * p;
-						//p = mrm[index] * p;
+						
 						p[1] = -p[1];		
 						p = p + camera_pos_1;
 						p = p + manualcorrect_translation[index];
 
-					}
+						/*p[0] = -p[0] / p[1];
+						p[2] = -p[2] / p[1];
+						p[1] = -1;*/
 
+
+						//if (viewpoint1[0] <= p[0])//&& p[0]<1.2
+						//{
+						//z1 = iii;
+
+						//}	
+
+						//if (viewpoint1[2] <= p[2])
+						//{
+						//z2 = iii;
+						//}
+						//if (viewpoint2[0] >= p[0])//&& p[0] > -1.2
+						//{
+						//z3 = iii;
+						//}
+						//if (viewpoint2[2] >= p[2])
+						//{
+						//z4 = iii;
+						//}
+						
+				
+						
+					}
+					iii++;
 					if (index == 1)
 					{
 						float t;
@@ -468,10 +484,22 @@ vr_rgbd::~vr_rgbd()
 									
 					temppc.push_back(v);			
 					intermediate_pc.push_back(v);
+					
 				}
 				++i;
 			}
 		cur_pc[index] = temppc;
+
+		
+		viewpoint1[0] = intermediate_pc[z1].point[0];
+		viewpoint1[2] = intermediate_pc[z2].point[2];
+		viewpoint2[0] = intermediate_pc[z3].point[0];
+		viewpoint2[2] = intermediate_pc[z4].point[2];
+
+		std::cout << "num1:  " << z1 << std::endl;
+		std::cout << "point:  " << intermediate_pc[z1].point << std::endl;
+		std::cout << "num2:  " << z2 << std::endl;
+		std::cout << "point:  " << intermediate_pc[z2].point << std::endl;
 		
 		return intermediate_pc.size();
 	
@@ -2094,6 +2122,71 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					C.push_back(c);
 					C.push_back(c);
 				}
+				
+				P.push_back(vec3(0, 0, 0));
+				P.push_back(viewpoint1);
+				P.push_back(vec3(0, 0, 0));
+				P.push_back(viewpoint2);
+
+				P.push_back(vec3(1.2, -1, 1.2));
+				P.push_back(vec3(-1.2, -1, 1.2));
+				P.push_back(vec3(-1.2, -1, 1.2));
+				P.push_back(vec3(-1.2, -1, -1.2));
+				P.push_back(vec3(-1.2, -1, -1.2));
+				P.push_back(vec3(1.2, -1, -1.2));
+				P.push_back(vec3(1.2, -1, -1.2));
+				P.push_back(vec3(1.2, -1, 1.2));
+
+
+				//std::cout<<"p1   "<<viewpoint1<<std::endl;
+				//std::cout << "p2   " << viewpoint2 << std::endl;
+
+
+				//P.push_back(vec3(0, 0, 0));
+				//P.push_back(vec3(1, -1, 1));
+
+				C.push_back(rgb(0, 0, 1));
+				C.push_back(rgb(0, 0, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+
+
+
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+
+
+
+
+				P.push_back(vec3(0, -1, 0));
+				P.push_back(vec3(0, 0, 0));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				
+				/*P.push_back(vec3(1.67097, -1, 0.303567));
+				P.push_back(vec3(0, 0, 0));
+				P.push_back(vec3(-0.114076 ,- 1 ,1.73125));
+				P.push_back(vec3(0, 0, 0));
+				P.push_back(vec3(-1.7267 ,- 1 ,- 0.185624));
+				P.push_back(vec3(0, 0, 0));
+				P.push_back(vec3(-0.256466 ,- 1 ,- 1.71221));
+				P.push_back(vec3(0, 0, 0));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));
+				C.push_back(rgb(0, 1, 1));*/
+
+
 			}
 			if (P.size() > 0) {
 				cgv::render::shader_program& prog = ctx.ref_default_shader_program();
