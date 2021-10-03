@@ -2,6 +2,7 @@
 Implementation of Go-ICP (see http://jlyang.org/go-icp/)
 WIP
 */
+
 #pragma once
 #include <vector>
 #include "rgbd_pointcloud.h"

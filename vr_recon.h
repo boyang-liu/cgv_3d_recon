@@ -144,6 +144,7 @@ protected:
 	///
 	bool rgbd_started;
 	bool rgbd_multi_started;
+	bool all_devices_attached;
 	std::string rgbd_protocol_path;
 	bool get_tracker_positions;
 	/// 
@@ -201,23 +202,24 @@ protected:
 	/// start the rgbd device
 	void start_rgbd();
 	void start_multi_rgbd();
+	void attach_all_devices();
 	void stop_multi_rgbd();
+	void detach_all_devices();
 	/// stop rgbd device
 	void stop_rgbd();
 	void set_rgbd_pos();
 
-	bool get_camera_pos_1;
-	vec3 camera_pos_1 ;
-	mat3 camera_ori_1;
-	bool get_camera_pos_2;
-	vec3 camera_pos_2 ;
-	mat3 camera_ori_2;
-	bool get_camera_pos_3;
-	vec3 camera_pos_3;
-	mat3 camera_ori_3;
-	bool get_camera_pos;
+	bool coarseregistrationmode;
+	std::vector<vec3> cam_coarse_t;
+	std::vector<mat3> cam_coarse_r;
+
+	
+	
 	std::vector<vec3> camera_pos;
 	std::vector<mat3> camera_ori;
+
+	std::vector<vec3> viewconepos1;
+	std::vector<vec3> viewconepos2;
 
 	bool no_controller;
 	std::vector<vec3> manualcorrect_translation;
@@ -234,7 +236,12 @@ protected:
 	int current_corrected_cam;
 
 	int depth_stream_format_idx;
+	int color_stream_format_idx;
+	int ir_stream_format_idx;
 	std::vector<rgbd::stream_format> depth_stream_formats;
+	std::vector<rgbd::stream_format> color_stream_formats;	
+	std::vector<rgbd::stream_format> ir_stream_formats;
+
 
 	cgv::render::shader_program sky_prog;
 	cgv::render::texture img_tex;
@@ -247,7 +254,9 @@ protected:
 
 	int save_time = 0;
 	int currentpointcloud;
+	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
 	std::vector<rgbd_pointcloud> rgbdpc;
+	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
 	std::vector<int> knn;
 	float Radius_SelectMode;
@@ -277,6 +286,8 @@ public:
 	size_t construct_multi_point_cloud(int index);//
 	//size_t construct_point_clouds();
 
+	void getviewconeposition(vec3 &a, mat3 r, vec3 t);
+
 	void save_current_pc();
 	void load_current_pc();
 	void clear_current_point_cloud();
@@ -294,11 +305,11 @@ public:
 	//size_t read_pc_queue(const std::string filename, std::string content);
 	
 	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
-	void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
+	//void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
 	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
-	void start_select_points();
+	//void start_select_points();
 
 
 	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
@@ -318,7 +329,7 @@ public:
 	void draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2);
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
-	void draw_selectmode_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
+	void draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw(cgv::render::context& ctx);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
@@ -332,6 +343,7 @@ private:
 	//std::vector<int> device_indices ;
 protected:
 	void device_select();
+	void update_stream_formats();
 	//void set_devices();
 	//void capture_multi_device();
 };

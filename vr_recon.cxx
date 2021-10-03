@@ -145,47 +145,164 @@ void vr_rgbd::start_rgbd()
 		rgbd_inp.set_near_mode(true);
 		std::vector<rgbd::stream_format> stream_formats;
 		rgbd_started = rgbd_inp.start(rgbd::IS_COLOR_AND_DEPTH, stream_formats);
+
+		
+
 		update_member(&rgbd_started);	
 
 }
 	/// stop rgbd device
+
+void vr_rgbd::attach_all_devices() 
+{
+	if (rgbd_inp.is_attached()) {
+		if(rgbd_inp.is_started()){
+			rgbd_inp.stop();
+			rgbd_started = !rgbd_inp.stop();
+			update_member(&rgbd_started);
+		}	
+		rgbd_inp.detach();	
+	}
+
+	if (!rgbd_inp.is_multi_attached())
+	{
+
+		if (rgbd::rgbd_input::get_nr_devices() == 0)
+		{
+
+			return;
+		}
+
+		vector<std::string> ser;
+
+		for (int nr_de = 0; nr_de < rgbd::rgbd_input::get_nr_devices(); nr_de++)
+		{
+			ser.push_back(rgbd::rgbd_input::get_serial(nr_de));
+		}
+
+
+		if (!rgbd_inp.multi_attach(ser))
+		{
+			return;
+		}
+		std::cout << "size of multi_rgbd:" << rgbd_inp.nr_multi_de() << std::endl;
+
+	}
+	all_devices_attached = rgbd_inp.is_multi_attached();
+	if (rgbd_inp.is_multi_attached())
+		std::cout << "these are attached" << std::endl;
+	else
+		std::cout << "these are not attached" << std::endl;
+	
+	update_stream_formats();
+
+
+
+	update_member(&all_devices_attached);
+}
+void vr_rgbd::detach_all_devices() {
+	if (!rgbd_inp.is_multi_attached())
+	{
+		return;
+	}
+	if (rgbd_inp.is_multi_started())
+		stop_multi_rgbd();
+	else
+		rgbd_inp.detach();
+	all_devices_attached = rgbd_inp.is_multi_attached();
+	
+	update_member(&all_devices_attached);
+}
+
+
+
+
+
+
+
 
 void vr_rgbd::start_multi_rgbd()
 {
 	
 	if (!rgbd_inp.is_multi_attached())
 	{
-		
-		if (rgbd::rgbd_input::get_nr_devices() == 0)
-		{
-			
-			return;
-		}
-		
-		vector<std::string> ser;
-		
-		for (int nr_de=0;nr_de< rgbd::rgbd_input::get_nr_devices();nr_de++) 	
-		{
-			ser.push_back(rgbd::rgbd_input::get_serial(nr_de));
-		}
-		
-		
-		if (!rgbd_inp.multi_attach(ser))
-		{			
-			return;
-		}
-		std::cout << "size of multi_rgbd:" << rgbd_inp.nr_multi_de() << std::endl;
+		std::cout << "no attached devices!" << std::endl;
+		rgbd_multi_started = false;
+		update_member(&rgbd_multi_started);
+		return;
+	}
+	
 
+
+
+
+
+	//rgbd_inp.set_near_mode(near_mode);                                                //???
+	//InputStreams is = IS_NONE;
+	bool use_default = false;
+	std::vector<stream_format> sfs;
+	if (color_stream_format_idx == -1)
+		use_default = true;
+	else
+		sfs.push_back(color_stream_formats[color_stream_format_idx]);
+	if (depth_stream_format_idx == -1)
+		use_default = true;
+	else
+		sfs.push_back(depth_stream_formats[depth_stream_format_idx]);
+	if (ir_stream_format_idx == -1)
+		use_default = true;
+	else
+		sfs.push_back(ir_stream_formats[ir_stream_format_idx]);
+	//if (use_default) {
+	//	/*sfs.clear();
+	//	if (!rgbd_inp.start(InputStreams(is), sfs)) {
+	//		cgv::gui::message("could not start kinect device");
+	//		return;
+	//	}
+	//	else {*/
+	//		for (const auto& sf : sfs) {
+	//			auto ci = std::find(color_stream_formats.begin(), color_stream_formats.end(), sf);
+	//			if (ci != color_stream_formats.end()) {
+	//				color_stream_format_idx = ci - color_stream_formats.begin();
+	//				update_member(&color_stream_format_idx);
+	//			}
+	//			auto di = std::find(depth_stream_formats.begin(), depth_stream_formats.end(), sf);
+	//			if (di != depth_stream_formats.end()) {
+	//				depth_stream_format_idx = di - depth_stream_formats.begin();
+	//				update_member(&depth_stream_format_idx);
+	//			}
+	//			auto ii = std::find(ir_stream_formats.begin(), ir_stream_formats.end(), sf);
+	//			if (ii != ir_stream_formats.end()) {
+	//				ir_stream_format_idx = ii - ir_stream_formats.begin();
+	//				update_member(&ir_stream_format_idx);
+	//			}
+	//		}
+	//	//}
+	//
+	//}
+
+
+
+
+
+
+
+	
+	
+	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());    //??
+
+	if (use_default)
+		rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
+	else {
+	for (int i = 0; i < multi_stream_formats.size(); i++)
+		multi_stream_formats[i] = sfs;
+	//rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
+	
+	rgbd_multi_started = rgbd_inp.multi_start(multi_stream_formats);
+	
 	}
 
-	if (rgbd_inp.is_multi_attached())
-		std::cout << "these are attached" << std::endl;
-	else
-		std::cout << "these are not attached" << std::endl;
-	
-	
-	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());
-	rgbd_multi_started = rgbd_inp.multi_start(rgbd::IS_COLOR_AND_DEPTH, multi_stream_formats);
+
 	if (rgbd_multi_started)
 		std::cout << "they are started" << std::endl;
 	else
@@ -195,13 +312,26 @@ void vr_rgbd::start_multi_rgbd()
 		manualcorrect_rotation.push_back((0, 0, 0));
 	}
 	current_corrected_cam =-1;
-	cur_pc.resize(rgbd_inp.get_nr_devices());
+	//save point cloud
+	intermediate_rgbdpc.resize(rgbd_inp.get_nr_devices());
+	//cur_pc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
+
+	viewconepos1.resize(rgbd_inp.get_nr_devices());
+	viewconepos2.resize(rgbd_inp.get_nr_devices());
+
 	cam_rotation.resize(rgbd_inp.get_nr_devices());
 	cam_translation.resize(rgbd_inp.get_nr_devices());
+
+	cam_coarse_t.resize(rgbd_inp.get_nr_devices());
+	cam_coarse_r.resize(rgbd_inp.get_nr_devices());
+
 	trees.resize(rgbd_inp.get_nr_devices());
 	for (int i = 0;i< cam_rotation.size();i++) {
+		cam_coarse_r[i].identity();
+		cam_coarse_t[i] = vec3(0, 0, 0);
+		
 		cam_rotation[i].identity();
 		cam_translation[i] = vec3(0, 0, 0);
 	}
@@ -218,7 +348,8 @@ void vr_rgbd::stop_multi_rgbd()
 	
 	rgbd_multi_started = !rgbd_inp.stop();
 	rgbd_inp.detach();
-	
+	cam_coarse_t.clear();
+	cam_coarse_r.clear();
 	
 	manualcorrect_translation.clear();
 	manualcorrect_rotation.clear();
@@ -241,21 +372,19 @@ void vr_rgbd::stop_rgbd()
 	rgbd_inp.stop();
 	rgbd_inp.detach();
 	
-	rgbd_started = rgbd_inp.stop();
+	rgbd_started = !rgbd_inp.stop();
 	update_member(&rgbd_started);
 }
+
+
+
+
+
 void vr_rgbd::set_rgbd_pos()
 {
 	
-	get_camera_pos_1 = true;
-	get_camera_pos_2 = true;
 	
-	std::cout << "camera1 ori:" << std::endl << camera_ori_1 << std::endl;
-	//std::cout << "qqqqqqqqqqqqqqqqqqqqqqqqqqqqq:" << camera_ori_1(0,1) << std::endl;
-	std::cout << "camera2 ori:" <<std::endl << camera_ori_2 << std::endl;
-
-	std::cout << "camera1 pos:" << camera_pos_1 << std::endl;
-	std::cout << "camera2 pos:" << camera_pos_2 << std::endl;
+	
 	return;
 }
 
@@ -292,6 +421,7 @@ vr_rgbd::vr_rgbd()
 	state[0] = state[1] = state[2] = state[3] = IS_NONE;
 	rgbd_started = false;
 	rgbd_multi_started = false;
+	all_devices_attached = false;
 	get_tracker_positions = false;
 	record_frame = false;
 	record_all_frames = false;
@@ -316,15 +446,11 @@ vr_rgbd::vr_rgbd()
 	connect(cgv::gui::get_animation_trigger().shoot, this, &vr_rgbd::timer_event);
 
 	
-	get_camera_pos_1 = false;
-	camera_pos_1 = (0, 0, 0);
-	camera_ori_1.identity();
-	get_camera_pos_2 = false;
-	camera_pos_2 = (0, 0, 0);
-	camera_ori_2.identity();
-	get_camera_pos_3 = false;
-	camera_pos_3 = (0, 0, 0);
-	camera_ori_3.identity();
+	color_stream_format_idx = -1;
+	depth_stream_format_idx = -1;
+	ir_stream_format_idx = -1;
+	
+
 	no_controller=false;
 
 	translationmode=false;
@@ -389,190 +515,83 @@ vr_rgbd::~vr_rgbd()
 	{
 		//for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {//
 			
-		if(index ==0)
-			intermediate_pc.clear();
+		//if (index == 0) {
+		//intermediate_pc.clear();
+		
+		//}
+			
 		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
 		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
 
 		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);
 		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
 
-		viewpoint1 = vec3(0, -1, 0);
-		viewpoint2 = vec3(0, -1, 0);
-		int z1, z2, z3, z4;
-		int iii = 0;
+		
 		int i = 0;
-		std::vector<vertex> temppc;
+		
+		intermediate_rgbdpc[index].clear();
 		for (int y = 0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
 					// flipping y to make it the same direction as in pixel y coordinate
 							
-					if (index == 0 )
-					{
-						float t;
-						t = p[1];
-						p[1] = p[2];
-						p[2] = -t;				
-						p = camera_ori_1 * p;
-						
-						p[1] = -p[1];		
-						p = p + camera_pos_1;
-						p = p + manualcorrect_translation[index];
-
-						/*p[0] = -p[0] / p[1];
-						p[2] = -p[2] / p[1];
-						p[1] = -1;*/
-
-
-						//if (viewpoint1[0] <= p[0])//&& p[0]<1.2
-						//{
-						//z1 = iii;
-
-						//}	
-
-						//if (viewpoint1[2] <= p[2])
-						//{
-						//z2 = iii;
-						//}
-						//if (viewpoint2[0] >= p[0])//&& p[0] > -1.2
-						//{
-						//z3 = iii;
-						//}
-						//if (viewpoint2[2] >= p[2])
-						//{
-						//z4 = iii;
-						//}
-						
-				
-						
-					}
-					iii++;
-					if (index == 1)
-					{
-						float t;
-						t = p[1];
-						p[1] = p[2];
-						p[2] = -t;
-						p = camera_ori_2*p  ;
-						p[1] = -p[1];
-						p = p + camera_pos_2;
-						p = p + manualcorrect_translation[index];
-					}
-
-					if (index == 2)
-					{
-						float t;
-						t = p[1];
-						p[1] = p[2];
-						p[2] = -t;
-						p = camera_ori_3 * p;
-						p[1] = -p[1];
-						p = p + camera_pos_3;
-						p = p + manualcorrect_translation[index];
-					}
-
 					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
+					//rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i + 0], colors[4 * i + 3]);
+					
 					vertex v;
 					//filter points without color for 32 bit formats
 					static const rgba8 filter_color = rgba8(0, 0, 0, 255);
+					//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
+					
 					if (!(c == filter_color)) {
 						v.color = c;
+						
+						float t;
+						t = p[1];
+						p[1] = p[2];
+						p[2] = -t;
+
+						p = cam_coarse_r[index] * p;
+
+						p[1] = -p[1];
+						p = p + cam_coarse_t[index];
+						//p = p + manualcorrect_translation[index];
+
+						//p[0] = -p[0] / p[1];
+						//p[2] = -p[2] / p[1];
+						//p[1] = -1;
+										
 						v.point = p;
-					}
-									
-					temppc.push_back(v);			
-					intermediate_pc.push_back(v);
+						intermediate_rgbdpc[index].add_point(v.point, v.color);
 					
+					}
+						
 				}
 				++i;
 			}
-		cur_pc[index] = temppc;
-
-		
-		viewpoint1[0] = intermediate_pc[z1].point[0];
-		viewpoint1[2] = intermediate_pc[z2].point[2];
-		viewpoint2[0] = intermediate_pc[z3].point[0];
-		viewpoint2[2] = intermediate_pc[z4].point[2];
-
-		std::cout << "num1:  " << z1 << std::endl;
-		std::cout << "point:  " << intermediate_pc[z1].point << std::endl;
-		std::cout << "num2:  " << z2 << std::endl;
-		std::cout << "point:  " << intermediate_pc[z2].point << std::endl;
-		
-		return intermediate_pc.size();
+				
+		return intermediate_rgbdpc[index].get_nr_Points();
 	
+	}
+	void vr_rgbd::getviewconeposition(vec3 &a, mat3 r, vec3 t) {
+
+		/*float temp;
+		temp = a[1];
+		a[1] = a[2];
+		a[2] = -temp;*/
+		a= r * a;
+		//a[1] = -a[1];
+		a = a + t;
+		return;
+
+
+
+
 	}
 
 
 
-	//size_t vr_rgbd::construct_point_clouds() {
-	//	intermediate_pc.clear();
-	//	
-	//	for (int index = 0; index < rgbd_inp.nr_multi_de();index++) {
-	//	const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frames[index].frame_data.front());
-	//	const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frames[index].frame_data.front());
-	//	rgbd_inp.map_color_to_depth(depth_frames[index], color_frames[index], warped_color_frame_2, index);
-	//	colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
-	//	int i = 0;
-	//	for (int y = 0; y < depth_frames[index].height; ++y)
-	//		for (int x = 0; x < depth_frames[index].width; ++x) {
-	//			vec3 p;
-	//			if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
-	//				// flipping y to make it the same direction as in pixel y coordinate
-
-	//				if (index == 0)
-	//				{
-	//					float t;
-	//					t = p[1];
-	//					p[1] = p[2];
-	//					p[2] = -t;
-	//					p = camera_ori_1 * p;
-	//					p[1] = -p[1];
-	//					p = p + camera_pos_1;
-	//					p = p + manualcorrect_translation[index];
-	//				}
-	//				if (index == 1)
-	//				{
-	//					float t;
-	//					t = p[1];
-	//					p[1] = p[2];
-	//					p[2] = -t;
-	//					p = camera_ori_2 * p;
-	//					p[1] = -p[1];
-	//					p = p + camera_pos_2;
-	//					p = p + manualcorrect_translation[index];
-	//				}
-	//				if (index == 2)
-	//				{
-	//					float t;
-	//					t = p[1];
-	//					p[1] = p[2];
-	//					p[2] = -t;
-	//					p = camera_ori_3 * p;
-	//					p[1] = -p[1];
-	//					p = p + camera_pos_3;
-	//					p = p + manualcorrect_translation[index];
-	//				}
-	//				rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
-	//				vertex v;
-	//				//filter points without color for 32 bit formats
-	//				static const rgba8 filter_color = rgba8(0, 0, 0, 255);
-	//				if (!(c == filter_color)) {
-	//					v.color = c;
-	//					v.point = p;
-	//				}
-	//				intermediate_pc.push_back(v);
-	//			}
-	//			++i;
-	//		}
-
-
-	//	}
-	//	
-	//	return intermediate_pc.size();
-	//}
 
 	void vr_rgbd::save_current_pc()
 	{
@@ -640,11 +659,19 @@ vr_rgbd::~vr_rgbd()
 		rgbdpc.push_back(source_pc);
 		rgbdpc_in_box.resize(rgbdpc.size());
 		
+		cam_coarse_t.resize(rgbdpc.size());;
+		cam_coarse_r.resize(rgbdpc.size());;
+
 		cam_rotation.resize(rgbdpc.size());
 		cam_translation.resize(rgbdpc.size());
+
 		for (int i = 0; i < cam_rotation.size(); i++) {
+			cam_coarse_r[i].identity();
+			cam_coarse_t[i] = vec3(0, 0, 0);
+
 			cam_rotation[i].identity();
 			cam_translation[i] = vec3(0, 0, 0);
+
 		}
 
 		trees.resize(rgbdpc.size());
@@ -830,6 +857,7 @@ vr_rgbd::~vr_rgbd()
 
 		//return;
 
+
 		GoICP mygoicp;
 		
 		mygoicp.initializeRegistration(source);
@@ -842,14 +870,14 @@ vr_rgbd::~vr_rgbd()
 
 
 	}
-	void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud& pc1) {
+	/*void vr_rgbd::generate_pc(std::vector<vertex> rgbd_points, rgbd_pointcloud& pc1) {
 		pc1.clear();
 		for (int i = 0; i < rgbd_points.size(); i++)
 		{
 			pc1.add_point(rgbd_points[i].point, rgbd_points[i].color);
 		}
 		return;
-	}
+	}*/
 	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1,int i) {
 		trees[i].reset();
 		trees[i] = std::make_shared<ann_tree>();
@@ -885,11 +913,11 @@ vr_rgbd::~vr_rgbd()
 	}
 
 
-	void vr_rgbd::start_select_points() {
+	/*void vr_rgbd::start_select_points() {
 		for (int i = 0; i < rgbdpc.size(); i++)
 			generate_pc(cur_pc[i], rgbdpc[i]);
 
-	}
+	}*/
 
 
 
@@ -1084,30 +1112,17 @@ vr_rgbd::~vr_rgbd()
 							controller_position_pc = controller_position;
 							
 						}
-						//future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
+						future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
 						//construct_point_cloud();
 						//current_pc = intermediate_pc;
+						
 						//post_redraw();
-						//std::cout<<"run this"<<std::endl;
+						
 					}
 					
 				}
 			//}
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 		if (rgbd_inp.is_multi_started()) {
@@ -1125,26 +1140,16 @@ vr_rgbd::~vr_rgbd()
 			}
 			if (generate_pc_from_rgbd) 
 			{
-			current_pc = intermediate_pc;post_redraw();
+			//current_pc = intermediate_pc;
+				rgbdpc = intermediate_rgbdpc;
+				post_redraw();
 			}
 			else {
-				current_pc.clear();
+				for (int i = 0; i < rgbdpc.size(); i++)
+					rgbdpc[i].clear();
 			}
 			
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1193,7 +1198,8 @@ std::string vr_rgbd::get_type_name() const
 }
 void vr_rgbd::create_gui()
 {
-	
+	//std::cout<<"================================1231"<<std::endl;
+
 		add_decorator("vr_rgbd", "heading", "level=2");
 
 		unsigned n = rgbd_input::get_nr_devices();
@@ -1214,7 +1220,11 @@ void vr_rgbd::create_gui()
 		
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
-		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));
+
+		add_member_control(this, "color_stream_format", (DummyEnum&)color_stream_format_idx, "dropdown", get_stream_format_enum(color_stream_formats));
+		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));		
+		add_member_control(this, "ir_stream_format", (DummyEnum&)ir_stream_format_idx, "dropdown", get_stream_format_enum(ir_stream_formats));
+		add_member_control(this, "attach all devices", all_devices_attached, "check");
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
 		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
 		connect_copy(add_control("position_scale", position_scale, "value_slider", "min=0.05;max=10;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
@@ -1290,6 +1300,7 @@ bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 			rh.reflect_member("clear_all_frames", clear_all_frames) &&
 			rh.reflect_member("rgbd_started", rgbd_started) &&
 			rh.reflect_member("rgbd_multi_started", rgbd_multi_started) &&
+			rh.reflect_member("all_devices_attached", all_devices_attached) &&
 			rh.reflect_member("position_scale", position_scale) &&
 			rh.reflect_member("rotation_scale", rotation_scale) &&
 			rh.reflect_member("get_tracker_positions", get_tracker_positions) &&
@@ -1328,6 +1339,19 @@ void vr_rgbd::on_set(void* member_ptr)
 				stop_multi_rgbd();
 			}
 		}
+		if (member_ptr == &all_devices_attached && all_devices_attached != rgbd_inp.is_multi_attached())
+		{
+
+			if (all_devices_attached)
+			{
+				attach_all_devices();
+			}
+			else
+			{				
+				detach_all_devices();
+			}
+		}
+
 		if (member_ptr == &get_tracker_positions)
 		{
 			set_rgbd_pos();
@@ -1342,6 +1366,29 @@ void vr_rgbd::stream_help(std::ostream& os)
 {
 		os << "vr_rgbd: no shortcuts defined" << std::endl;
 }
+
+
+void vr_rgbd::update_stream_formats()
+{
+	color_stream_formats.clear();
+	rgbd_inp.query_stream_formats(IS_COLOR, color_stream_formats);
+	if (find_control(color_stream_format_idx))
+		find_control(color_stream_format_idx)->multi_set(get_stream_format_enum(color_stream_formats));
+	depth_stream_formats.clear();
+	rgbd_inp.query_stream_formats(IS_DEPTH, depth_stream_formats);
+	if (find_control(depth_stream_format_idx))
+		find_control(depth_stream_format_idx)->multi_set(get_stream_format_enum(depth_stream_formats));
+	ir_stream_formats.clear();
+	rgbd_inp.query_stream_formats(IS_INFRARED, ir_stream_formats);
+	if (find_control(ir_stream_format_idx))
+		find_control(ir_stream_format_idx)->multi_set(get_stream_format_enum(ir_stream_formats));
+}
+
+
+
+
+
+
 bool vr_rgbd::handle(cgv::gui::event& e)
 {
 		// check if vr event flag is not set and don't process events in this case
@@ -1386,6 +1433,18 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						else
 							boundingboxisfixed = true;
 
+					}if (coarseregistrationmode) {
+						/*cam_coarse_t[currentpointcloud] = vec3(vrke.get_state().controller[3].pose[9], vrke.get_state().controller[3].pose[10], vrke.get_state().controller[3].pose[11]);
+						cam_coarse_r[currentpointcloud][0] = vrke.get_state().controller[3].pose[0];
+						cam_coarse_r[currentpointcloud][1] = vrke.get_state().controller[3].pose[1];
+						cam_coarse_r[currentpointcloud][2] = vrke.get_state().controller[3].pose[2];
+						cam_coarse_r[currentpointcloud][3] = vrke.get_state().controller[3].pose[3];
+						cam_coarse_r[currentpointcloud][4] = vrke.get_state().controller[3].pose[4];
+						cam_coarse_r[currentpointcloud][5] = vrke.get_state().controller[3].pose[5];
+						cam_coarse_r[currentpointcloud][6] = vrke.get_state().controller[3].pose[6];
+						cam_coarse_r[currentpointcloud][7] = vrke.get_state().controller[3].pose[7];
+						cam_coarse_r[currentpointcloud][8] = vrke.get_state().controller[3].pose[8];*/
+						
 					}
 
 
@@ -1524,6 +1583,9 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					{
 						currentpointcloud = (currentpointcloud + 1) % rgbdpc.size();
 					}
+					if (coarseregistrationmode) {
+						currentpointcloud = (currentpointcloud + 1) % rgbdpc.size();
+					}
 					
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1554,6 +1616,9 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					if (selectPointsmode)
 					{
 						currentpointcloud = (currentpointcloud + rgbdpc.size()-1) % rgbdpc.size();
+					}
+					if (coarseregistrationmode) {
+						currentpointcloud = (currentpointcloud + rgbdpc.size() - 1) % rgbdpc.size();
 					}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1613,15 +1678,17 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						std::cout << "no camera linked" << std::endl;
 						break;
 					}*/
-					if(setboundingboxmode)
+					if(coarseregistrationmode)
 					{
 						selectPointsmode = false;
 						setboundingboxmode = false;
+						coarseregistrationmode = false;
 						std::cout << "no mode " << std::endl;
 					}
 					else if (!selectPointsmode ) {
 					selectPointsmode = true;
 					setboundingboxmode = false;
+					coarseregistrationmode = false;
 					std::cout<< "selectPointsmode :"<< selectPointsmode <<std::endl;
 					if(rgbdpc.size()==0)
 						std::cout << "no point cloud" << std::endl;
@@ -1632,36 +1699,26 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					for (int i=0;i< rgbdpc.size();i++) {
 						rgbdpc[i].set_render_color();
 					}}
+
 					else if (!setboundingboxmode) {
 						selectPointsmode = false;
 						setboundingboxmode = true;
+						coarseregistrationmode = false;
 						std::cout << "setboundingboxmode :" << setboundingboxmode << std::endl;
 					
 					}
-					
-					
 
-					/*if (translationmode) {
-						if (current_corrected_cam < manualcorrect_translation.size())
-						{
-							current_corrected_cam = current_corrected_cam+ 1;
-						}
-						if (current_corrected_cam == manualcorrect_translation.size() )
-						{
-							current_corrected_cam = 0;
-						}
-						std::cout << "manualcorrect_translation size :  " << manualcorrect_translation.size() << std::endl;
-						std::cout << "current camera is : camera " << current_corrected_cam << std::endl;
+					else if (!coarseregistrationmode) {
+						selectPointsmode = false;
+						setboundingboxmode = false;
+						coarseregistrationmode = true;
+						if (rgbdpc.size() == 0)
+							std::cout << "no point cloud" << std::endl;
+
+
 					}
-					if (!translationmode){
-						translationmode = true;
-						rotationmode = false;
-						current_corrected_cam = 0;
-						std::cout << "cam::" << translationmode << std::endl;
-					}*/
 					
-
-
+					
 					/*clear_all_frames = true;
 					update_member(&clear_all_frames);*/
 				}
@@ -1700,27 +1757,15 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 
 
-			if ((!no_controller  && ci == 2)|| (no_controller &&ci==0))
+			if ( ci == 2)
 			{
 				
-				camera_pos_1=vrpe.get_position();
-				camera_ori_1 = vrpe.get_orientation();
-
-
-				/*mat3 cam_ori;
-				cam_ori = vrpe.get_orientation();*/
-				/*camera_ori_1(0, 0) = cam_ori(0, 0);
-				camera_ori_1(0, 1) = cam_ori(0, 1);
-				camera_ori_1(0, 2) = cam_ori(0, 2);
-				camera_ori_1(1, 0) = cam_ori(2, 0);
-				camera_ori_1(1, 1) = cam_ori(2, 1);
-				camera_ori_1(1, 2) = cam_ori(2, 2);*/
-				/*camera_ori_1(2, 0) = cam_ori(1, 0);
-				camera_ori_1(2, 1) = cam_ori(1, 1);
-				camera_ori_1(2, 2) = cam_ori(1, 2);*/
+				//camera_pos_1=vrpe.get_position();
+				//camera_ori_1 = vrpe.get_orientation();
 
 				
 			}
+			/*
 			if ((!no_controller  && ci == 3) || (no_controller  && ci == 1))
 			{
 
@@ -1734,7 +1779,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				camera_pos_3 = vrpe.get_position();
 				camera_ori_3 = vrpe.get_orientation();
 
-			}
+			}*/
 
 
 
@@ -1825,7 +1870,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 bool vr_rgbd::init(cgv::render::context& ctx)
 {
 		//ctx.set_bg_color(0.7, 0.7, 0.8, 1.0);
-		
+	
 		cgv::render::ref_point_renderer(ctx, 1);
 
 		if (!cgv::utils::has_option("NO_OPENVR"))
@@ -1861,7 +1906,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 		cgv::render::ref_box_renderer(ctx, 1);
 		cgv::render::ref_sphere_renderer(ctx, 1);	
 
-		
+		//std::cout << "================================1231" << std::endl;
 		if (!sky_prog.is_created()) {
 			sky_prog.build_program(ctx, "glsl/sky.glpr");
 			img_tex.create_from_images(ctx, data_dir + "/skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");//
@@ -1970,8 +2015,6 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 			pr.disable(ctx);
 		}
 
-		//std::cout<<"front:"<< pc.front()<<std::endl;
-		//std::cout << "front:" << pc.front().point << std::endl;
 }
 
 void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
@@ -1986,7 +2029,7 @@ void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
 	}
 
 }
-void vr_rgbd::draw_selectmode_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc) {
+void vr_rgbd::draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc) {
 	if (pc.get_nr_Points() == 0)
 		return;
 	auto& pr = cgv::render::ref_point_renderer(ctx);
@@ -1999,6 +2042,11 @@ void vr_rgbd::draw_selectmode_rgbdpc(cgv::render::context& ctx, const rgbd_point
 
 }
 
+
+
+
+
+
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
 	
@@ -2008,8 +2056,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			pr.set_render_style(point_style);
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 
-			
-			draw_pc(ctx, current_pc);
+			if(current_pc.size()!=0)
+				draw_pc(ctx, current_pc);
 			/*if(rgbdpc.size()!=0){
 			if (rgbdpc[0].labels.size() != 0) 
 			{
@@ -2020,7 +2068,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			
 
-
+			
 
 
 			
@@ -2037,9 +2085,67 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		
 
 		if (vr_view_ptr) {
+			
 			std::vector<vec3> P;
 			std::vector<rgb> C;
 			const vr::vr_kit_state* state_ptr = vr_view_ptr->get_current_vr_state();
+
+			if (rgbdpc.size() != 0) {
+
+				for (int i = 0; i < rgbdpc.size(); i++) {
+					
+					vec3 a = vec3(1.1, -1, 0.95);
+					vec3 b = vec3(1.1, -1, -0.61);
+					vec3 c= vec3(-1.15, -1, -0.61);				
+					vec3 d = vec3(-1.15, -1, 0.95);
+					vec3 e = vec3(0, 0, 0);
+					getviewconeposition(a, cam_coarse_r[i], cam_coarse_t[i]);
+					getviewconeposition(b, cam_coarse_r[i], cam_coarse_t[i]);
+					getviewconeposition(c, cam_coarse_r[i], cam_coarse_t[i]);
+					getviewconeposition(d, cam_coarse_r[i], cam_coarse_t[i]);
+					getviewconeposition(e, cam_coarse_r[i], cam_coarse_t[i]);
+
+					P.push_back(a);
+					P.push_back(b);
+					P.push_back(b);
+					P.push_back(c);
+					P.push_back(c);
+					P.push_back(d);
+					P.push_back(d);
+					P.push_back(a);
+
+					P.push_back(a);
+					P.push_back(e);
+					P.push_back(b);
+					P.push_back(e);
+					P.push_back(c);
+					P.push_back(e);
+					P.push_back(d);
+					P.push_back(e);
+
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					C.push_back(rgb(0, 1, 1));
+					
+
+
+
+
+				}
+			}
 			if (state_ptr) {
 				if (selectPointsmode ) {
 					if (state_ptr->controller[1].status == vr::VRS_TRACKED)
@@ -2085,7 +2191,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					}
 					}
 					
-
+					
 
 
 				}
@@ -2123,68 +2229,13 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					C.push_back(c);
 				}
 				
-				P.push_back(vec3(0, 0, 0));
-				P.push_back(viewpoint1);
-				P.push_back(vec3(0, 0, 0));
-				P.push_back(viewpoint2);
-
-				P.push_back(vec3(1.2, -1, 1.2));
-				P.push_back(vec3(-1.2, -1, 1.2));
-				P.push_back(vec3(-1.2, -1, 1.2));
-				P.push_back(vec3(-1.2, -1, -1.2));
-				P.push_back(vec3(-1.2, -1, -1.2));
-				P.push_back(vec3(1.2, -1, -1.2));
-				P.push_back(vec3(1.2, -1, -1.2));
-				P.push_back(vec3(1.2, -1, 1.2));
 
 
-				//std::cout<<"p1   "<<viewpoint1<<std::endl;
-				//std::cout << "p2   " << viewpoint2 << std::endl;
+			
 
 
-				//P.push_back(vec3(0, 0, 0));
-				//P.push_back(vec3(1, -1, 1));
-
-				C.push_back(rgb(0, 0, 1));
-				C.push_back(rgb(0, 0, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-
-
-
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-
-
-
-
-				P.push_back(vec3(0, -1, 0));
-				P.push_back(vec3(0, 0, 0));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
 				
-				/*P.push_back(vec3(1.67097, -1, 0.303567));
-				P.push_back(vec3(0, 0, 0));
-				P.push_back(vec3(-0.114076 ,- 1 ,1.73125));
-				P.push_back(vec3(0, 0, 0));
-				P.push_back(vec3(-1.7267 ,- 1 ,- 0.185624));
-				P.push_back(vec3(0, 0, 0));
-				P.push_back(vec3(-0.256466 ,- 1 ,- 1.71221));
-				P.push_back(vec3(0, 0, 0));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));
-				C.push_back(rgb(0, 1, 1));*/
+				
 
 
 			}
@@ -2214,10 +2265,15 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 		else if (selectPointsmode) {
 			if (rgbdpc.size() != 0) {
-				draw_selectmode_rgbdpc(ctx, rgbdpc[currentpointcloud]);
+				draw_selected_rgbdpc(ctx, rgbdpc[currentpointcloud]);
 			}
 					
 			
+		}
+		else if (coarseregistrationmode) {
+			if (rgbdpc.size() != 0) {
+				draw_selected_rgbdpc(ctx, rgbdpc[currentpointcloud]);
+			}
 		}
 		else{
 		if (rgbdpc.size() != 0) {
@@ -2422,7 +2478,21 @@ void vr_rgbd::device_select() {
 		device_mode = No_Device;
 	else device_mode = Has_Device;
 	//std::cout<<"device_id:"<< device_idx <<std::endl;
+	if (device_mode == Has_Device) {
+		unsigned nr = rgbd_input::get_nr_devices();
+		// if the number of device is zero
+		if (nr == 0) {
+			device_mode = No_Device;
+			update_member(&device_mode);
+		}
+		else {
+		
+		}
 
+	
+	
+	
+	}
 
 
 }
