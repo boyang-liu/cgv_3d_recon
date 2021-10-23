@@ -21,8 +21,6 @@
 #include <future>
 #include <iostream>
 #include <chrono>
-//#include <point_cloud/point_cloud.h>
-//#include <point_cloud/ICP.h>
 #include <cg_vr/vr_events.h>
 #include <vr/vr_state.h>
 #include <vr/vr_kit.h>

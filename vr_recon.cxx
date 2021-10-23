@@ -2348,14 +2348,14 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 
 		//// draw static boxes
-		//cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
-		//renderer.set_render_style(style);
-		//renderer.set_box_array(ctx, boxes);
-		//renderer.set_color_array(ctx, box_colors);
-		//if (renderer.validate_and_enable(ctx)) {
-		//	glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-		//}
-		//renderer.disable(ctx);
+		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		renderer.set_render_style(style);
+		renderer.set_box_array(ctx, boxes);
+		renderer.set_color_array(ctx, box_colors);
+		if (renderer.validate_and_enable(ctx)) {
+			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		}
+		renderer.disable(ctx);
 
 		//// draw dynamic boxes 
 		//renderer.set_render_style(movable_style);
