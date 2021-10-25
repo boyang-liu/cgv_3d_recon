@@ -1,4 +1,4 @@
-files:voxelize
+files:boxx
 vertex_file:group.glsl
 vertex_file:quaternion.glsl
 vertex_file:view.glsl

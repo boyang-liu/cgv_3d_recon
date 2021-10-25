@@ -61,7 +61,7 @@ namespace cgv {
 
 		bool voxel_renderer::build_shader_program(context& ctx, shader_program& prog, const shader_define_map& defines)
 		{
-			return prog.build_program(ctx, "glsl/voxelize.glpr", true, defines);
+			return prog.build_program(ctx, "glsl/boxx.glpr", true, defines);
 		}
 
 		bool voxel_renderer::enable(context& ctx)

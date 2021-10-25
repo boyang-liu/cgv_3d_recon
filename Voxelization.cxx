@@ -12,12 +12,12 @@ namespace voxel
 		ret.clear();
 
 		//shader
-		if (!voxelize_prog.is_linked()) {
+		/*if (!voxelize_prog.is_linked()) {
 			if (!voxelize_prog.build_program(ctx, "voxelize.glpr", true)) {
 				std::cerr << "could not build voxelize_prog shader program" << std::endl;
 				abort();
 			}
-		}
+		}*/
 
 
 		//bounding box info
@@ -39,13 +39,20 @@ namespace voxel
 		mypc = pc.getPoints();
 		mypc_color = pc.getColors();
 		
+		std::vector<box3> myboxes;
+		rgb box_clr(0.3f, 0.2f, 0.0f);
+		std::vector<rgb> box_colors;
+		myboxes.push_back(box3(vec3(-0.5f , -0.5f, -0.5f ), vec3(0.5f , 0.5f, 0.5f )));
+		box_colors.push_back(box_clr);
+
 
 		cgv::render::voxel_renderer& renderer = cgv::render::ref_voxel_renderer(ctx);
+		cgv::render::voxel_render_style style;
 		renderer.set_render_style(style);
-		renderer.set_box_array(ctx, boxes);
+		renderer.set_voxel_array(ctx, myboxes);
 		renderer.set_color_array(ctx, box_colors);
 		if (renderer.validate_and_enable(ctx)) {
-			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+			glDrawArrays(GL_POINTS, 0, (GLsizei)myboxes.size());
 		}
 		renderer.disable(ctx);
 
@@ -53,57 +60,15 @@ namespace voxel
 
 
 
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glDisable(GL_MULTISAMPLE);
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_DEPTH_TEST);
-		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		voxelize_prog.enable(ctx);
 		
 
-		ctx.push_modelview_matrix();
-		ctx.mul_modelview_matrix(cgv::math::scale4<double>(
-			max_scene_extent, max_scene_extent, max_scene_extent));
-		ctx.tesselate_unit_cube();
-		ctx.pop_modelview_matrix();
 
 
 
-		//// generate ssbo.
-		//glGenBuffers(1, &m_cntBuffer);
-		//glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_cntBuffer);
-		//glBufferData(GL_SHADER_STORAGE_BUFFER, length * sizeof(int), nullptr, GL_STATIC_DRAW);
-		//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_cntBuffer);
 
-		//// bind shader and ssbo.
-		//shader->bind();
-		//shader->setVec3("boxMin", min);
-		//shader->setFloat("step", step);
-		//shader->setVec3("resolution", resolution);
-		//shader->setVec2("halfPixel[0]", vec2(1.0f / resolution.z, 1.0f / resolution.y));
-		//shader->setVec2("halfPixel[1]", vec2(1.0f / resolution.x, 1.0f / resolution.z));
-		//shader->setVec2("halfPixel[2]", vec2(1.0f / resolution.x, 1.0f / resolution.y));
-		//
-		//
-		//int* writePtr = reinterpret_cast<int*>(glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY));
-		//for (int x = 0; x < length; ++x)
-		//{
-		//	writePtr[x] = 0;
-		//}
-		//if (!glUnmapBuffer(GL_SHADER_STORAGE_BUFFER))
-		//	std::cout << "unMap error\n" << std::endl;
-		//
-		//// draw and count.
-		//
+		
 
-		////===
-
-		sky_prog.disable(ctx);
-		img_tex.disable(ctx);
-		glEnable(GL_CULL_FACE);
-		glDepthMask(GL_TRUE);
+		
 		
 
 		return false;

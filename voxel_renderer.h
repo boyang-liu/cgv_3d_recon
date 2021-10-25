@@ -7,12 +7,12 @@
 
 namespace cgv { 
 	namespace render { 	
-		class CGV_API voxel_renderer;
+		class  voxel_renderer;
 
-		extern CGV_API voxel_renderer& ref_voxel_renderer(context& ctx, int ref_count_change = 0);
+		extern  voxel_renderer& ref_voxel_renderer(context& ctx, int ref_count_change = 0);
 
 		/// voxels use surface render styles
-		struct CGV_API voxel_render_style : public surface_render_style
+		struct  voxel_render_style : public surface_render_style
 		{
 			/// extent used in case extent array is not specified
 			vec3 default_extent;
@@ -24,7 +24,7 @@ namespace cgv {
 	
 		
 
-		class CGV_API voxel_renderer : public surface_renderer
+		class  voxel_renderer : public surface_renderer
 		{
 		protected:
 			
@@ -72,10 +72,13 @@ namespace cgv {
 			
 			template <typename T>
 			void set_voxel_array(const context& ctx, const std::vector<cgv::media::axis_aligned_box<T, 3> >& boxes) {
+				std::cout << "999999999999999999" << std::endl;
 				set_composed_attribute_array(ctx, ref_prog().get_attribute_location(ctx, "position"),
 					&boxes.front(), boxes.size(), boxes[0].get_min_pnt());
+				std::cout << "888888888888888" << std::endl;
 				ref_composed_attribute_array(ctx, ref_prog().get_attribute_location(ctx, "extent"),
 					ref_prog().get_attribute_location(ctx, "position"), &boxes.front(), boxes.size(), boxes[0].get_max_pnt());
+				std::cout << "777777777777777777" << std::endl;
 				has_positions = true;
 				has_extents = true;
 				set_position_is_center(false);

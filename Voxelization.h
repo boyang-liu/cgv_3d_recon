@@ -5,13 +5,15 @@
 #include <3rd/glew/GL/glew.h>
 #include "rgbd_pointcloud.h"
 #include "voxel_renderer.h"
-//#include "Drawable/Drawable.h"
+
 
 
 typedef cgv::math::fvec<float, 3> vec3;
 typedef cgv::math::fvec<std::int32_t, 3> ivec3;
 typedef cgv::type::uint8_type ClrComp;
 typedef cgv::media::color<ClrComp, cgv::media::RGB, cgv::media::OPACITY> Rgba;
+typedef cgv::media::color<float, cgv::media::RGB> rgb;
+typedef cgv::media::axis_aligned_box<float, 3> box3;
 namespace voxel {
 class Voxelization
 {

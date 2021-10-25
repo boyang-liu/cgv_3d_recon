@@ -26,6 +26,8 @@
 #include "ICP.h"
 #include "PCBoundingbox.h"
 #include "GoICP.h"
+#include "Voxelization.h"
+#include "voxel_renderer.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -35,7 +37,7 @@ using namespace cgv::data;
 using namespace cgv::utils;
 using namespace cgv::render;
 using namespace rgbd;
-
+using namespace voxel;
 
 
 
@@ -2302,6 +2304,26 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			glDepthMask(GL_TRUE);
 		}
 
+		
+
+
+
+		/*boxes.clear();
+		boxes.
+		box_colors.
+		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		renderer.set_render_style(style);
+		renderer.set_box_array(ctx, boxes);
+		renderer.set_color_array(ctx, box_colors);
+		if (renderer.validate_and_enable(ctx)) {
+			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		}
+		renderer.disable(ctx);*/
+
+
+
+
+
 		/*std::vector<vec3> myline;
 		std::vector<rgb> mycolor;
 		
@@ -2347,9 +2369,63 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 
 
+		/*voxel::Voxelization myvoxel;
+		std::vector<vec3> ret;
+		float step = 1.2;
+		vec3 min = vec3(0, 0, 0);
+		vec3 max = vec3(1, 1, 1);
+		rgbd_pointcloud rp1;
+		rp1.add_point(min);
+		myvoxel.voxelize(ctx, step, ret, min, max, rp1);*/
+
+
+		std::cout<<"000000000" << std::endl;
+		std::vector<box3> boxes1;
+		boxes1.clear();
+		vec3 min11 = vec3(-1, -1, -1);
+		vec3 max11 = vec3(0, 0, 0);
+		boxes1.push_back(box3(min11, max11));
+		cgv::render::voxel_renderer& renderer1 = cgv::render::ref_voxel_renderer(ctx);
+
+		std::cout << "11111111111" << std::endl;
+
+		std::vector<rgb> box_colors1;
+		box_colors1.clear();
+		rgb table_clr11(0.3f, 0.2f, 0.0f);
+	
+		box_colors1.push_back(table_clr11);
+		renderer1.enable(ctx);
+		renderer1.set_render_style(style);
+		std::cout << "222222222222" << std::endl;
+		renderer1.set_voxel_array(ctx, boxes1);
+		renderer1.set_color_array(ctx, box_colors1);
+		std::cout << "3333333333333" << std::endl;
+		
+
+		if (renderer1.validate_and_enable(ctx)) {
+			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes1.size());
+		}
+
+		
+
+		renderer1.disable(ctx);
+
+
+
+
 		//// draw static boxes
+		boxes.clear();
+		vec3 min1 = vec3(0,0,0);
+		vec3 max1 = vec3(1, 1, 1);
+		boxes.push_back(box3(min1, max1));
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		box_colors.clear();
+		rgb table_clr1(0.3f, 0.2f, 0.0f);
+		box_colors.push_back(table_clr1);
+
 		renderer.set_render_style(style);
+		
+
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
 		if (renderer.validate_and_enable(ctx)) {

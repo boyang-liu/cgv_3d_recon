@@ -1,28 +1,21 @@
-#version 430 core
+#version 150 
 
-in vec3 FragPos;
-in vec3 ProjectPos;
-in vec4 BoundingBox;
+in vec3 normal;
+in vec4 color_fs;
+in vec3 position;
+flat in int side;
 
-layout (std430, binding = 0) buffer CountBuffer{
-    int cnts[];
-};
+//***** begin interface of fragment.glfs ***********************************
+uniform float gamma = 2.2;
+void finish_fragment(vec4 color);
+//***** end interface of fragment.glfs ***********************************
 
-uniform bool conservate;
-uniform float step;
-uniform vec3 boxMin;
-uniform vec3 resolution;
+//***** begin interface of surface.glsl ***********************************
+vec4 compute_reflected_appearance(vec3 position_eye, vec3 normal_eye, vec4 color, int side);
+//***** end interface of surface.glsl ***********************************
 
-out vec4 color;
-
-void main(){
-	if(ProjectPos.x < BoundingBox.x || ProjectPos.y < BoundingBox.y || ProjectPos.x > BoundingBox.z || ProjectPos.y > BoundingBox.w)
-		discard;
-
-	uint x = uint((FragPos.x - boxMin.x)/step);
-	uint y = uint((FragPos.y - boxMin.y)/step);
-	uint z = uint((FragPos.z - boxMin.z)/step);
-	uint index = uint(y * (resolution.z * resolution.x) + z * resolution.x + x);
-	atomicAdd(cnts[index], 1);
-	color = vec4(0.0,1.0,0.0,1.0);
+void main()
+{
+	// illumination
+	finish_fragment(compute_reflected_appearance(position, normalize(normal), color_fs, side));
 }
