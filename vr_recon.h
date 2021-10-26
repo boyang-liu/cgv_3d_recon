@@ -253,6 +253,8 @@ protected:
 
 	int save_time = 0;
 	int currentpointcloud;
+	int currentcamera;
+
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
