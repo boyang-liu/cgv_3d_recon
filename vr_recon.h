@@ -201,7 +201,8 @@ protected:
 	void start_rgbd();
 	void start_multi_rgbd();
 	void attach_all_devices();
-	void stop_multi_rgbd();
+	void stop_all_rgbd();
+	
 	void detach_all_devices();
 	/// stop rgbd device
 	void stop_rgbd();
@@ -238,7 +239,7 @@ protected:
 	int ir_stream_format_idx;
 	std::vector<rgbd::stream_format> depth_stream_formats;
 	std::vector<rgbd::stream_format> color_stream_formats;	
-	std::vector<rgbd::stream_format> ir_stream_formats;
+	//std::vector<rgbd::stream_format> ir_stream_formats;
 
 
 	cgv::render::shader_program sky_prog;

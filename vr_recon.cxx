@@ -207,12 +207,35 @@ void vr_rgbd::detach_all_devices() {
 	{
 		return;
 	}
+
+
+
+
+
 	if (rgbd_inp.is_multi_started())
-		stop_multi_rgbd();
-	else
+		stop_all_rgbd();
+	else {
 		rgbd_inp.detach();
+		cam_coarse_t.clear();
+		cam_coarse_r.clear();
+
+		manualcorrect_translation.clear();
+		manualcorrect_rotation.clear();
+		current_corrected_cam = -1;
+		translationmode = false;
+		rotationmode = false;
+		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
+		current_pc.clear();
+	
+	
+	
+	}
+		
 	all_devices_attached = rgbd_inp.is_multi_attached();
 	
+
+
+
 	update_member(&all_devices_attached);
 }
 
@@ -251,10 +274,12 @@ void vr_rgbd::start_multi_rgbd()
 		use_default = true;
 	else
 		sfs.push_back(depth_stream_formats[depth_stream_format_idx]);
-	if (ir_stream_format_idx == -1)
+
+	/*if (ir_stream_format_idx == -1)
 		use_default = true;
 	else
-		sfs.push_back(ir_stream_formats[ir_stream_format_idx]);
+		sfs.push_back(ir_stream_formats[ir_stream_format_idx]);*/
+
 	//if (use_default) {
 	//	/*sfs.clear();
 	//	if (!rgbd_inp.start(InputStreams(is), sfs)) {
@@ -341,27 +366,19 @@ void vr_rgbd::start_multi_rgbd()
 	update_member(&rgbd_multi_started);
 	
 }
-void vr_rgbd::stop_multi_rgbd() 
+void vr_rgbd::stop_all_rgbd() 
 {
-	std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
+	//std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 	if (!rgbd_inp.is_multi_started())
 		return;
 	//rgbd_inp.stop();//
 	
 	rgbd_multi_started = !rgbd_inp.stop();
-	rgbd_inp.detach();
-	cam_coarse_t.clear();
-	cam_coarse_r.clear();
+
 	
-	manualcorrect_translation.clear();
-	manualcorrect_rotation.clear();
-	current_corrected_cam =-1;
-	translationmode = false;
-	rotationmode = false;
-	std::cout << "nr of attached devices"<<rgbd_inp.nr_multi_de() << std::endl;
-	current_pc.clear();
 	update_member(&rgbd_multi_started);
 }
+
 
 
 
@@ -464,6 +481,7 @@ vr_rgbd::vr_rgbd()
 	selectPointsmode = false;
 	setboundingboxmode = false;
 	boundingboxisfixed = false;
+	coarseregistrationmode = false;
 	currentpointcloud = 0;
 	Radius_SelectMode = 0.1;
 	
@@ -649,8 +667,52 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::load_current_pc() 
 	{
+		rgbd_pointcloud a, b;
+		a.add_point(vec3(0, 0, 0), Rgba(0, 0, 0));
+		a.add_point(vec3(2, 0, 0), Rgba(0, 0, 0));
+		a.add_point(vec3(0, 2, 0), Rgba(0, 0, 0));
+		a.add_point(vec3(2, 2, 0), Rgba(0, 0, 0));
+		/*a.add_point(vec3(0, 1, 0));
+		a.add_point(vec3(2, 2, 0));*/
+
+
+		b.add_point(vec3(1, 1, -1), Rgba(255, 255, 255));
+		b.add_point(vec3(1, -1, 1), Rgba(255, 255, 255));
+		b.add_point(vec3(1, 1, 1), Rgba(255, 255, 255));
+		b.add_point(vec3(1, -1, -1), Rgba(255, 255, 255));
+		/*b.add_point(vec3(2, 2, 3));
+		b.add_point(vec3(2, 2, 4));*/
+
 		
-		std::string fn = cgv::gui::file_open_dialog("source point cloud(*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
+
+		rgbdpc.push_back(a);
+		rgbdpc.push_back(b);
+		for (int i = 0; i < a.get_nr_Points(); i++)
+			rgbdpc[0].labels.push_back(i);
+		for (int ii = 0; ii < b.get_nr_Points(); ii++)
+			rgbdpc[1].labels.push_back(ii);
+
+		rgbdpc_in_box.resize(rgbdpc.size());
+
+		cam_coarse_t.resize(rgbdpc.size());;
+		cam_coarse_r.resize(rgbdpc.size());;
+
+		cam_rotation.resize(rgbdpc.size());
+		cam_translation.resize(rgbdpc.size());
+
+		for (int i = 0; i < cam_rotation.size(); i++) {
+			cam_coarse_r[i].identity();
+			cam_coarse_t[i] = vec3(0, 0, 0);
+
+			cam_rotation[i].identity();
+			cam_translation[i] = vec3(0, 0, 0);
+
+		}
+
+		trees.resize(rgbdpc.size());
+		post_redraw();
+
+		/*std::string fn = cgv::gui::file_open_dialog("source point cloud(*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
 		if (fn.empty())
 			return;
 		clear_current_point_cloud();
@@ -679,137 +741,28 @@ vr_rgbd::~vr_rgbd()
 		trees.resize(rgbdpc.size());
 		post_redraw();
 		
-		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;
+		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;*/
 
 	}
 	void vr_rgbd::clear_current_point_cloud() 
 	{
 		
 		generate_pc_from_rgbd = false;
-		stop_multi_rgbd();
+		stop_all_rgbd();
 		current_pc.clear();
 	}
 
 	void vr_rgbd::temp_test() {
-		
-		/*for (int i = 0; i < 10; i++)
-		{
-			for (int ii = 0; ii < 10; ii++) {
-				for (int iii = 0; iii < 10; iii++) {
-					vertex v;
-					v.point =vec3(i,ii,iii) ;
-					v.color = rgba8(255,255,0,255);
-					test_pc.push_back(v);
-				}
-			}
-		}
-		current_pc = test_pc;
-		rgbd_pointcloud pc01;
-		generate_pc(test_pc,pc01);
-		vec3 q = vec3(11, 11, 11);*/
-		//select_feature_points(pc01,q,Radius_SelectMode);
 
-		/*cgv::math::fmat<float, 3, 3> r1,r2,r3,r4;
-		cgv::math::fvec<float, 3> t1,t2,t3,t4;
-
-
-		r1(0, 0) = 0.952418;
-		r1(0, 1) = 0.198909;
-		r1(0, 2) = -0.230942;
-		r1(1, 0) = -0.143503;
-		r1(1, 1) = 0.961104;
-		r1(1, 2) = 0.235977;
-		r1(2, 0) = 0.268897;
-		r1(2, 1) = -0.191607;
-		r1(2, 2) = 0.943918;
-
-		t1(0) = -0.203763;
-		t1(1) = 0.386837;
-		t1(2) = -0.511605;
-
-		r2(0, 0) = 0.961165;
-		r2(0, 1) = -0.153666;
-		r2(0, 2) = 0.229239;
-		r2(1, 0) = 0.189122;
-		r2(1, 1) = 0.971690;
-		r2(1, 2) = -0.141605;
-		r2(2, 0) = -0.200988;
-		r2(2, 1) = 0.179459;
-		r2(2, 2) = 0.963015;
-
-		t2(0) = -0.073599;
-		t2(1) = -0.41059;
-		t2(2) = 0.584258;
-		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
-		{
-			rgbdpc[0].pnt(i) = r2 * (rgbdpc[0].pnt(i) - t2);
-			rgbdpc[0].pnt(i) = r1 * (rgbdpc[0].pnt(i) - t1);
-
-		}*/
-
-
-		/*r3(0, 0) = 0.990595 ;
-		r3(0, 1) = -0.125282 ;
-		r3(0, 2) = -0.0550185
-			;
-		r3(1, 0) = 0.127902 ;
-		r3(1, 1) = 0.990673 ;
-		r3(1, 2) = 0.0469851
-			;
-		r3(2, 0) = 0.0486189 ;
-		r3(2, 1) = -0.0535801 ;
-		r3(2, 2) = 0.997379;
-
-		t3(0) = -0.232942 ;
-		t3(1) = 0.421966 ;
-		t3(2) = 0.098693;
-
-		r4(0, 0) = 0.997146 ;
-		r4(0, 1) = 0.0740373 ;
-		r4(0, 2) = 0.0146868
-			;
-		r4(1, 0) = -0.0736217 ;
-		r4(1, 1) = 0.996919 ;
-		r4(1, 2) = -0.0270362
-			;
-		r4(2, 0) = -0.0166432 ;
-		r4(2, 1) = 0.0258777 ;
-		r4(2, 2) = 0.999526;
-
-		t4(0) = -0.0116226 ;
-		t4(1) = -0.213213 ;
-		t4(2) = -0.0494034;
-
-		for (int i = 0; i < rgbdpc[0].get_nr_Points(); i++)
-		{
-			rgbdpc[0].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
-			rgbdpc[0].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
-
-		}*/
-		/*for (int i = 0; i < rgbdpc[1].get_nr_Points(); i++)
-		{
-			rgbdpc[1].pnt(i) = r4 * (rgbdpc[0].pnt(i) + t4);
-			rgbdpc[1].pnt(i) = r3 * (rgbdpc[0].pnt(i) + t3);
-
-		}*/
-
-	rgbd_pointcloud a,b;
-	a.add_point(vec3(0, 0, 0));
-	a.add_point(vec3(1, 0, 0));
-	a.add_point(vec3(2, 0, 0));
-	a.add_point(vec3(0, 0, 0));
-	a.add_point(vec3(0, 1, 0));
-	a.add_point(vec3(0, 2, 0));
+	
+	
 	
 
-	b.add_point(vec3(2, 2, 2));
-	b.add_point(vec3(2, 3, 2));
-	b.add_point(vec3(2, 4, 2));
-	b.add_point(vec3(2, 2, 2));
-	b.add_point(vec3(2, 2, 3));
-	b.add_point(vec3(2, 2, 4));
-	cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
-	registerPointCloud(a, b, r, t);
+	
+		cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
+		registerPointCloud(rgbdpc[0], rgbdpc[1], r, t);
+	
+	
 	
 
 	}
@@ -867,8 +820,8 @@ vr_rgbd::~vr_rgbd()
 		
 		std::cout << "mygoicp.registerPointcloud() :" << mygoicp.registerPointcloud() << std::endl;
 
-
-
+		
+		source.do_transformation(mygoicp.optimal_rotation, mygoicp.optimal_translation);
 
 
 	}
@@ -1128,17 +1081,22 @@ vr_rgbd::~vr_rgbd()
 
 
 		if (rgbd_inp.is_multi_started()) {
-			for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)			
+			
+			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
-					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0, m);				
-					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0, m);				
+				
+					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0, mm);		
+					
+					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0, mm);		
+					
 				if (color_frame.is_allocated() && depth_frame.is_allocated())  //&&(color_frame_changed || depth_frame_changed)
 					{
 					color_frame_2 = color_frame;
 					depth_frame_2 = depth_frame;
-					vr_rgbd::construct_multi_point_cloud(m);
+					vr_rgbd::construct_multi_point_cloud(mm);
 					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
 				}	
+				
 			}
 			if (generate_pc_from_rgbd) 
 			{
@@ -1147,49 +1105,12 @@ vr_rgbd::~vr_rgbd()
 				post_redraw();
 			}
 			else {
-				for (int i = 0; i < rgbdpc.size(); i++)
-					rgbdpc[i].clear();
+				/*for (int i = 0; i < rgbdpc.size(); i++)
+					rgbdpc[i].clear();*/
+				rgbdpc.clear();
 			}
 			
 		}
-
-
-
-
-		//if (rgbd_inp.is_multi_started()) {
-		//	//color_frames.clear();
-		//	//depth_frames.clear();
-		//	//color_frames_2.clear();
-		//	//depth_frames_2.clear();
-		//	for (int m = 0; m < rgbd_inp.nr_multi_de(); m++)
-		//	{
-		//		
-		//		bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, mycolor_frame, 0, m);
-		//		bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, mydepth_frame, 0, m);
-		//		if (mycolor_frame.is_allocated() && mydepth_frame.is_allocated())
-		//		{
-		//			if (color_frames.size() == 0|| color_frames.size() == 1) {
-		//				color_frames.push_back(mycolor_frame);
-		//				depth_frames.push_back(mydepth_frame);}
-		//			else {
-		//				color_frames[m]=mycolor_frame;
-		//				depth_frames[m]=mydepth_frame;
-		//			}
-		//		}					
-		//	}			
-		//	if(color_frames.size()>0 && depth_frames.size() > 0 && color_frames.size()== depth_frames.size())
-		//	{
-		//		color_frames_2 = color_frames;
-		//		depth_frames_2 = depth_frames;				
-		//		if (!future_handle.valid()) 
-		//		{			
-		//		future_handle = std::async(&vr_rgbd::construct_point_clouds, this);
-		//		}			
-		//		//vr_rgbd::construct_point_clouds();
-		//	}
-		//}
-			//current_pc = intermediate_pc; 
-			//post_redraw();
 		
 
 }
@@ -1225,7 +1146,7 @@ void vr_rgbd::create_gui()
 
 		add_member_control(this, "color_stream_format", (DummyEnum&)color_stream_format_idx, "dropdown", get_stream_format_enum(color_stream_formats));
 		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));		
-		add_member_control(this, "ir_stream_format", (DummyEnum&)ir_stream_format_idx, "dropdown", get_stream_format_enum(ir_stream_formats));
+		//add_member_control(this, "ir_stream_format", (DummyEnum&)ir_stream_format_idx, "dropdown", get_stream_format_enum(ir_stream_formats));
 		add_member_control(this, "attach all devices", all_devices_attached, "check");
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
 		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
@@ -1338,7 +1259,7 @@ void vr_rgbd::on_set(void* member_ptr)
 			else
 			{
 				//std::cout<<"run there?"<<std::endl;
-				stop_multi_rgbd();
+				stop_all_rgbd();
 			}
 		}
 		if (member_ptr == &all_devices_attached && all_devices_attached != rgbd_inp.is_multi_attached())
@@ -1380,10 +1301,10 @@ void vr_rgbd::update_stream_formats()
 	rgbd_inp.query_stream_formats(IS_DEPTH, depth_stream_formats);
 	if (find_control(depth_stream_format_idx))
 		find_control(depth_stream_format_idx)->multi_set(get_stream_format_enum(depth_stream_formats));
-	ir_stream_formats.clear();
+	/*ir_stream_formats.clear();
 	rgbd_inp.query_stream_formats(IS_INFRARED, ir_stream_formats);
 	if (find_control(ir_stream_format_idx))
-		find_control(ir_stream_format_idx)->multi_set(get_stream_format_enum(ir_stream_formats));
+		find_control(ir_stream_format_idx)->multi_set(get_stream_format_enum(ir_stream_formats));*/
 }
 
 
@@ -2060,14 +1981,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			if(current_pc.size()!=0)
 				draw_pc(ctx, current_pc);
-			/*if(rgbdpc.size()!=0){
-			if (rgbdpc[0].labels.size() != 0) 
-			{
-				for (int i = 0; i < rgbdpc[0].labels.size(); i++)
-					test_pc[rgbdpc[0].lab(i)].color = (255, 0, 0, 255);
-			}}*/
-			//draw_pc(ctx,test_pc);
-
+			
+			
 			
 
 			
@@ -2378,8 +2293,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		rp1.add_point(min);
 		myvoxel.voxelize(ctx, step, ret, min, max, rp1);*/
 
-
-		std::cout<<"000000000" << std::endl;
+		//========================================================
+		/*std::cout<<"000000000" << std::endl;
 		std::vector<box3> boxes1;
 		boxes1.clear();
 		vec3 min11 = vec3(-1, -1, -1);
@@ -2408,13 +2323,13 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 		
 
-		renderer1.disable(ctx);
+		renderer1.disable(ctx);*/
 
-
+		//======================================================================
 
 
 		//// draw static boxes
-		boxes.clear();
+	/*	boxes.clear();
 		vec3 min1 = vec3(0,0,0);
 		vec3 max1 = vec3(1, 1, 1);
 		boxes.push_back(box3(min1, max1));
@@ -2431,7 +2346,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		if (renderer.validate_and_enable(ctx)) {
 			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
 		}
-		renderer.disable(ctx);
+		renderer.disable(ctx);*/
 
 		//// draw dynamic boxes 
 		//renderer.set_render_style(movable_style);

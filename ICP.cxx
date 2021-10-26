@@ -126,7 +126,7 @@
 
 			for (int iter = 0; iter < maxIterations && abs(cost) > eps; iter++)
 			{
-				std::cout << "iteration:" << iter << std::endl;
+				//std::cout << "iteration:" << iter << std::endl;
 				
 
 				cost = 0.0;
@@ -157,7 +157,7 @@
 					///the new rotation matrix: rotation_update_mat
 					cost += error(Q.pnt(i), p, rotation_update_mat, translation_update_vec);
 				}
-				std::cout << "cost:" << cost << std::endl;
+				//std::cout << "cost:" << cost << std::endl;
 				cost /= S.get_nr_Points();
 				///judge if cost is decreasing, and is larger than eps. If so, update the R and t, otherwise stop and output R and t
 				if (min >= abs(cost)) {
