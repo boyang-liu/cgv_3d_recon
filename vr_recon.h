@@ -232,8 +232,8 @@ protected:
 	bool selectPointsmode;
 	bool boundingboxisfixed;
 
+	bool record_pc_started;
 	int current_corrected_cam;
-
 	int depth_stream_format_idx;
 	int color_stream_format_idx;
 	int ir_stream_format_idx;
@@ -255,6 +255,9 @@ protected:
 	int currentpointcloud;
 	int currentcamera;
 
+	int num_recorded_pc;
+	int num_loaded_pc;
+	std::string pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
@@ -289,12 +292,15 @@ public:
 
 	void getviewconeposition(vec3 &a, mat3 r, vec3 t);
 
-	void save_current_pc();
-	void load_current_pc();
+	void save_all_pc();
+	void Record_PC_FromOneCam(int cam);
+	void Record_PC_FromAllcams();
+	void load_pc();
+	void load_recorded_pc();
 	void clear_current_point_cloud();
 
 	void temp_test();
-	void clear_pc();
+	
 	frame_type read_rgb_frame();
 	//should be a thread
 	frame_type read_depth_frame();
@@ -332,6 +338,7 @@ public:
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw(cgv::render::context& ctx);
+	void draw_viewingcone(cgv::render::context& ctx, int cc, std::vector<vec3>& P, std::vector<rgb>& C);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
 	 
