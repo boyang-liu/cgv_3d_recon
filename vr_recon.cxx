@@ -198,7 +198,34 @@ void vr_rgbd::attach_all_devices()
 	
 	update_stream_formats();
 
+	for (int mc = 0; mc < rgbd_inp.get_nr_devices(); mc++) {
+		manualcorrect_translation.push_back((0, 0, 0));
+		manualcorrect_rotation.push_back((0, 0, 0));
+	}
+	current_corrected_cam = -1;
+	//save point cloud
+	intermediate_rgbdpc.resize(rgbd_inp.get_nr_devices());
+	//cur_pc.resize(rgbd_inp.get_nr_devices());
+	rgbdpc.resize(rgbd_inp.get_nr_devices());
+	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
 
+	viewconepos1.resize(rgbd_inp.get_nr_devices());
+	viewconepos2.resize(rgbd_inp.get_nr_devices());
+
+	cam_rotation.resize(rgbd_inp.get_nr_devices());
+	cam_translation.resize(rgbd_inp.get_nr_devices());
+
+	cam_coarse_t.resize(rgbd_inp.get_nr_devices());
+	cam_coarse_r.resize(rgbd_inp.get_nr_devices());
+
+	trees.resize(rgbd_inp.get_nr_devices());
+	for (int i = 0; i < cam_rotation.size(); i++) {
+		cam_coarse_r[i].identity();
+		cam_coarse_t[i] = vec3(0, 0, 0);
+
+		cam_rotation[i].identity();
+		cam_translation[i] = vec3(0, 0, 0);
+	}
 
 	update_member(&all_devices_attached);
 }
@@ -307,14 +334,6 @@ void vr_rgbd::start_multi_rgbd()
 	//	//}
 	//
 	//}
-
-
-
-
-
-
-
-	
 	
 	std::vector<std::vector<rgbd::stream_format>> multi_stream_formats(rgbd_inp.nr_multi_de());    //??
 
@@ -334,34 +353,8 @@ void vr_rgbd::start_multi_rgbd()
 		std::cout << "they are started" << std::endl;
 	else
 		std::cout << "they are not started" << std::endl;
-	for (int mc = 0;mc<rgbd_inp.get_nr_devices();mc++) {
-		manualcorrect_translation.push_back((0, 0, 0));
-		manualcorrect_rotation.push_back((0, 0, 0));
-	}
-	current_corrected_cam =-1;
-	//save point cloud
-	intermediate_rgbdpc.resize(rgbd_inp.get_nr_devices());
-	//cur_pc.resize(rgbd_inp.get_nr_devices());
-	rgbdpc.resize(rgbd_inp.get_nr_devices());
-	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
-
-	viewconepos1.resize(rgbd_inp.get_nr_devices());
-	viewconepos2.resize(rgbd_inp.get_nr_devices());
-
-	cam_rotation.resize(rgbd_inp.get_nr_devices());
-	cam_translation.resize(rgbd_inp.get_nr_devices());
-
-	cam_coarse_t.resize(rgbd_inp.get_nr_devices());
-	cam_coarse_r.resize(rgbd_inp.get_nr_devices());
-
-	trees.resize(rgbd_inp.get_nr_devices());
-	for (int i = 0;i< cam_rotation.size();i++) {
-		cam_coarse_r[i].identity();
-		cam_coarse_t[i] = vec3(0, 0, 0);
-		
-		cam_rotation[i].identity();
-		cam_translation[i] = vec3(0, 0, 0);
-	}
+	
+	
 	
 	update_member(&rgbd_multi_started);
 	
@@ -454,7 +447,7 @@ vr_rgbd::vr_rgbd()
 	point_style.blend_width_in_pixel = 0;
 	max_nr_shown_recorded_pcs = 20;
 	counter_pc = 0;
-	bool record_pc_started=false;
+	record_pc_started=false;
 	num_loaded_pc = -1;
 
 
@@ -494,7 +487,7 @@ vr_rgbd::vr_rgbd()
 	
 	//testmat.identity();
 	//testtran=vec3(0,0,0);
-	int num_recorded_pc = 0;
+	num_recorded_pc = 0;
 
 }
 
@@ -574,14 +567,15 @@ vr_rgbd::~vr_rgbd()
 						float t;
 						t = p[1];
 						p[1] = p[2];
-						p[2] = -t;
-
+						p[2] = t;
+						
 						p = cam_coarse_r[index] * p;
-
-						p[1] = -p[1];
+						
+						
+					
 						p = p + cam_coarse_t[index];
 						//p = p + manualcorrect_translation[index];
-
+						
 						//p[0] = -p[0] / p[1];
 						//p[2] = -p[2] / p[1];
 						//p[1] = -1;
@@ -599,7 +593,10 @@ vr_rgbd::~vr_rgbd()
 	
 	}
 	void vr_rgbd::getviewconeposition(vec3 &a, mat3 r, vec3 t) {
-
+		/*float temp;
+		temp = a[1];
+		a[1] = a[2];
+		a[2] = temp;*/
 		a= r * a;
 		a = a + t;
 		return;
@@ -647,7 +644,7 @@ vr_rgbd::~vr_rgbd()
 			std::cout << "no pointcloud in the scene" << std::endl;
 			return;
 		}
-		std::string fn = data_dir + "\\" + "record" + "\\" +"camera" + to_string(cam) + "\\" + to_string(num_recorded_pc) + ".lbypc";
+		std::string fn = data_dir + "\\" + "record" + "\\" +"camera" + to_string(cam+1) + "\\" + to_string(num_recorded_pc) + ".lbypc";
 
 		if (fn.empty())
 			return;
@@ -714,38 +711,13 @@ vr_rgbd::~vr_rgbd()
 	{
 		
 
-		//rgbdpc.push_back(a);
-		//rgbdpc.push_back(b);
-		//for (int i = 0; i < a.get_nr_Points(); i++)
-		//	rgbdpc[0].labels.push_back(i);
-		//for (int ii = 0; ii < b.get_nr_Points(); ii++)
-		//	rgbdpc[1].labels.push_back(ii);
-
-		//rgbdpc_in_box.resize(rgbdpc.size());
-
-		//cam_coarse_t.resize(rgbdpc.size());;
-		//cam_coarse_r.resize(rgbdpc.size());;
-
-		//cam_rotation.resize(rgbdpc.size());
-		//cam_translation.resize(rgbdpc.size());
-
-		//for (int i = 0; i < cam_rotation.size(); i++) {
-		//	cam_coarse_r[i].identity();
-		//	cam_coarse_t[i] = vec3(0, 0, 0);
-
-		//	cam_rotation[i].identity();
-		//	cam_translation[i] = vec3(0, 0, 0);
-
-		//}
-
-		//trees.resize(rgbdpc.size());
-		//post_redraw();
+		
 
 		std::string fn = cgv::gui::file_open_dialog("source point cloud(*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt)", "Point cloud files:*.lbypc;*.obj;*.pobj;*.ply;*.bpc;*.lpc;*.xyz;*.pct;*.points;*.wrl;*.apc;*.pnt;*.txt;");
 		
 		if (fn.empty())
 			return;
-		clear_current_point_cloud();
+		//clear_current_point_cloud();
 
 		rgbd_pointcloud source_pc;
 		source_pc.read_pc(fn);
@@ -1171,11 +1143,22 @@ vr_rgbd::~vr_rgbd()
 			{
 			//current_pc = intermediate_pc;
 				rgbdpc = intermediate_rgbdpc;
+				if (record_pc_started && num_recorded_pc <= 1000) {
+					for (int i = 0; i < rgbdpc.size(); i++)
+					{
+
+						Record_PC_FromOneCam(i);
+
+					}
+					num_recorded_pc++;
+
+				}
 				post_redraw();
 			}
 			else {
 				/*for (int i = 0; i < rgbdpc.size(); i++)
 					rgbdpc[i].clear();*/
+
 				rgbdpc.clear();
 			}
 			
@@ -1297,8 +1280,10 @@ bool vr_rgbd::self_reflect(cgv::reflect::reflection_handler& rh)
 			rh.reflect_member("rgbd_started", rgbd_started) &&
 			rh.reflect_member("rgbd_multi_started", rgbd_multi_started) &&
 			rh.reflect_member("all_devices_attached", all_devices_attached) &&
+			rh.reflect_member("record_pc_started", record_pc_started) &&
 			//rh.reflect_member("position_scale", position_scale) &&
 			//rh.reflect_member("rotation_scale", rotation_scale) &&
+
 			rh.reflect_member("get_tracker_positions", get_tracker_positions) &&
 			rh.reflect_member("rgbd_protocol_path", rgbd_protocol_path);
 }
@@ -1333,6 +1318,7 @@ void vr_rgbd::on_set(void* member_ptr)
 			{
 				//std::cout<<"run there?"<<std::endl;
 				stop_all_rgbd();
+				
 			}
 		}
 		if (member_ptr == &all_devices_attached && all_devices_attached != rgbd_inp.is_multi_attached())
@@ -2035,10 +2021,10 @@ void vr_rgbd::draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcl
 }
 
 void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int cc, std::vector<vec3>& P, std::vector<rgb>& C) {
-	vec3 a = vec3(1.1, -1, 0.95);
-	vec3 b = vec3(1.1, -1, -0.61);
-	vec3 c = vec3(-1.15, -1, -0.61);
-	vec3 d = vec3(-1.15, -1, 0.95);
+	vec3 a = vec3(0.275, 0.25, 0.2375);
+	vec3 b = vec3(0.275, 0.25, -0.1525);
+	vec3 c = vec3(-0.2875, 0.25, -0.1525);
+	vec3 d = vec3(-0.2875, 0.25, 0.2375);
 	vec3 e = vec3(0, 0, 0);
 
 	getviewconeposition(a, cam_coarse_r[cc], cam_coarse_t[cc]);
@@ -2098,13 +2084,6 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			if(current_pc.size()!=0)
 				draw_pc(ctx, current_pc);
-			
-			
-			
-
-			
-
-
 			
 			
 
@@ -2266,19 +2245,15 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		if (rgbdpc.size() != 0) {
 			for (int i = 0; i < rgbdpc.size(); i++)
 			{	
-				if (record_pc_started) {
-					if (num_recorded_pc == 1000){
-						record_pc_started = false;
-						break;}
-				Record_PC_FromOneCam(i);
-				num_recorded_pc++;
-				
+				if (record_pc_started&& num_recorded_pc<=1000) {				
+							Record_PC_FromOneCam(i);				
 				}
 				draw_rgbdpc(ctx, rgbdpc[i]);
-
+				
 				
 			}
-				
+			if (record_pc_started && num_recorded_pc <= 1000)
+				num_recorded_pc++;
 		}
 		}
 
