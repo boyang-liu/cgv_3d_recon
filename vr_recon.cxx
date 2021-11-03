@@ -26,8 +26,7 @@
 #include "ICP.h"
 #include "PCBoundingbox.h"
 #include "GoICP.h"
-#include "Voxelization.h"
-#include "voxel_renderer.h"
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -37,7 +36,7 @@ using namespace cgv::data;
 using namespace cgv::utils;
 using namespace cgv::render;
 using namespace rgbd;
-using namespace voxel;
+
 
 
 
