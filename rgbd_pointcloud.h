@@ -128,10 +128,15 @@ public:
 	Rgba& clr(size_t i) { return Colors[i]; }
 
 	const Rgba& render_clr(size_t i) const { return renderColors[i]; }
-	
+	//Rgba& render_clr(size_t i) const { return renderColors[i]; }
 	
 	const Cnt& lab(size_t i) const { return labels[i]; }
+
+
 	std::vector<int> labels;
+
+	const Nml& nml(size_t i) const { return Normals[i]; }
+	Nml& nml(size_t i) { return Normals[i]; }
 
 	const std::vector<Pnt>& getPoints() const { return Points; }
 	const std::vector<Rgba>& getColors() const { return Colors; }
@@ -141,15 +146,16 @@ public:
 	void rgbd_pointcloud::do_transformation(Pnt translation_vec);
 
 	void append(const rgbd_pointcloud& pc);
-
+	bool has_normals() const {return has_nmls;}
+	void create_normals();
 
 protected:
 
 	//bool read(const std::string& file_name);
 	std::vector<Pnt> Points;
 	std::vector<Rgba> Colors;
-
-	
+	std::vector<Nml> Normals;
+	bool has_nmls;
 	std::vector<Rgba> renderColors;
 private:
 

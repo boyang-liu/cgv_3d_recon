@@ -546,8 +546,8 @@ vr_rgbd::~vr_rgbd()
 		int i = 0;
 		
 		intermediate_rgbdpc[index].clear();
-		for (int y = 0; y < depth_frame_2.height; ++y)
-			for (int x = 0; x < depth_frame_2.width; ++x) {
+		for (int y =0; y < depth_frame_2.height; ++y)
+			for (int x = 0; x < depth_frame_2.width; ++x) {//
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
 					// flipping y to make it the same direction as in pixel y coordinate
@@ -560,34 +560,29 @@ vr_rgbd::~vr_rgbd()
 					static const rgba8 filter_color = rgba8(0, 0, 0, 255);
 					//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
 					
-					if (!(c == filter_color)) {
-						v.color = c;
-						
+					//if (!(c == filter_color)) {
+					
+					p[0] = p[0]*10 / p[2];
+					p[1] = p[1] * 10 / p[2];
+					p[2] = 10;
+						v.color = c;						
 						float t;
 						t = p[1];
 						p[1] = p[2];
-						p[2] = t;
-						
-						p = cam_coarse_r[index] * p;
-						
-						
-					
-						p = p + cam_coarse_t[index];
-						//p = p + manualcorrect_translation[index];
-						
-						//p[0] = -p[0] / p[1];
-						//p[2] = -p[2] / p[1];
-						//p[1] = -1;
-										
+						p[2] = t;						
+						p = cam_coarse_r[index] * p;															
+						p = p + cam_coarse_t[index];																
 						v.point = p;
-						intermediate_rgbdpc[index].add_point(v.point, v.color);
-					
-					}
+						
+						intermediate_rgbdpc[index].add_point(v.point, v.color);					
+					//}
 						
 				}
 				++i;
 			}
-				
+		//std::cout << "depth_frame_2.height:" << depth_frame_2.height << std::endl;
+		//std::cout << "depth_frame_2.width:" << depth_frame_2.width << std::endl;
+		//std::cout << "intermediate_rgbdpc[0]:" << intermediate_rgbdpc[0].get_nr_Points() << std::endl;
 		return intermediate_rgbdpc[index].get_nr_Points();
 	
 	}

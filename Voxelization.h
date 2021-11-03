@@ -4,29 +4,29 @@
 #include <cgv/render/shader_program.h>
 #include <3rd/glew/GL/glew.h>
 #include "rgbd_pointcloud.h"
-#include "voxel_renderer.h"
 
 
 
-typedef cgv::math::fvec<float, 3> vec3;
-typedef cgv::math::fvec<std::int32_t, 3> ivec3;
-typedef cgv::type::uint8_type ClrComp;
-typedef cgv::media::color<ClrComp, cgv::media::RGB, cgv::media::OPACITY> Rgba;
-typedef cgv::media::color<float, cgv::media::RGB> rgb;
-typedef cgv::media::axis_aligned_box<float, 3> box3;
-namespace voxel {
-class Voxelization
-{
-private:
-	GLuint m_cntBuffer;
-protected:
-	cgv::render::shader_program voxelize_prog;
-public:
-	Voxelization() = default;
-	~Voxelization() = default;
 
-	bool voxelize(cgv::render::context& ctx,const float& step, std::vector<vec3>& ret, vec3 min, vec3 max, rgbd_pointcloud pc);
-};
-
-
-}
+//typedef cgv::math::fvec<float, 3> vec3;
+//typedef cgv::math::fvec<std::int32_t, 3> ivec3;
+//typedef cgv::type::uint8_type ClrComp;
+//typedef cgv::media::color<ClrComp, cgv::media::RGB, cgv::media::OPACITY> Rgba;
+//typedef cgv::media::color<float, cgv::media::RGB> rgb;
+//typedef cgv::media::axis_aligned_box<float, 3> box3;
+//namespace voxel {
+//class Voxelization
+//{
+//private:
+//	GLuint m_cntBuffer;
+//protected:
+//	cgv::render::shader_program voxelize_prog;
+//public:
+//	Voxelization() = default;
+//	~Voxelization() = default;
+//
+//	bool voxelize(cgv::render::context& ctx,const float& step, std::vector<vec3>& ret, vec3 min, vec3 max, rgbd_pointcloud pc);
+//};
+//
+//
+//}

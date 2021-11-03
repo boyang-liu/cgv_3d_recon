@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip> 
 #include <cgv/math/svd.h> 
-#include "point_cloud.h"
+#include "rgbd_pointcloud.h"
 #include "normal_estimator.h"
 #include "lib_begin.h"
 
@@ -40,14 +40,14 @@ namespace cgv {
 				bool use_penalty;
 			}parameters;
 
-			const point_cloud *sourceCloud;
-			const point_cloud *targetCloud;
+			const rgbd_pointcloud *sourceCloud;
+			const rgbd_pointcloud *targetCloud;
 			ann_tree neighbor_tree;
 
 			SICP();
 			~SICP();
-			void set_source_cloud(const point_cloud &inputCloud);
-			void set_target_cloud(const point_cloud &inputCloud);
+			void set_source_cloud(const rgbd_pointcloud &inputCloud);
+			void set_target_cloud(const rgbd_pointcloud &inputCloud);
 			void register_point_to_point(mat3& rotation, vec3& translation);
 			void register_point_to_plane(mat3& rotation, vec3& translation);
 			void register_point_cloud(ComputationMode cm, mat3& rotation, vec3& translation);

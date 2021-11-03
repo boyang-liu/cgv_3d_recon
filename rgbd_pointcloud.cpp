@@ -314,3 +314,8 @@ void  rgbd_pointcloud::append(const rgbd_pointcloud& pc) {
 		labels[i] = pc.lab(i) + old_l;
 	return;
 }
+void rgbd_pointcloud::create_normals()
+{
+	has_nmls = true;
+	Normals.resize(Points.size());
+}

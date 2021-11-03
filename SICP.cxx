@@ -1,6 +1,6 @@
 /*	Sparse Iterative Closest Point by Sofien Bouaziz, Andrea Tagliasacchi, Mark Pauly 2013 */
 
-#include "point_cloud.h"
+#include "rgbd_pointcloud.h"
 #include <fstream>
 #include <future>
 #include <vector>
@@ -40,11 +40,11 @@ namespace cgv {
 
 		}
 
-		void SICP::set_source_cloud(const point_cloud& inputCloud) {
+		void SICP::set_source_cloud(const rgbd_pointcloud& inputCloud) {
 			sourceCloud = &inputCloud;
 		}
 
-		void SICP::set_target_cloud(const point_cloud& inputCloud) {
+		void SICP::set_target_cloud(const rgbd_pointcloud& inputCloud) {
 			targetCloud = &inputCloud;
 			neighbor_tree.build(inputCloud);
 		}
@@ -204,15 +204,15 @@ namespace cgv {
 		{
 			rotation.identity();
 			translation.zeros();
-			vector<Pnt> source_points(&sourceCloud->pnt(0), &sourceCloud->pnt(0) + sourceCloud->get_nr_points());
+			vector<Pnt> source_points(&sourceCloud->pnt(0), &sourceCloud->pnt(0) + sourceCloud->get_nr_Points());
 			vector<Pnt> Xo1 = source_points;
 			vector<Pnt> Xo2 = source_points;
-			vector<Pnt> closest_points(sourceCloud->get_nr_points());
-			vector<Pnt> Z(sourceCloud->get_nr_points(), Pnt(0, 0, 0));
-			vector<Pnt> lagrage_multipliers(sourceCloud->get_nr_points(), Pnt(0, 0, 0));
+			vector<Pnt> closest_points(sourceCloud->get_nr_Points());
+			vector<Pnt> Z(sourceCloud->get_nr_Points(), Pnt(0, 0, 0));
+			vector<Pnt> lagrage_multipliers(sourceCloud->get_nr_Points(), Pnt(0, 0, 0));
 
 			for (int i = 0; i < parameters.max_runs; ++i) {
-				for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+				for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 					closest_points[i] = targetCloud->pnt(neighbor_tree.find_closest(source_points[i]));
 				}
 
@@ -222,25 +222,25 @@ namespace cgv {
 					float dual = 0;
 					for (int i = 0; i < parameters.max_inner_loop; ++i) {
 						// update Z
-						for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+						for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 							Z[i] = source_points[i] - closest_points[i] + lagrage_multipliers[i] / mu;
 						}
 						// shrinkage operator usually converges in three iterations (I = 3)
 						shrink<3>(Z, mu, parameters.p);
 
-						vector<vec3> U(sourceCloud->get_nr_points());
+						vector<vec3> U(sourceCloud->get_nr_Points());
 						for (int i = 0; i < U.size(); ++i) {
 							U[i] = closest_points[i] + Z[i] - lagrage_multipliers[i] / mu;
 						}
 						// ridgid motion estimator
 						mat3 rot_up;
 						vec3 trans_up;
-						point_to_point(source_points.data(), U.data(), sourceCloud->get_nr_points(), rot_up,trans_up);
+						point_to_point(source_points.data(), U.data(), sourceCloud->get_nr_Points(), rot_up,trans_up);
 						rotation *= rot_up;
 						translation += trans_up;
 
 						dual = -numeric_limits<float>::infinity();
-						for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+						for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 							dual = max((source_points[i] - Xo1[i]).length(),dual);
 						}
 						Xo1 = source_points;
@@ -248,8 +248,8 @@ namespace cgv {
 					}
 					// C Update
 
-					vector<float> Pnorms(sourceCloud->get_nr_points());
-					for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+					vector<float> Pnorms(sourceCloud->get_nr_Points());
+					for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 						vec3 p = source_points[i] - closest_points[i] - Z[i];
 						Pnorms[i] = p.length();
 						if (!parameters.use_penalty) {
@@ -263,7 +263,7 @@ namespace cgv {
 					if (primal < parameters.stop && dual < parameters.stop) break;
 				}
 				float stop = -numeric_limits<float>::infinity();
-				for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+				for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 					stop = max((source_points[i] - Xo2[i]).length(), stop);
 				}
 				Xo2 = source_points;
@@ -276,16 +276,16 @@ namespace cgv {
 		{
 			rotation.identity();
 			translation.zeros();
-			vector<Pnt> source_points(&sourceCloud->pnt(0), &sourceCloud->pnt(0) + sourceCloud->get_nr_points());
+			vector<Pnt> source_points(&sourceCloud->pnt(0), &sourceCloud->pnt(0) + sourceCloud->get_nr_Points());
 			vector<Pnt> Xo1 = source_points;
 			vector<Pnt> Xo2 = source_points;
-			vector<Pnt> closest_points_position(sourceCloud->get_nr_points());
-			vector<Dir> closest_points_normal(sourceCloud->get_nr_points());
-			vector<float> Z(sourceCloud->get_nr_points(), 0);
-			vector<float> lagrage_multipliers(sourceCloud->get_nr_points(), 0);
+			vector<Pnt> closest_points_position(sourceCloud->get_nr_Points());
+			vector<Dir> closest_points_normal(sourceCloud->get_nr_Points());
+			vector<float> Z(sourceCloud->get_nr_Points(), 0);
+			vector<float> lagrage_multipliers(sourceCloud->get_nr_Points(), 0);
 
 			for (int i = 0; i < parameters.max_runs; ++i) {
-				for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+				for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 					int c = neighbor_tree.find_closest(source_points[i]);
 					closest_points_position[i] = targetCloud->pnt(c);
 					closest_points_normal[i] = targetCloud->nml(c);
@@ -297,25 +297,25 @@ namespace cgv {
 					float dual = 0;
 					for (int i = 0; i < parameters.max_inner_loop; ++i) {
 						// update Z
-						for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+						for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 							Z[i] = dot(closest_points_normal[i],(source_points[i] - closest_points_position[i])) + lagrage_multipliers[i] / mu;
 						}
 						// shrinkage operator usually converges in three iterations (I = 3)
 						shrink<3>(Z, mu, parameters.p);
 
-						vector<float> U(sourceCloud->get_nr_points());
+						vector<float> U(sourceCloud->get_nr_Points());
 						for (int i = 0; i < U.size(); ++i) {
 							U[i] = Z[i] - lagrage_multipliers[i] / mu;
 						}
 						// ridgid motion estimator
 						mat3 rot_up;
 						vec3 trans_up;
-						point_to_plane(source_points.data(), closest_points_position.data(), closest_points_normal.data(), U.data(), sourceCloud->get_nr_points(),rot_up,trans_up);
+						point_to_plane(source_points.data(), closest_points_position.data(), closest_points_normal.data(), U.data(), sourceCloud->get_nr_Points(),rot_up,trans_up);
 						rotation *= rot_up;
 						translation += trans_up;
 
 						dual = -numeric_limits<float>::infinity();
-						for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+						for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 							dual = max((source_points[i] - Xo1[i]).length(), dual);
 						}
 						Xo1 = source_points;
@@ -323,8 +323,8 @@ namespace cgv {
 					}
 					// C Update
 
-					vector<float> P(sourceCloud->get_nr_points());
-					for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+					vector<float> P(sourceCloud->get_nr_Points());
+					for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 						float p = dot(closest_points_normal[i],(source_points[i] - closest_points_position[i])) - Z[i];
 						if (!parameters.use_penalty) {
 							lagrage_multipliers[i] += mu * p;
@@ -339,7 +339,7 @@ namespace cgv {
 					if (primal < parameters.stop && dual < parameters.stop) break;
 				}
 				float stop = -numeric_limits<float>::infinity();
-				for (int i = 0; i < sourceCloud->get_nr_points(); ++i) {
+				for (int i = 0; i < sourceCloud->get_nr_Points(); ++i) {
 					stop = max((source_points[i] - Xo2[i]).length(), stop);
 				}
 				Xo2 = source_points;
