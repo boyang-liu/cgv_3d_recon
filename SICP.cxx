@@ -15,9 +15,9 @@
 using namespace std;
 using namespace cgv::math;
 
-namespace cgv {
+//namespace cgv {
 
-	namespace pointcloud {
+	//namespace pointcloud {
 
 
 		float det(const cgv::math::fmat<float, 3, 3>& m) {
@@ -359,5 +359,5 @@ namespace cgv {
 			}
 		}
 
-	}
-}
+	//}
+//}

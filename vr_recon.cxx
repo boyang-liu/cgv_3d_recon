@@ -26,7 +26,7 @@
 #include "ICP.h"
 #include "PCBoundingbox.h"
 #include "GoICP.h"
-
+#include "SICP.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -800,7 +800,13 @@ vr_rgbd::~vr_rgbd()
 
 
 		cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
-		registerPointCloud(rgbdpc[0], rgbdpc[1], r, t);
+		/*registerPointCloud(rgbdpc[0], rgbdpc[1], r, t);*/
+		SICP* sicp = new SICP();
+		sicp->set_source_cloud(rgbdpc[0]);
+		sicp->set_target_cloud(rgbdpc[1]);
+		std::cout << "sicp->parameters.p" << sicp->parameters.p << std::endl;
+		//sicp->register_point_to_point(r, t);
+		//rgbdpc[0].do_transformation(r, t);
 
 	}
 	
@@ -1884,7 +1890,14 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			img_tex.create_from_images(ctx, data_dir + "/skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");//
 			
 		}
-		
+		if (!floor_prog.is_created()) {
+			floor_prog.build_program(ctx, "glsl/floor.glpr");
+			flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
+			
+		}
+
+
+
 		return true;
 
 		
@@ -2270,6 +2283,27 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
 		}
+		/*if (floor_prog.is_created()) {
+			std::cout<<"aaaaaa"<<std::endl;
+			glDepthMask(GL_FALSE);
+			glDisable(GL_CULL_FACE);
+			flo_tex.enable(ctx, 1);
+			std::cout << "2222" << std::endl;
+			floor_prog.enable(ctx);
+			std::cout << "333" << std::endl;
+			floor_prog.set_uniform(ctx, "tex", 1);
+			ctx.push_modelview_matrix();
+			ctx.mul_modelview_matrix(cgv::math::scale4<double>(
+				max_scene_extent, max_scene_extent, max_scene_extent));
+			ctx.tesselate_unit_cube();
+			ctx.pop_modelview_matrix();
+			floor_prog.disable(ctx);
+			flo_tex.disable(ctx);
+			glEnable(GL_CULL_FACE);
+			glDepthMask(GL_TRUE);
+		}*/
+
+
 
 		
 

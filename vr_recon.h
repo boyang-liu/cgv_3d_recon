@@ -243,6 +243,8 @@ protected:
 
 
 	cgv::render::shader_program sky_prog;
+	cgv::render::shader_program floor_prog;
+	cgv::render::texture flo_tex;
 	cgv::render::texture img_tex;
 	//mat4 mvp;
 	char* cgv_data = getenv("CGV_DATA");

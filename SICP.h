@@ -10,9 +10,9 @@
 #include "normal_estimator.h"
 #include "lib_begin.h"
 
-namespace cgv {
+//namespace cgv {
 
-	namespace pointcloud {
+	//namespace pointcloud {
 
 		// Sparse ICP using Alternate Direction Method of Multipliers
 		class CGV_API SICP : public point_cloud_types {
@@ -57,6 +57,6 @@ namespace cgv {
 			void point_to_plane(vec3* X, vec3* Y, vec3* N, const float* u, size_t size, mat3& rotation, vec3& translation);
 		};
 
-	}
-}
+	//}
+//}
 #include <cgv/config/lib_end.h>
