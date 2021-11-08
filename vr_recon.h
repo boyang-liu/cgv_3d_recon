@@ -208,7 +208,7 @@ protected:
 	void stop_rgbd();
 	void set_rgbd_pos();
 
-	bool coarseregistrationmode;
+	//bool coarseregistrationmode;
 	std::vector<vec3> cam_coarse_t;
 	std::vector<mat3> cam_coarse_r;
 
@@ -318,6 +318,7 @@ public:
 	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
+	void delete_selected_points(rgbd_pointcloud& pc1);
 	//void start_select_points();
 
 

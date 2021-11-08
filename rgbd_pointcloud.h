@@ -148,7 +148,7 @@ public:
 	void append(const rgbd_pointcloud& pc);
 	bool has_normals() const {return has_nmls;}
 	void create_normals();
-
+	void delete_labeled_points();
 protected:
 
 	//bool read(const std::string& file_name);

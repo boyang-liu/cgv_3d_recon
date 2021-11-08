@@ -22,5 +22,5 @@ void update_normal(inout vec3 normal, in int side);
 void main() 
 {
 	vec3 mycolor = texture(tex,tc).rgb;
-	frag_color = (mycolor,1.0f);
+	//frag_color = (mycolor,1.0f);
 }

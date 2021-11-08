@@ -218,6 +218,7 @@ void rgbd_pointcloud::set_render_color()
 			renderColors[labels[i]]= Rgba(255, 0, 0, 255);
 		}
 	}
+	
 	return ;
 }
 void rgbd_pointcloud::merge_labels(std::vector<int>& a) {
@@ -290,7 +291,7 @@ void rgbd_pointcloud::do_transformation( Pnt translation_vec) {
 	}
 	for (int i = 0; i < get_nr_Points(); i++)
 	{
-		Points[i] =  translation_vec;
+		Points[i] = Points[i]+ translation_vec;
 	}
 
 }
@@ -314,8 +315,15 @@ void  rgbd_pointcloud::append(const rgbd_pointcloud& pc) {
 		labels[i] = pc.lab(i) + old_l;
 	return;
 }
-void rgbd_pointcloud::create_normals()
-{
+void rgbd_pointcloud::create_normals(){
 	has_nmls = true;
 	Normals.resize(Points.size());
+}
+void rgbd_pointcloud::delete_labeled_points() {
+	for (int i = 1; i <= labels.size(); i++) {
+		Points.erase(Points.begin() + labels[labels.size() - i]);
+		Colors.erase(Colors.begin() + labels[labels.size() - i]);
+	}
+	labels.clear();
+	set_render_color();
 }
