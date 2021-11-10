@@ -222,16 +222,17 @@ protected:
 
 	bool no_controller;
 	std::vector<vec3> manualcorrect_translation;
-	std::vector<vec3> manualcorrect_rotation;
+	std::vector<mat3> manualcorrect_rotation;
 	float position_scale;
 	float rotation_scale;
 	//controller mode for immersive interaction
-	bool translationmode;
-	bool rotationmode;
+	
 	bool setboundingboxmode;
 	bool selectPointsmode;
 	bool boundingboxisfixed;
-
+	bool manualcorrectmode;
+	int mode;
+	bool manualcorrectstarted;
 	bool record_pc_started;
 	int current_corrected_cam;
 	int depth_stream_format_idx;
@@ -250,7 +251,7 @@ protected:
 	char* cgv_data = getenv("CGV_DATA");
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
-	
+	bool generate_pc_from_files;
 	std::vector<std::shared_ptr<ann_tree>> trees;
 
 	int save_time = 0;
@@ -258,8 +259,10 @@ protected:
 	int currentcamera;
 
 	int num_recorded_pc;
+	int total_recorded_pc;
 	int num_loaded_pc;
-	std::string pc_load_dir;
+	int total_loaded_pc=1000;
+	std::vector<std::string> pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
@@ -271,8 +274,8 @@ protected:
 	float BoundingBoxlength;
 	float BoundingBoxheight;
 	PCBoundingbox pcbb;
-	std::vector<cgv::math::fmat<float, 3, 3>> cam_rotation;
-	std::vector < cgv::math::fvec<float, 3>> cam_translation;
+	std::vector<cgv::math::fmat<float, 3, 3>> cam_fine_r;
+	std::vector < cgv::math::fvec<float, 3>> cam_fine_t;
 
 	vec3 viewpoint1 =vec3(0,0,0);
 	vec3 viewpoint2 = vec3(0, 0, 0);
@@ -298,7 +301,8 @@ public:
 	void Record_PC_FromOneCam(int cam);
 	void Record_PC_FromAllcams();
 	void load_pc();
-	void load_recorded_pc();
+	void start_load_recorded_pc();
+	void load_recorded_pc(int index);
 	void clear_current_point_cloud();
 
 	void temp_test();
@@ -313,7 +317,7 @@ public:
 	//void write_pcs_to_disk(int i);
 	//size_t read_pc_queue(const std::string filename, std::string content);
 	
-	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t);
+	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t,int source_index);
 	//void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
 	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);

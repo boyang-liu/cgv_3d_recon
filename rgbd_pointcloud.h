@@ -31,6 +31,7 @@
 #include <vr/vr_driver.h>
 #include <cg_vr/vr_server.h>
 #include <vr_view_interactor.h>
+#include <numeric>
 #define BYTE_COLORS
 struct point_cloud_types
 {
@@ -149,14 +150,19 @@ public:
 	bool has_normals() const {return has_nmls;}
 	void create_normals();
 	void delete_labeled_points();
+	Pnt cam_pos=Pnt(0,0,0);
+	Pnt mean;
+	std::vector<Rgba> renderColors;
+	std::vector<Rgba> Colors;
+	//void set_mean() { mean=accumulate(&pnt(0), &pnt(0) + get_nr_Points(), Pnt(0, 0, 0)) / ((float)get_nr_Points()); }
 protected:
-
+	
 	//bool read(const std::string& file_name);
 	std::vector<Pnt> Points;
-	std::vector<Rgba> Colors;
+	
 	std::vector<Nml> Normals;
 	bool has_nmls;
-	std::vector<Rgba> renderColors;
+	
 private:
 
 };
