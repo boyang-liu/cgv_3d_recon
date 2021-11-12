@@ -37,10 +37,10 @@
 #include "rgbd_pointcloud.h"
 #include "PCBoundingbox.h"
 #include "GoICP.h"
-
+#include <time.h>
 using namespace rgbd;
 
-
+#define recorded_pc_frequency 30
 
 /// the plugin class vr_rgbd inherits like other plugins from node, drawable and provider
 class vr_rgbd :
@@ -295,7 +295,7 @@ public:
 	size_t construct_multi_point_cloud(int index);//
 	//size_t construct_point_clouds();
 
-	void getviewconeposition(vec3 &a, mat3 r, vec3 t);
+	//void getviewconeposition(vec3 &a, mat3 r, vec3 t);
 
 	void save_all_pc();
 	void Record_PC_FromOneCam(int cam);
@@ -345,10 +345,10 @@ public:
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw(cgv::render::context& ctx);
-	void draw_viewingcone(cgv::render::context& ctx, int cc, std::vector<vec3>& P, std::vector<rgb>& C);
+	void draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
-	 
+	int mytime=0;
 
 private:
 	int device_idx;

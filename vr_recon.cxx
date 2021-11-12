@@ -522,6 +522,7 @@ vr_rgbd::~vr_rgbd()
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0])) {
 					// flipping y to make it the same direction as in pixel y coordinate
+
 					p = -p;
 					p = rgbd_2_controller_orientation * p + rgbd_2_controller_position;
 					p = controller_orientation_pc * p + controller_position_pc;
@@ -578,6 +579,9 @@ vr_rgbd::~vr_rgbd()
 					/*p[0] = p[0]*10 / p[2];
 					p[1] = p[1] * 10 / p[2];
 					p[2] = 10;*/
+						/*p[0] = p[0]  / p[2];
+						p[1] = p[1]  / p[2];
+						p[2] = 1;*/
 						v.color = c;						
 						float t;
 						t = p[1];
@@ -609,16 +613,16 @@ vr_rgbd::~vr_rgbd()
 		return intermediate_rgbdpc[index].get_nr_Points();
 	
 	}
-	void vr_rgbd::getviewconeposition(vec3 &a, mat3 r, vec3 t) {
-		/*float temp;
-		temp = a[1];
-		a[1] = a[2];
-		a[2] = temp;*/
-		a= r * a;
-		a = a + t;
-		return;
+	//void vr_rgbd::getviewconeposition(vec3 &a, mat3 r, vec3 t) {
+	//	/*float temp;
+	//	temp = a[1];
+	//	a[1] = a[2];
+	//	a[2] = temp;*/
+	//	a= r * a;
+	//	a = a + t;
+	//	return;
 
-	}
+	//}
 
 
 
@@ -944,45 +948,45 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud& source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t,int source_index) {
 
-		//ICP* icp = new ICP();
-		///*cgv::math::fmat<float, 3, 3> r;
-		//cgv::math::fvec<float, 3> t;*/
-		//r.identity();
-		//t.zeros();
-		//std::cout << "source.labels.size():" << source.labels.size() << std::endl;
-		//std::cout << "target.labels.size():" << target.labels.size() << std::endl;
-		//if (source.labels.size() == 0 || target.labels.size() == 0) {
-		//	std::cout << "there is no label points in source or target pc" << std::endl;
-		//	return;
-		//}
+		ICP* icp = new ICP();
+		/*cgv::math::fmat<float, 3, 3> r;
+		cgv::math::fvec<float, 3> t;*/
+		r.identity();
+		t.zeros();
+		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
+		std::cout << "target.labels.size():" << target.labels.size() << std::endl;
+		if (source.labels.size() == 0 || target.labels.size() == 0) {
+			std::cout << "there is no label points in source or target pc" << std::endl;
+			return;
+		}
 
-		//rgbd_pointcloud sourcelabelpoints, targetlabelpoints;
-		//for (int i = 0; i < source.labels.size(); i++) {
-		//	sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
-		//	//std::cout << "source labels:" << source.lab(i) << std::endl;
-		//}
-		//for (int i = 0; i < target.labels.size(); i++) {
-		//	targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
-		//	//std::cout << "target labels:" << target.lab(i) << std::endl;
-		//}
+		rgbd_pointcloud sourcelabelpoints, targetlabelpoints;
+		for (int i = 0; i < source.labels.size(); i++) {
+			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+			//std::cout << "source labels:" << source.lab(i) << std::endl;
+		}
+		for (int i = 0; i < target.labels.size(); i++) {
+			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
+			//std::cout << "target labels:" << target.lab(i) << std::endl;
+		}
 
-		//icp->set_source_cloud(sourcelabelpoints);
-		//icp->set_target_cloud(targetlabelpoints);
-		//icp->set_iterations(20);
-		//icp->set_eps(1e-10);
-		//std::cout << "run there!" << std::endl;
-		//icp->reg_icp(r, t);
+		icp->set_source_cloud(sourcelabelpoints);
+		icp->set_target_cloud(targetlabelpoints);
+		icp->set_iterations(20);
+		icp->set_eps(1e-10);
+		std::cout << "run there!" << std::endl;
+		icp->reg_icp(r, t);
 
 
-		//std::cout << "rotation" << r << std::endl;
-		//std::cout << "translation" << t << std::endl;
+		std::cout << "rotation" << r << std::endl;
+		std::cout << "translation" << t << std::endl;
 
-		//source.do_transformation(r, t);
+		source.do_transformation(r, t);
 
-		////testmat = testmat * r;
-		////testvec = testvec +t;
+		//testmat = testmat * r;
+		//testvec = testvec +t;
 
-		//return;
+		return;
 
 		//================================================================
 
@@ -997,24 +1001,24 @@ vr_rgbd::~vr_rgbd()
 		source.do_transformation(mygoicp.optimal_rotation, mygoicp.optimal_translation);*/
 		//===============================================================
 		
-		SICP* sicp = new SICP();
-		sicp->set_source_cloud(source);
-		sicp->set_target_cloud(target);		
-		sicp->register_point_to_point(r, t);
-		
-		vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
-		
-		//need to de-mean for rotation
-		source.do_transformation(-mean);
-		//do rotation		
-		source.do_transformation(r);
-		//do translation and reapply mean
-		source.do_transformation(t + mean);
-		source.cam_pos -=mean;
-		source.cam_pos = r*source.cam_pos   + t + mean;
-		cam_fine_r[source_index] = r;
-		cam_fine_t[source_index] = - r * mean + t+mean;
-		post_redraw();
+		//SICP* sicp = new SICP();
+		//sicp->set_source_cloud(source);
+		//sicp->set_target_cloud(target);		
+		//sicp->register_point_to_point(r, t);
+		//
+		//vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
+		//
+		////need to de-mean for rotation
+		//source.do_transformation(-mean);
+		////do rotation		
+		//source.do_transformation(r);
+		////do translation and reapply mean
+		//source.do_transformation(t + mean);
+		//source.cam_pos -=mean;
+		//source.cam_pos = r*source.cam_pos   + t + mean;
+		//cam_fine_r[source_index] = r;
+		//cam_fine_t[source_index] = - r * mean + t+mean;
+		//post_redraw();
 
 
 
@@ -1329,13 +1333,19 @@ vr_rgbd::~vr_rgbd()
 			
 		}
 		else {
+			if (mytime == 0)
+				mytime++;
+			else
+				mytime--;
 			if (num_loaded_pc < total_loaded_pc) {
-			if (generate_pc_from_files)
+				
+			if (generate_pc_from_files&& mytime==0)
 			{
+			
 				for(int i=0;i<rgbdpc.size();i++)
 					load_recorded_pc(i);
-					
-			}num_loaded_pc++;
+				num_loaded_pc++;
+			}
 			}
 			else {
 				generate_pc_from_files = false;
@@ -1724,14 +1734,20 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 							
 						{
 							int PCwithMaxpoints = 0;
-							if(rgbdpc_in_box[1].get_nr_Points()> rgbdpc_in_box[PCwithMaxpoints].get_nr_Points())
-								PCwithMaxpoints = 1;
-							//if (rgbdpc_in_box[2].get_nr_Points() > rgbdpc_in_box[PCwithMaxpoints].get_nr_Points())
-							//	PCwithMaxpoints = 2;
+							for(int i=0;i< rgbdpc_in_box.size();i++)
+							if(rgbdpc_in_box[i].get_nr_Points()> rgbdpc_in_box[PCwithMaxpoints].get_nr_Points())
+								PCwithMaxpoints = i;
+							
 							 
 							//registerPointCloud(rgbdpc_in_box[(currentpointcloud + 1) % rgbdpc.size()], rgbdpc_in_box[currentpointcloud], r, t);
+							for (int i = 0; i < rgbdpc_in_box.size(); i++)
+							{
+								if (i != PCwithMaxpoints) {
+									registerPointCloud(rgbdpc_in_box[PCwithMaxpoints], rgbdpc_in_box[i], r, t, i);
+									
+								}
+							}
 							
-							registerPointCloud(rgbdpc_in_box[PCwithMaxpoints],rgbdpc_in_box[(PCwithMaxpoints + 1) % rgbdpc.size()],  r, t, (PCwithMaxpoints + 1) % rgbdpc.size());
 							//registerPointCloud(rgbdpc_in_box[PCwithMaxpoints],rgbdpc_in_box[(PCwithMaxpoints + 2) % rgbdpc.size()],  r, t,);
 
 						}
@@ -2169,19 +2185,25 @@ void vr_rgbd::draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcl
 
 }
 
-void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int cc, std::vector<vec3>& P, std::vector<rgb>& C) {
+void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C) {
 	vec3 a = vec3(0.275, 0.25, 0.2375);
 	vec3 b = vec3(0.275, 0.25, -0.1525);
 	vec3 c = vec3(-0.2875, 0.25, -0.1525);
 	vec3 d = vec3(-0.2875, 0.25, 0.2375);
 	vec3 e = vec3(0, 0, 0);
 
-	getviewconeposition(a, cam_coarse_r[cc], cam_coarse_t[cc]);
+	mat3 r = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_r[index];
+	vec3 t = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_t[index] + manualcorrect_rotation[index] * cam_fine_t[index] + manualcorrect_translation[index];
+	/*getviewconeposition(a, cam_coarse_r[cc], cam_coarse_t[cc]);
 	getviewconeposition(b, cam_coarse_r[cc], cam_coarse_t[cc]);
 	getviewconeposition(c, cam_coarse_r[cc], cam_coarse_t[cc]);
 	getviewconeposition(d, cam_coarse_r[cc], cam_coarse_t[cc]);
-	getviewconeposition(e, cam_coarse_r[cc], cam_coarse_t[cc]);
-
+	getviewconeposition(e, cam_coarse_r[cc], cam_coarse_t[cc]);*/
+	a = r * a + t;
+	b = r * b + t;
+	c = r * c + t;
+	d = r * d + t;
+	e = r * e + t;
 	P.push_back(a);
 	P.push_back(b);
 	P.push_back(b);
