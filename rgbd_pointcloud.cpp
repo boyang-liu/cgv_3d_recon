@@ -61,8 +61,11 @@ bool rgbd_pointcloud::write_lbypc(const std::string& file_name)
 	int n = Points.size();
 	// write the header
 	success = success && fwrite(&n, sizeof(int), 1, fp);
-	// write the content 
 	success = success && fwrite(&cam_pos, sizeof(Pnt), 1, fp) ;
+	success = success && fwrite(&cam_rotation, sizeof(Mat), 1, fp);
+	success = success && fwrite(&cam_translation, sizeof(Pnt), 1, fp);
+	// write the content 
+	
 	success = success && fwrite(&Points[0], sizeof(Pnt), n, fp) == n;
 	success = success && fwrite(&Colors[0], sizeof(Rgba), n, fp) == n;
 
@@ -87,7 +90,16 @@ bool rgbd_pointcloud::read_lbypc(const std::string& file_name)
 	int nr;
 	success = success && fread(&nr, sizeof(int), 1, fp) == 1;
 	//success = success && fread(&flags, sizeof(cgv::type::uint32_type), 1, fp) == 1;
+
 	success = success && fread(&cam_pos[0], sizeof(Pnt), 1, fp) == 1;
+
+	success = success && fread(&cam_rotation[0], sizeof(Mat), 1, fp) == 1;
+
+	success = success && fread(&cam_translation[0], sizeof(Pnt), 1, fp) == 1;
+
+	
+
+
 	Points.resize(nr);
 	success = success && fread(&Points[0][0], sizeof(Pnt), nr, fp) == nr;
 	Colors.resize(nr);
@@ -118,14 +130,38 @@ bool rgbd_pointcloud::read_txt(const std::string& file_name)
 	bool do_parse = false;
 	unsigned i;
 	Pnt c_p;
+	Mat c_r;
+	Pnt c_t;
 	if (lines[0].empty())
-	if (sscanf(lines[i].begin, "%f %f %f ", &c_p[0], &c_p[1], &c_p[2]) == 3) {
+	if (sscanf(lines[0].begin, "%f %f %f ", &c_p[0], &c_p[1], &c_p[2]) == 3) {
 
 
 		cam_pos = c_p;
 	}
 
-	for (i = 1; i < lines.size(); ++i) {
+	if (sscanf(lines[1].begin, "%f %f %f ", &c_r[0], &c_r[1], &c_r[2]) == 3) {
+		cam_rotation[0] = c_r[0];
+		cam_rotation[1] = c_r[1];
+		cam_rotation[2] = c_r[2];
+	}
+	if (sscanf(lines[2].begin, "%f %f %f ", &c_r[3], &c_r[4], &c_r[5]) == 3) {
+		cam_rotation[3] = c_r[3];
+		cam_rotation[4] = c_r[4];
+		cam_rotation[5] = c_r[5];
+	}
+	if (sscanf(lines[3].begin, "%f %f %f ", &c_r[6], &c_r[7], &c_r[8]) == 3) {
+		cam_rotation[6] = c_r[6];
+		cam_rotation[7] = c_r[7];
+		cam_rotation[8] = c_r[8];
+	}
+	if (sscanf(lines[4].begin, "%f %f %f ", &c_t[0], &c_t[1], &c_t[2]) == 3) {
+
+
+		cam_translation = c_t;
+	}
+
+
+	for (i = 5; i < lines.size(); ++i) {
 		if (lines[i].empty())
 			continue;
 
@@ -169,6 +205,10 @@ bool rgbd_pointcloud::write_txt(const std::string& file_name)
 	ofstream ofile;
 	ofile.open(file_name.c_str());
 	ofile << cam_pos << " ";
+	ofile << "\n";
+	ofile << cam_rotation << " ";
+	ofile << "\n";
+	ofile << cam_translation << " ";
 	ofile << "\n";
 	for (int i = 0; i < Points.size(); i++) {
 

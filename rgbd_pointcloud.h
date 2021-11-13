@@ -106,6 +106,8 @@ public:
 	
 	rgbd_pointcloud() {
 		cam_pos = Pnt(0, 0, 0);
+		cam_rotation.identity();
+		cam_translation = Pnt(0, 0, 0);
 	}
 	bool write_pc(const std::string& file_name);
 	bool read_pc(const std::string& file_name);
@@ -153,6 +155,8 @@ public:
 	void create_normals();
 	void delete_labeled_points();
 	Pnt cam_pos;
+	Mat cam_rotation;
+	Pnt cam_translation;
 	Pnt mean;
 	std::vector<Rgba> renderColors;
 	std::vector<Rgba> Colors;

@@ -629,7 +629,20 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::save_all_pc()
 	{
-		
+		for (int i = 1; i < rgbdpc.size(); i++)
+		{
+			rgbdpc[i].cam_rotation = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_r[i];
+			rgbdpc[i].cam_translation = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_t[i] + manualcorrect_rotation[i] * cam_fine_t[i] + manualcorrect_translation[i];
+
+		}
+		for (int i = 1; i < rgbdpc_in_box.size(); i++)
+		{
+			rgbdpc_in_box[i].cam_rotation = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_r[i];
+			rgbdpc_in_box[i].cam_translation = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_t[i] + manualcorrect_rotation[i] * cam_fine_t[i] + manualcorrect_translation[i];
+
+		}
+
+
 		if (rgbdpc.size()==0){
 			std::cout<<"no pointcloud in the scene"<<std::endl;
 			return;
@@ -677,6 +690,16 @@ vr_rgbd::~vr_rgbd()
 	}
 	void vr_rgbd::Record_PC_FromOneCam(int cam)
 	{
+		
+			rgbdpc[cam].cam_rotation = manualcorrect_rotation[cam] * cam_fine_r[cam] * cam_coarse_r[cam];
+			rgbdpc[cam].cam_translation = manualcorrect_rotation[cam] * cam_fine_r[cam] * cam_coarse_t[cam] + manualcorrect_rotation[cam] * cam_fine_t[cam] + manualcorrect_translation[cam];
+
+		
+		
+			rgbdpc_in_box[cam].cam_rotation = manualcorrect_rotation[cam] * cam_fine_r[cam] * cam_coarse_r[cam];
+			rgbdpc_in_box[cam].cam_translation = manualcorrect_rotation[cam] * cam_fine_r[cam] * cam_coarse_t[cam] + manualcorrect_rotation[cam] * cam_fine_t[cam] + manualcorrect_translation[cam];
+
+		
 		if (rgbdpc.size() == 0) {
 			std::cout << "no pointcloud in the scene" << std::endl;
 			return;
@@ -895,29 +918,36 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
-
-		cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
-		/*registerPointCloud(rgbdpc[0], rgbdpc[1], r, t);*/
-		SICP* sicp = new SICP();
-		sicp->set_source_cloud(rgbdpc[0]);
-		sicp->set_target_cloud(rgbdpc[1]);
-		std::cout << "sicp->parameters.p" << sicp->parameters.p << std::endl;
-		sicp->register_point_to_point(r, t);
-		std::cout<<"r:" << r << std::endl;
-		std::cout << "t:" << t << std::endl;
-		//rgbdpc[0].do_transformation(r, t);
-		
-		vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
-		std::cout << "mean:" << mean << std::endl;
-		//need to de-mean for rotation
-		rgbdpc[0].do_transformation(-mean); 
-		//do rotation
-		//rgbdpc[0].do_transformation(cgv::math::quaternion<float>(r));
-		rgbdpc[0].do_transformation(r);
-		//do translation and reapply mean
-		rgbdpc[0].do_transformation(t + mean);
-		rgbdpc[0].cam_pos = vec3(0, 0, 0);
-		post_redraw();
+		//mat3 c;
+		//c.identity();
+		//std::cout<<c[0]<<c[1]<<c[2]<<c[3]<<c[4]<<c[5]<<c[6]<<std::endl;
+		// 
+		// 
+		// 
+		// 
+		// 
+		//cgv::math::fmat<float, 3, 3> r; cgv::math::fvec<float, 3> t;
+		///*registerPointCloud(rgbdpc[0], rgbdpc[1], r, t);*/
+		//SICP* sicp = new SICP();
+		//sicp->set_source_cloud(rgbdpc[0]);
+		//sicp->set_target_cloud(rgbdpc[1]);
+		//std::cout << "sicp->parameters.p" << sicp->parameters.p << std::endl;
+		//sicp->register_point_to_point(r, t);
+		//std::cout<<"r:" << r << std::endl;
+		//std::cout << "t:" << t << std::endl;
+		////rgbdpc[0].do_transformation(r, t);
+		//
+		//vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
+		//std::cout << "mean:" << mean << std::endl;
+		////need to de-mean for rotation
+		//rgbdpc[0].do_transformation(-mean); 
+		////do rotation
+		////rgbdpc[0].do_transformation(cgv::math::quaternion<float>(r));
+		//rgbdpc[0].do_transformation(r);
+		////do translation and reapply mean
+		//rgbdpc[0].do_transformation(t + mean);
+		//rgbdpc[0].cam_pos = vec3(0, 0, 0);
+		//post_redraw();
 		
 		
 		/*ICP* icp = new ICP();		
