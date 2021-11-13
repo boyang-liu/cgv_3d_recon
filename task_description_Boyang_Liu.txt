@@ -1,0 +1,16 @@
+3D scanning based estimating the center of gravity of the body
+
+Hardware requirements: 3 kinect azures, 3 vive trackers, HTC vive, GPU
+
+1. attach a tracker on every kinect camera, obtain initial pose by multiple sampling
+2. select a fixed area by using VR controller immersively, e.g. one person needs a 2*2*2 = 8 cubic meters
+3. generate depth map and map depth to point
+4. reconstruct surface by using fusion method/ online surface reconstruction(use compute shader), low-poly mesh is also sufficient.
+5. remove outliers while reconstructing
+6. estimate center of gravity by using the mesh
+
+optional task:
+
+1. recosntruct dense mesh
+2. draw the trajectory of the center of gravity
+3. evaluate the center of gravity
