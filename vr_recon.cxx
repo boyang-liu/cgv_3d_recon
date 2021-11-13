@@ -948,45 +948,51 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud& source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t,int source_index) {
 
-		ICP* icp = new ICP();
-		/*cgv::math::fmat<float, 3, 3> r;
-		cgv::math::fvec<float, 3> t;*/
-		r.identity();
-		t.zeros();
-		std::cout << "source.labels.size():" << source.labels.size() << std::endl;
-		std::cout << "target.labels.size():" << target.labels.size() << std::endl;
-		if (source.labels.size() == 0 || target.labels.size() == 0) {
-			std::cout << "there is no label points in source or target pc" << std::endl;
-			return;
-		}
+		//ICP* icp = new ICP();
+		///*cgv::math::fmat<float, 3, 3> r;
+		//cgv::math::fvec<float, 3> t;*/
+		//r.identity();
+		//t.zeros();
+		//std::cout << "source.labels.size():" << source.labels.size() << std::endl;
+		//std::cout << "target.labels.size():" << target.labels.size() << std::endl;
+		//if (source.labels.size() == 0 || target.labels.size() == 0) {
+		//	std::cout << "there is no label points in source or target pc" << std::endl;
+		//	return;
+		//}
 
-		rgbd_pointcloud sourcelabelpoints, targetlabelpoints;
-		for (int i = 0; i < source.labels.size(); i++) {
-			sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
-			//std::cout << "source labels:" << source.lab(i) << std::endl;
-		}
-		for (int i = 0; i < target.labels.size(); i++) {
-			targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
-			//std::cout << "target labels:" << target.lab(i) << std::endl;
-		}
+		//rgbd_pointcloud sourcelabelpoints, targetlabelpoints;
+		//for (int i = 0; i < source.labels.size(); i++) {
+		//	sourcelabelpoints.add_point(source.pnt(source.lab(i)), source.clr(source.lab(i)));
+		//	//std::cout << "source labels:" << source.lab(i) << std::endl;
+		//}
+		//for (int i = 0; i < target.labels.size(); i++) {
+		//	targetlabelpoints.add_point(target.pnt(target.lab(i)), target.clr(target.lab(i)));
+		//	//std::cout << "target labels:" << target.lab(i) << std::endl;
+		//}
 
-		icp->set_source_cloud(sourcelabelpoints);
-		icp->set_target_cloud(targetlabelpoints);
-		icp->set_iterations(20);
-		icp->set_eps(1e-10);
-		std::cout << "run there!" << std::endl;
-		icp->reg_icp(r, t);
+		//icp->set_source_cloud(sourcelabelpoints);
+		//icp->set_target_cloud(targetlabelpoints);
+		//icp->set_iterations(20);
+		//icp->set_eps(1e-10);
+		//std::cout << "run there!" << std::endl;
+		//icp->reg_icp(r, t);
 
 
-		std::cout << "rotation" << r << std::endl;
-		std::cout << "translation" << t << std::endl;
 
-		source.do_transformation(r, t);
+		//std::cout << "rotation" << r << std::endl;
+		//std::cout << "translation" << t << std::endl;
 
-		//testmat = testmat * r;
-		//testvec = testvec +t;
+		//source.do_transformation(r, t);
+		
+		//source.cam_pos = r * source.cam_pos + t ;
+		/*cam_fine_t[source_index] = r * cam_fine_t[source_index] + t;
+		cam_fine_r[source_index] = r* cam_fine_r[source_index];*/
+		
 
-		return;
+		////testmat = testmat * r;
+		////testvec = testvec +t;
+
+		//return;
 
 		//================================================================
 
@@ -997,28 +1003,31 @@ vr_rgbd::~vr_rgbd()
 		
 		std::cout << "mygoicp.registerPointcloud() :" << mygoicp.registerPointcloud() << std::endl;
 
+		//source.cam_pos = mygoicp.optimal_rotation * source.cam_pos +mygoicp.optimal_translation ;
+		/*cam_fine_t[source_index] = mygoicp.optimal_rotation * cam_fine_t[source_index] + mygoicp.optimal_translation;
+		cam_fine_r[source_index] = mygoicp.optimal_rotation* cam_fine_r[source_index];*/
 		
-		source.do_transformation(mygoicp.optimal_rotation, mygoicp.optimal_translation);*/
+		//source.do_transformation(mygoicp.optimal_rotation, mygoicp.optimal_translation);*/
 		//===============================================================
 		
-		//SICP* sicp = new SICP();
-		//sicp->set_source_cloud(source);
-		//sicp->set_target_cloud(target);		
-		//sicp->register_point_to_point(r, t);
-		//
-		//vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
-		//
-		////need to de-mean for rotation
-		//source.do_transformation(-mean);
-		////do rotation		
-		//source.do_transformation(r);
-		////do translation and reapply mean
-		//source.do_transformation(t + mean);
-		//source.cam_pos -=mean;
-		//source.cam_pos = r*source.cam_pos   + t + mean;
-		//cam_fine_r[source_index] = r;
-		//cam_fine_t[source_index] = - r * mean + t+mean;
-		//post_redraw();
+		SICP* sicp = new SICP();
+		sicp->set_source_cloud(source);
+		sicp->set_target_cloud(target);		
+		sicp->register_point_to_point(r, t);
+		
+		vec3 mean = accumulate(&rgbdpc[0].pnt(0), &rgbdpc[0].pnt(0) + rgbdpc[0].get_nr_Points(), vec3(0, 0, 0)) / ((float)rgbdpc[0].get_nr_Points());
+		
+		//need to de-mean for rotation
+		source.do_transformation(-mean);
+		//do rotation		
+		source.do_transformation(r);
+		//do translation and reapply mean
+		source.do_transformation(t + mean);
+		source.cam_pos -=mean;
+		source.cam_pos = r*source.cam_pos   + t + mean;
+		cam_fine_t[source_index] = r * cam_fine_t[source_index] +(- r * mean + t+mean);
+		cam_fine_r[source_index] = r* cam_fine_r[source_index];
+		post_redraw();
 
 
 

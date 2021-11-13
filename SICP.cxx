@@ -29,7 +29,7 @@ using namespace cgv::math;
 			parameters.max_inner_loop = 1;
 			parameters.max_outer_loop = 50;
 			parameters.mu = 10;
-			parameters.p = 0.5f;		
+			parameters.p = 0.4f;		
 			parameters.stop = 1e-5;
 			parameters.use_penalty = false;
 			parameters.max_mu = 1e5;

@@ -62,6 +62,7 @@ bool rgbd_pointcloud::write_lbypc(const std::string& file_name)
 	// write the header
 	success = success && fwrite(&n, sizeof(int), 1, fp);
 	// write the content 
+	success = success && fwrite(&cam_pos, sizeof(Pnt), 1, fp) ;
 	success = success && fwrite(&Points[0], sizeof(Pnt), n, fp) == n;
 	success = success && fwrite(&Colors[0], sizeof(Rgba), n, fp) == n;
 
@@ -86,6 +87,7 @@ bool rgbd_pointcloud::read_lbypc(const std::string& file_name)
 	int nr;
 	success = success && fread(&nr, sizeof(int), 1, fp) == 1;
 	//success = success && fread(&flags, sizeof(cgv::type::uint32_type), 1, fp) == 1;
+	success = success && fread(&cam_pos[0], sizeof(Pnt), 1, fp) == 1;
 	Points.resize(nr);
 	success = success && fread(&Points[0][0], sizeof(Pnt), nr, fp) == nr;
 	Colors.resize(nr);
@@ -115,7 +117,15 @@ bool rgbd_pointcloud::read_txt(const std::string& file_name)
 
 	bool do_parse = false;
 	unsigned i;
-	for (i = 0; i < lines.size(); ++i) {
+	Pnt c_p;
+	if (lines[0].empty())
+	if (sscanf(lines[i].begin, "%f %f %f ", &c_p[0], &c_p[1], &c_p[2]) == 3) {
+
+
+		cam_pos = c_p;
+	}
+
+	for (i = 1; i < lines.size(); ++i) {
 		if (lines[i].empty())
 			continue;
 
@@ -158,11 +168,14 @@ bool rgbd_pointcloud::write_txt(const std::string& file_name)
 {
 	ofstream ofile;
 	ofile.open(file_name.c_str());
+	ofile << cam_pos << " ";
+	ofile << "\n";
 	for (int i = 0; i < Points.size(); i++) {
 
 		ofile << Points[i] << " ";
 		ofile << Colors[i] << " ";
 		ofile << "\n";
+
 	}
 	ofile.close();
 	//success = success && fwrite(&flags, sizeof(cgv::type::uint32_type), 1, fp) == 1;

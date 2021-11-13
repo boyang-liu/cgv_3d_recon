@@ -104,7 +104,9 @@ class rgbd_pointcloud : public point_cloud_types//:public cgv::render::drawable
 
 public:
 	
-
+	rgbd_pointcloud() {
+		cam_pos = Pnt(0, 0, 0);
+	}
 	bool write_pc(const std::string& file_name);
 	bool read_pc(const std::string& file_name);
 	size_t add_point(const Pnt& p);
@@ -150,7 +152,7 @@ public:
 	bool has_normals() const {return has_nmls;}
 	void create_normals();
 	void delete_labeled_points();
-	Pnt cam_pos=Pnt(0,0,0);
+	Pnt cam_pos;
 	Pnt mean;
 	std::vector<Rgba> renderColors;
 	std::vector<Rgba> Colors;
