@@ -5,81 +5,51 @@
 #include <iostream>
 #include <algorithm>
 
-//namespace voxel
-//{
-//	bool Voxelization::voxelize(cgv::render::context& ctx, const float& step, std::vector<vec3>& ret,vec3 min,vec3 max, rgbd_pointcloud pc)
-//	{
-//		ret.clear();
-//
-//		//shader
-//		/*if (!voxelize_prog.is_linked()) {
-//			if (!voxelize_prog.build_program(ctx, "voxelize.glpr", true)) {
-//				std::cerr << "could not build voxelize_prog shader program" << std::endl;
-//				abort();
-//			}
-//		}*/
-//
-//
-//		//bounding box info
-//				
-//		ivec3 resolution;
-//
-//		vec3 range(max.x() - min.x(), max.y() - min.y(), max.z() - min.z());
-//		resolution.x() = static_cast<int>(range.x() / step) + 1;
-//		resolution.y() = static_cast<int>(range.y() / step) + 1;
-//		resolution.z() = static_cast<int>(range.z() / step) + 1;
-//		int length = static_cast<int>((resolution.x()) * (resolution.y()) * (resolution.z()));
-//
-//		
-//		//point cloud info
-//
-//		std::vector<vec3> mypc;
-//		std::vector<Rgba> mypc_color;
-//		
-//		mypc = pc.getPoints();
-//		mypc_color = pc.getColors();
-//		
-//		std::vector<box3> myboxes;
-//		rgb box_clr(0.3f, 0.2f, 0.0f);
-//		std::vector<rgb> box_colors;
-//		myboxes.push_back(box3(vec3(-0.5f , -0.5f, -0.5f ), vec3(0.5f , 0.5f, 0.5f )));
-//		box_colors.push_back(box_clr);
-//
-//
-//		cgv::render::voxel_renderer& renderer = cgv::render::ref_voxel_renderer(ctx);
-//		cgv::render::voxel_render_style style;
-//		renderer.set_render_style(style);
-//		renderer.set_voxel_array(ctx, myboxes);
-//		renderer.set_color_array(ctx, box_colors);
-//		if (renderer.validate_and_enable(ctx)) {
-//			glDrawArrays(GL_POINTS, 0, (GLsizei)myboxes.size());
-//		}
-//		renderer.disable(ctx);
-//
-//
-//
-//
-//
-//		
-//
-//
-//
-//
-//
-//		
-//
-//		
-//		
-//
-//		return false;
-//
-//
-//
-//
-//
-//
-//	}
-//
-//
-//
-//}
+namespace voxel
+{
+	bool Voxelization::init_voxelize(cgv::render::context& ctx, const float& step,vec3 min,vec3 max, rgbd_pointcloud pc)
+	{
+		if (!voxelize_prog.build_program(ctx, "gradient_3d.glpr", true)) {
+			std::cerr << "ERROR in building shader program "  << std::endl;
+			return false;
+		}
+
+		unsigned group_size = 4;
+		uvec3 num_groups = ceil(vec3(vres) / (float)group_size);
+
+		voxelize_prog.enable(ctx);
+		voxelize_prog.set_uniform(ctx, "resolution", vres);
+		voxelize_prog.set_uniform(ctx, "cam_pos", pc.cam_pos);
+		voxelize_prog.set_uniform(ctx, "gradient_mode", (int)gradient_mode);
+		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
+
+		// do something else
+
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		voxelize_prog.disable(ctx);
+		
+
+		//bounding box info
+				
+		ivec3 resolution;
+
+		vec3 range(max.x() - min.x(), max.y() - min.y(), max.z() - min.z());
+		resolution.x() = static_cast<int>(range.x() / step) + 1;
+		resolution.y() = static_cast<int>(range.y() / step) + 1;
+		resolution.z() = static_cast<int>(range.z() / step) + 1;
+		int length = static_cast<int>((resolution.x()) * (resolution.y()) * (resolution.z()));
+
+		
+			
+		return false;
+
+
+
+
+
+
+	}
+
+
+
+}
