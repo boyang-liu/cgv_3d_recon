@@ -496,7 +496,7 @@ vr_rgbd::vr_rgbd()
 
 	BoundingBoxlength = 2.0;
 	BoundingBoxheight = 2.0;
-	
+	BoundingBoxstep = 0.05;
 	//testmat.identity();
 	//testtran=vec3(0,0,0);
 	num_recorded_pc = 0;
@@ -2352,14 +2352,19 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					vec3 ray_origin, ray_direction;
 					state_ptr->controller[1].put_ray(&ray_origin(0), &ray_direction(0));
 					vec3 box_center = ray_origin + ray_length * ray_direction;
-
+					
+					
 					vec3 pos1, pos2;
 					pos1 = box_center - vec3(BoundingBoxlength /2, BoundingBoxlength / 2, BoundingBoxheight / 2);
 					pos2 = box_center + vec3(BoundingBoxlength / 2, BoundingBoxlength / 2, BoundingBoxheight / 2);
 					
+
 					draw_boudingbox(ctx, pos1, pos2);
 					pcbb.pos1 = pos1;
 					pcbb.pos2 = pos2;
+
+					pcbb.step = BoundingBoxstep;
+
 
 					if (rgbdpc.size() > 0) {
 					for (int i = 0; i < rgbdpc.size(); i++) {
@@ -2374,6 +2379,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				else {
 					if (boundingboxisfixed) {
 						draw_boudingbox(ctx, pcbb.pos1, pcbb.pos2);
+
+
 					}
 
 

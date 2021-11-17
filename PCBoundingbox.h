@@ -15,7 +15,22 @@ public:
 	vec3 boxcenter;
 	float height;
 	float length;
+	float width;
+	float step;
 	vec3 getpos1() { return boxcenter - vec3(boxcenter[0] - length / 2, boxcenter[1] - length / 2, boxcenter[2] - height / 2); }
 	vec3 getpos2() { return boxcenter - vec3(boxcenter[0] + length / 2, boxcenter[1] + length / 2, boxcenter[2] + height / 2); }
+	void initvoxelindex() {
+		voxelindex.resize(length / step);
+		for (int i = 0; i < voxelindex.size(); i++) {
+			voxelindex[i].resize(width / step);
+			for (int j = 0; j < voxelindex.size(); i++)
+			{
+				voxelindex[j].resize(height / step);
+			}
+		}
+	
+	}
+protected:
+	std::vector<std::vector<std::vector<int>>> voxelindex;
 };
 

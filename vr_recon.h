@@ -273,6 +273,7 @@ protected:
 	
 	float BoundingBoxlength;
 	float BoundingBoxheight;
+	float BoundingBoxstep;
 	PCBoundingbox pcbb;
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_fine_r;
 	std::vector < cgv::math::fvec<float, 3>> cam_fine_t;

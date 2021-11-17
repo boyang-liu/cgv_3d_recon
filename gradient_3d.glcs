@@ -108,7 +108,15 @@ float sobel_z(ivec3 idx) {
 
 	return (1.0/44.0) * result;
 }
-
+float distance_box_cam(int boxindex) {
+vec3 boxcenter;
+boxcenter[0]=(boxindex%height)step-boxlength;
+boxcenter[1]=(boxindex-(boxindex%height%width))step-boxlength;
+boxcenter[2]=(boxindex-(boxindex%height%length))step-boxlength;
+float b_c_ditance;
+b_c_ditance=sqrt(boxcenter[0]-cam[0])+sqrt(boxcenter[1]-cam[1])+sqrt(boxcenter[2]-cam[2]);
+return b_c_distance
+}
 vec3 gradient_sobel(ivec3 idx) {
 
 	float result = 0.0;
@@ -236,13 +244,7 @@ void main() {
 		switch (gradient_mode) {			
 		case 0 :    // Central differences	
 			{
-				float xr = get_value(idx + ivec3(1, 0, 0));
-				float xl = get_value(idx + ivec3(-1, 0, 0));
-				float yr = get_value(idx + ivec3(0, 1, 0));
-				float yl = get_value(idx + ivec3(0, -1, 0));
-				float zr = get_value(idx + ivec3(0, 0, 1));
-				float zl = get_value(idx + ivec3(0, 0, -1));
-				imageStore(gradient_tex, idx, -0.5 * vec4(xr - xl, yr - yl, zr - zl, 0.0));
+				
 			}
 			break;
 		case 1 :    // Sobel operator
