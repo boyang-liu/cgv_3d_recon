@@ -10,13 +10,13 @@ uniform uvec3 resolution; // the resolution of the volume texture
 uniform vec3 cam_pos;
 
 float distance_box_cam(int boxindex) {
-vec3 boxcenter;
+/*vec3 boxcenter;
 boxcenter[0]=(boxindex%height)step-boxlength;
 boxcenter[1]=(boxindex-(boxindex%height%width))step-boxlength;
 boxcenter[2]=(boxindex-(boxindex%height%length))step-boxlength;
 float b_c_ditance;
 b_c_ditance=sqrt(boxcenter[0]-cam[0])+sqrt(boxcenter[1]-cam[1])+sqrt(boxcenter[2]-cam[2]);
-return b_c_distance
+return b_c_distance*/
 }
 
 
@@ -27,7 +27,6 @@ void main() {
     
 	if(idx.x < resolution.x && idx.y < resolution.y && idx.z < resolution.z) {
 		
-
 		
 	}
 }

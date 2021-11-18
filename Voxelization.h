@@ -30,7 +30,7 @@ public:
 	~Voxelization() = default;
 	/// resolution of the volume
 	uvec3 vres;
-	bool init_voxelize(cgv::render::context& ctx,const float& step, vec3 min, vec3 max, rgbd_pointcloud pc);
+	bool init_voxelize(cgv::render::context& ctx,const float step, vec3 min, vec3 max, rgbd_pointcloud pc);
 };
 
 
