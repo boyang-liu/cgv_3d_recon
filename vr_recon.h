@@ -50,6 +50,8 @@ class vr_rgbd :
 	public cgv::gui::provider
 {
 protected:
+
+
 	enum InteractionState
 	{
 		IS_NONE,

@@ -17,7 +17,9 @@ namespace voxel
 		unsigned group_size = 0.02;
 		//unsigned group_size = step;
 		vec3 vre = max - min;
-
+		vre.x = abs(vre.x);
+		vre.y = abs(vre.y);
+		vre.z = abs(vre.z);
 		uvec3 num_groups = ceil(vec3(vre) / (float)group_size);
 
 		voxelize_prog.enable(ctx);
@@ -25,6 +27,7 @@ namespace voxel
 		voxelize_prog.set_uniform(ctx, "max", max);
 		voxelize_prog.set_uniform(ctx, "step", step);
 		voxelize_prog.set_uniform(ctx, "cam_pos", pc.cam_pos);
+		voxelize_prog.set_uniform(ctx,"step",step);
 		//voxelize_prog.set_uniform(ctx, "gradient_mode", (int)gradient_mode);
 		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
 
