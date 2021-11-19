@@ -7,26 +7,30 @@
 
 namespace voxel
 {
-	bool Voxelization::init_voxelize(cgv::render::context& ctx, const float step,vec3 min,vec3 max, rgbd_pointcloud pc)
+	bool Voxelization::init_voxelize(cgv::render::context& ctx, const float step, vec3 min, vec3 max, std::vector<std::vector<depthpixel>> depthimageplane)
 	{
 		if (!voxelize_prog.build_program(ctx, "gradient_3d.glpr", true)) {
 			std::cerr << "ERROR in building shader program "  << std::endl;
 			return false;
 		}
 
-		unsigned group_size = 0.02;
+		unsigned group_size = 1.0; //0.02;
 		//unsigned group_size = step;
 		vec3 vre = max - min;
-		vre.x = abs(vre.x);
-		vre.y = abs(vre.y);
-		vre.z = abs(vre.z);
+		
+
+
+		vre[0] = abs(vre[0]);
+		vre[1] = abs(vre[1]);
+		vre[2] = abs(vre[2]);
+
 		uvec3 num_groups = ceil(vec3(vre) / (float)group_size);
 
 		voxelize_prog.enable(ctx);
 		voxelize_prog.set_uniform(ctx, "min", min);
 		voxelize_prog.set_uniform(ctx, "max", max);
 		voxelize_prog.set_uniform(ctx, "step", step);
-		voxelize_prog.set_uniform(ctx, "cam_pos", pc.cam_pos);
+		//voxelize_prog.set_uniform(ctx, "cam_pos", pc.cam_pos);
 		voxelize_prog.set_uniform(ctx,"step",step);
 		//voxelize_prog.set_uniform(ctx, "gradient_mode", (int)gradient_mode);
 		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);

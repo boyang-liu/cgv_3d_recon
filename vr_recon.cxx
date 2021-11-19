@@ -206,8 +206,8 @@ void vr_rgbd::attach_all_devices()
 	rgbdpc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
 
-	viewconepos1.resize(rgbd_inp.get_nr_devices());
-	viewconepos2.resize(rgbd_inp.get_nr_devices());
+	//viewconepos1.resize(rgbd_inp.get_nr_devices());
+	//viewconepos2.resize(rgbd_inp.get_nr_devices());
 
 	cam_fine_r.resize(rgbd_inp.get_nr_devices());
 	cam_fine_t.resize(rgbd_inp.get_nr_devices());
@@ -217,6 +217,8 @@ void vr_rgbd::attach_all_devices()
 	manualcorrect_translation.resize(rgbd_inp.get_nr_devices());
 	manualcorrect_rotation.resize(rgbd_inp.get_nr_devices());
 	trees.resize(rgbd_inp.get_nr_devices());
+
+	imageplanes.resize(rgbd_inp.get_nr_devices());
 	for (int i = 0; i < cam_fine_r.size(); i++) {
 		cam_coarse_r[i].identity();
 		cam_coarse_t[i] = vec3(0, 0, 0);
@@ -227,8 +229,12 @@ void vr_rgbd::attach_all_devices()
 		manualcorrect_rotation[i].identity();
 		manualcorrect_translation[i] = vec3(0, 0, 0);
 		rgbdpc[i].cam_pos = vec3(0, 0, 0);
-	}
 
+		imageplanes[i].resize(576);
+		for (int j = 0; j < 576; j++)
+			imageplanes[i][j].resize(640);
+	}
+	
 	update_member(&all_devices_attached);
 }
 void vr_rgbd::detach_all_devices() {
@@ -245,6 +251,10 @@ void vr_rgbd::detach_all_devices() {
 		stop_all_rgbd();
 	else {
 		rgbd_inp.detach();
+		rgbdpc.clear();
+		intermediate_rgbdpc.clear();
+		imageplanes.clear();
+		rgbdpc_in_box.clear();
 		cam_coarse_t.clear();
 		cam_coarse_r.clear();
 		cam_fine_t.clear();
@@ -252,7 +262,7 @@ void vr_rgbd::detach_all_devices() {
 		manualcorrect_translation.clear();
 		manualcorrect_rotation.clear();
 		current_corrected_cam = -1;
-		
+		trees.clear();
 		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 		current_pc.clear();
 	
@@ -559,6 +569,9 @@ vr_rgbd::~vr_rgbd()
 		
 		int i = 0;
 		
+		
+
+
 		intermediate_rgbdpc[index].clear();
 		for (int y =0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {//
@@ -574,16 +587,23 @@ vr_rgbd::~vr_rgbd()
 					static const rgba8 filter_color = rgba8(0, 0, 0, 255);
 					//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
 					
-					if (!(c == filter_color)) {
+					//if (!(c == filter_color)) {
 					
 					/*p[0] = p[0]*10 / p[2];
 					p[1] = p[1] * 10 / p[2];
-					p[2] = 10;
+					p[2] = 10;*/
+
+					//if () {
+					imageplanes[index][y][x].depthsquare = p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
+					imageplanes[index][y][x].color = c;
 
 
-						p[0] = p[0]  / p[2];
+					//}
+						
+						/*p[0] = p[0]  / p[2];
 						p[1] = p[1]  / p[2];
 						p[2] = 1;*/
+
 						v.color = c;						
 						float t;
 						t = p[1];
@@ -598,13 +618,19 @@ vr_rgbd::~vr_rgbd()
 						v.point = p;
 						
 						intermediate_rgbdpc[index].add_point(v.point, v.color);					
-					}
+					//}
 						
+				}
+				else {
+					imageplanes[index][y][x].depthsquare = -1;
+					imageplanes[index][y][x].color = rgba8(0, 0, 0, 255);
 				}
 				++i;
 			}
 		
-		
+		//std::cout << "im:" << imageplanes[index].size() << std::endl;
+		/*std::cout << "depths:" << depths[130000] << std::endl;*/
+
 		intermediate_rgbdpc[index].cam_pos = cam_coarse_r[index] * vec3(0, 0, 0) + cam_coarse_t[index];
 		intermediate_rgbdpc[index].cam_pos = cam_fine_r[index] * vec3(0, 0, 0) + cam_fine_t[index];
 
@@ -796,7 +822,7 @@ vr_rgbd::~vr_rgbd()
 
 		manualcorrect_rotation.resize(rgbdpc.size());
 		manualcorrect_translation.resize(rgbdpc.size());
-
+		imageplanes.resize(rgbdpc.size());
 		for (int i = 0; i < cam_fine_r.size(); i++) {
 			cam_coarse_r[i].identity();
 			cam_coarse_t[i] = vec3(0, 0, 0);
@@ -850,7 +876,7 @@ vr_rgbd::~vr_rgbd()
 		cam_fine_t.resize(rgbdpc.size());
 		manualcorrect_rotation.resize(rgbdpc.size());
 		manualcorrect_translation.resize(rgbdpc.size());
-		
+		imageplanes.resize(rgbdpc.size());
 		cam_coarse_r[rgbdpc.size()-1].identity();
 		cam_coarse_t[rgbdpc.size() - 1] = vec3(0, 0, 0);
 
@@ -919,6 +945,27 @@ vr_rgbd::~vr_rgbd()
 	}
 
 	void vr_rgbd::temp_test() {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 		//mat3 c;
 		//c.identity();

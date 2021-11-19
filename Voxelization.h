@@ -25,12 +25,17 @@ private:
 	
 protected:
 	cgv::render::shader_program voxelize_prog;
+	struct depthpixel : public cgv::render::render_types
+	{
+		float depthsquare;
+		rgba8 color;
+	};
 public:
 	Voxelization() = default;
 	~Voxelization() = default;
 	/// resolution of the volume
 	uvec3 vres;
-	bool init_voxelize(cgv::render::context& ctx,const float step, vec3 min, vec3 max, rgbd_pointcloud pc);
+	bool init_voxelize(cgv::render::context& ctx,const float step, vec3 min, vec3 max, std::vector<std::vector<depthpixel>>);
 };
 
 

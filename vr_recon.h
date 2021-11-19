@@ -64,6 +64,12 @@ protected:
 		vec3  point;
 		rgba8 color;
 	};
+
+	struct depthpixel : public cgv::render::render_types
+	{
+		float depthsquare;
+		rgba8 color;
+	};
 	/// internal members used for data storage
 	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
 	rgbd::frame_type color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
@@ -219,8 +225,8 @@ protected:
 	std::vector<vec3> camera_pos;
 	std::vector<mat3> camera_ori;
 
-	std::vector<vec3> viewconepos1;
-	std::vector<vec3> viewconepos2;
+	//std::vector<vec3> viewconepos1;
+	//std::vector<vec3> viewconepos2;
 
 	bool no_controller;
 	std::vector<vec3> manualcorrect_translation;
@@ -269,6 +275,9 @@ protected:
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
+
+	std::vector < std::vector<std::vector<depthpixel>>> imageplanes;
+
 	std::vector<int> knn;
 	float Radius_SelectMode;
 	float sphere_distance ;
