@@ -38,6 +38,7 @@
 #include "PCBoundingbox.h"
 #include "GoICP.h"
 #include <time.h>
+#include "Voxelization.h"
 using namespace rgbd;
 
 #define recorded_pc_frequency 30

@@ -14,12 +14,16 @@ typedef cgv::type::uint8_type ClrComp;
 typedef cgv::media::color<ClrComp, cgv::media::RGB, cgv::media::OPACITY> Rgba;
 typedef cgv::media::color<float, cgv::media::RGB> rgb;
 typedef cgv::media::axis_aligned_box<float, 3> box3;
-namespace voxel {
-class Voxelization:
-	public cgv::base::node,
+//namespace voxel {
+
+
+typedef cgv::math::fvec<uint32_t, 3> uvec3;
+
+class Voxelization//:
+	/*public cgv::base::node,
 	public cgv::render::drawable,
 	public cgv::gui::provider,
-	public cgv::gui::event_handler
+	public cgv::gui::event_handler*/
 {
 private:
 	
@@ -31,12 +35,15 @@ protected:
 		rgba8 color;
 	};
 public:
-	Voxelization() = default;
-	~Voxelization() = default;
+	//Voxelization() = default;
+	//~Voxelization() = default;
 	/// resolution of the volume
+
+	GLuint m_cntBuffer;
+
 	uvec3 vres;
-	bool init_voxelize(cgv::render::context& ctx,const float step, vec3 min, vec3 max, std::vector<std::vector<depthpixel>>);
+	bool init_voxelization(cgv::render::context& ctx, const float step, vec3 min, vec3 max);//, std::vector<std::vector<depthpixel>> depthimageplane, std::vector<vec3> cam_pos);
 };
 
 
-}
+//}

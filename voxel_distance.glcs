@@ -1,18 +1,26 @@
 #version 430
 
-layout(local_size_x = 100, local_size_y = 100, local_size_z = 100) in;
-
-layout(std430,binding = 0) buffer countbuffer{
-int cnts[];
-}
+layout(local_size_x = 10, local_size_y = 10, local_size_z = 10) in;
 
 
-uniform uvec3 resolution; // the resolution of the volume texture
+struct Voxel
+{
+    int inside;
+    uint colors;
+};
+layout(std430,binding = 1) buffer countbuffer{
+ Voxel ids[];
+};
+
 uniform vec3 min;
 uniform vec3 max;
-uniform vec3 cam_pos;
-uniform float step;
+uniform vec3 cam_pos1;
+uniform vec3 cam_pos2;
+uniform vec3 cam_pos3;
+uniform float group_size;
+uniform uvec3 resolution;
 float distance_box_cam(int boxindex) {
+
 /*vec3 boxcenter;
 boxcenter[0]=(boxindex%height)step-boxlength;
 boxcenter[1]=(boxindex-(boxindex%height%width))step-boxlength;
@@ -20,25 +28,25 @@ boxcenter[2]=(boxindex-(boxindex%height%length))step-boxlength;
 float b_c_ditance;
 b_c_ditance=sqrt(boxcenter[0]-cam[0])+sqrt(boxcenter[1]-cam[1])+sqrt(boxcenter[2]-cam[2]);
 return b_c_distance*/
+
+return 0;
 }
 float get_value(ivec3 idx) {
-	vec3 myvec=min+idx*step;
-	if(	idx.x >= 0 && idx.x < resolution.x &&
-		idx.y >= 0 && idx.y < resolution.y &&
-		idx.z >= 0 && idx.z < resolution.z) {
-		return imageLoad(volume_tex, idx).r;
-	} else {
-		return 0.0;
-	}
+//	vec3 myvec=min+idx*step;
+return 0;
 }
 
 void main() {
 
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
-    
-	if(idx.x < resolution.x && idx.y < resolution.y && idx.z < resolution.z) {
+    uint index = uint(resolution.z*resolution.y*idx.x+resolution.z*idx.y+idx.z);
+	if(idx.x < max.x && idx.y < max.y && idx.z < max.z) {
+		
 		
 		
 	}
+
+	
+
 }

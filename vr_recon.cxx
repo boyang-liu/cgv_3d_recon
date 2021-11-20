@@ -28,6 +28,7 @@
 #include "GoICP.h"
 #include "SICP.h"
 #include <numeric>
+#include "Voxelization.h"
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -946,8 +947,7 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
-
-
+		
 
 
 
@@ -2334,7 +2334,14 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
-	
+	Voxelization myvo;
+	vec3 mm1 = vec3(0, 0, 0);
+	vec3 mm2 = vec3(2, 2, 2);
+	myvo.init_voxelization(ctx,0,mm1,mm2);
+
+
+
+
 
 		if (show_points) {
 			auto& pr = cgv::render::ref_point_renderer(ctx);
