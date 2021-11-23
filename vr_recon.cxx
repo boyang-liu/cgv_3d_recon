@@ -595,8 +595,8 @@ vr_rgbd::~vr_rgbd()
 					p[2] = 10;*/
 
 					//if () {
-					imageplanes[index][y][x].depthsquare = p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
-					imageplanes[index][y][x].color = c;
+					imageplanes[index][y][x].depthsquare = p.length();//p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
+					imageplanes[index][y][x].pixelcolor = c;
 
 
 					//}
@@ -609,7 +609,10 @@ vr_rgbd::~vr_rgbd()
 						float t;
 						t = p[1];
 						p[1] = p[2];
-						p[2] = t;						
+						p[2] = t;
+
+
+
 						p = cam_coarse_r[index] * p;															
 						p = p + cam_coarse_t[index];	
 						p = cam_fine_r[index] * p;
@@ -624,7 +627,7 @@ vr_rgbd::~vr_rgbd()
 				}
 				else {
 					imageplanes[index][y][x].depthsquare = -1;
-					imageplanes[index][y][x].color = rgba8(0, 0, 0, 255);
+					imageplanes[index][y][x].pixelcolor = rgba8(0, 0, 0, 255);
 				}
 				++i;
 			}
@@ -948,18 +951,6 @@ vr_rgbd::~vr_rgbd()
 	void vr_rgbd::temp_test() {
 
 		
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2334,11 +2325,39 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
-	Voxelization myvo;
-	vec3 mm1 = vec3(0, 0, 0);
-	vec3 mm2 = vec3(2, 2, 2);
-	myvo.init_voxelization(ctx,0,mm1,mm2);
+	
+	std::vector<Mat> inver_r;
+	inver_r.resize(3);
+	inver_r[0].identity();
+	inver_r[1].identity();
+	inver_r[2].identity();
+	std::vector<vec3> inver_t;
+	inver_t.resize(3);
+	inver_t[0] = vec3(0, 0, 0);
+	inver_t[1] = vec3(0, 0, 0);
+	inver_t[2] = vec3(0, 0, 0);
 
+	std::vector< std::vector<std::vector<depthpixel>>> mydepthimageplane;
+	mydepthimageplane.resize(3);
+	mydepthimageplane[0].resize(576);
+	mydepthimageplane[1].resize(576);
+	mydepthimageplane[2].resize(576);
+
+	for (int y = 0; y < 576; y++)
+	{
+		mydepthimageplane[0][y].resize(640);
+		mydepthimageplane[1][y].resize(640);
+		mydepthimageplane[2][y].resize(640);
+	}
+	for (int i = 0; i < 3; i++)
+		for (int i2 = 0; i2 < 576; i2++)
+			for (int i3 = 0; i3 < 640; i3++) {
+				mydepthimageplane[i][i2][i3].depthsquare = 0;
+				mydepthimageplane[i][i2][i3].pixelcolor = rgba8(0, 0, 0, 255);}
+	Voxelization v;
+
+
+	v.init_voxelization(ctx, 0.1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
 
 
 

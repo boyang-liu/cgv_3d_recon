@@ -98,7 +98,11 @@ struct point_cloud_types
 	};
 };
 
-
+struct depthpixel : public point_cloud_types
+{
+	float depthsquare;
+	Rgba pixelcolor;
+};
 class rgbd_pointcloud : public point_cloud_types//:public cgv::render::drawable
 {
 

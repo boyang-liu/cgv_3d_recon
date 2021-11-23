@@ -60,17 +60,17 @@ protected:
 		IS_GRAB
 	};
 	
-	struct vertex : public cgv::render::render_types
+	struct vertex 
 	{
 		vec3  point;
 		rgba8 color;
 	};
 
-	struct depthpixel : public cgv::render::render_types
+	/*struct depthpixel 
 	{
 		float depthsquare;
 		rgba8 color;
-	};
+	};*/
 	/// internal members used for data storage
 	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
 	rgbd::frame_type color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;

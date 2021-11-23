@@ -1,7 +1,18 @@
 #version 430
 
 layout(local_size_x = 10, local_size_y = 10, local_size_z = 10) in;
+layout(binding = 0, r32f) uniform readonly image3D depth_tex;
+layout(binding = 1, rgba32f) uniform writeonly image3D v_id_tex;
+float get_depth_value(ivec3 depthidx) {
 
+	if(	depthidx.x >= 0 && depthidx.x < 3 &&
+		depthidx.y >= 0 && depthidx.y < 576 &&
+		depthidx.z >= 0 && depthidx.z < 640) {
+		return imageLoad(depth_tex, depthidx).r;
+	} else {
+		return 0.0;
+	}
+}
 
 struct Voxel
 {
@@ -14,38 +25,67 @@ layout(std430,binding = 1) buffer countbuffer{
 
 uniform vec3 min;
 uniform vec3 max;
-uniform vec3 cam_pos1;
-uniform vec3 cam_pos2;
-uniform vec3 cam_pos3;
+uniform vec3 inver_t1;
+uniform vec3 inver_t2;
+uniform vec3 inver_t3;
+
+uniform mat3 inver_r1;
+uniform mat3 inver_r2;
+uniform mat3 inver_r3;
+
+uniform float step;
 uniform float group_size;
 uniform uvec3 resolution;
-float distance_box_cam(int boxindex) {
 
-/*vec3 boxcenter;
-boxcenter[0]=(boxindex%height)step-boxlength;
-boxcenter[1]=(boxindex-(boxindex%height%width))step-boxlength;
-boxcenter[2]=(boxindex-(boxindex%height%length))step-boxlength;
-float b_c_ditance;
-b_c_ditance=sqrt(boxcenter[0]-cam[0])+sqrt(boxcenter[1]-cam[1])+sqrt(boxcenter[2]-cam[2]);
-return b_c_distance*/
+float sqr_d_box_cam(vec3 voxelcenter,mat3 r,vec3 t) {
+vec3 inver_c=r*voxelcenter+t;
+float d=voxelcenter.x*voxelcenter.x+voxelcenter.y*voxelcenter.y+voxelcenter.z*voxelcenter.z;
+return d;
+}
 
-return 0;
+vec3 get_value(ivec3 VoxelID) {
+vec3 vc=min+vec3(VoxelID.x*step-step/2,VoxelID.y*step-step/2,VoxelID.z*step-step/2);
+return  vc;
 }
-float get_value(ivec3 idx) {
-//	vec3 myvec=min+idx*step;
-return 0;
-}
+
+
+//=====================unfinished 
+/*vec2 pos_in_imageplane(vec3 voxel_center,mat3 r,vec3 t){
+
+vec2 pos=vec2(voxel_center.x/voxel_center.y,voxel_center.z/voxel_center.y);
+vec2 index_in_plane=vec2 (floor(pos.x),floor(pos.z))
+
+return index_in_plane;
+}*/
+//=====================unfinished
+
 
 void main() {
 
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
-    uint index = uint(resolution.z*resolution.y*idx.x+resolution.z*idx.y+idx.z);
-	if(idx.x < max.x && idx.y < max.y && idx.z < max.z) {
+	/*
+    vec3 voxelpos= get_value(idx);
+	if(voxelpos.x < max.x && voxelpos.y < max.y && voxelpos.z < max.z) {
+
+		float d1=sqr_d_box_cam(voxelpos,inver_r1,inver_t1);
+		float d2=sqr_d_box_cam(voxelpos,inver_r2,inver_t2);
+		float d3=sqr_d_box_cam(voxelpos,inver_r3,inver_t3);
+		//if()
+	}*/
+
+
 		
 		
-		
-	}
+
+		//=====================test 
+		imageStore(v_id_tex, idx, vec4(1.0, 0.0, 0.0, 0.0));
+
+
+
+
+		//=====================test 
+	
 
 	
 
