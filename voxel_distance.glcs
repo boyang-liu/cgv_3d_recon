@@ -64,6 +64,7 @@ void main() {
 
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
+
 	/*
     vec3 voxelpos= get_value(idx);
 	if(voxelpos.x < max.x && voxelpos.y < max.y && voxelpos.z < max.z) {
@@ -79,8 +80,9 @@ void main() {
 		
 
 		//=====================test 
-		imageStore(v_id_tex, idx, vec4(1.0, 0.0, 0.0, 0.0));
-
+		
+		imageStore(v_id_tex, idx, vec4(idx, 0.0));
+		
 
 
 

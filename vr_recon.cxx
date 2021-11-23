@@ -950,8 +950,9 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
+		std::cout << pcbb.pos1 << std::endl;
+		std::cout << pcbb.pos2 << std::endl;
 		
-
 
 
 
@@ -1661,7 +1662,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					
 
 					if (selectPointsmode) {
-						vec3 ray_origin, ray_direction,ray_end;
+						vec3 ray_origin, ray_direction, ray_end;
 						
 						vrke.get_state().controller[1].put_ray(&ray_origin(0), &ray_direction(0));												
 						ray_end=ray_origin + sphere_distance*ray_direction;
@@ -2357,7 +2358,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	Voxelization v;
 
 
-	v.init_voxelization(ctx, 0.1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+	//v.init_voxelization(ctx, 0.1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
 
 
 

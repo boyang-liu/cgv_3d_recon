@@ -42,10 +42,10 @@ protected:
 	};*/
 public:
 	Voxelization::Voxelization();
-	//~Voxelization() = default;
+	
 	/// resolution of the volume
 
-	GLuint m_cntBuffer;
+	//GLuint m_cntBuffer;
 
 	uvec3 vres;
 	bool init_voxelization(cgv::render::context& ctx, const float step, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);

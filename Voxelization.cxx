@@ -31,9 +31,9 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 			return false;
 		}
 
-		unsigned voxel_size = 0.1; //0.02;
+		unsigned voxel_size = step; //0.02;
 		//unsigned group_size = step;
-		vec3 vre = max - min;
+		uvec3 vre = max - min;
 		
 
 		depth_tex.destruct(ctx);
@@ -69,9 +69,11 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 		glBindImageTexture(0, depth_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		glBindImageTexture(1, v_id_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
+		
+		//uvec3 num_groups = ceil(vec3(vre) / (float)voxel_size);
+		uvec3 num_groups = uvec3(10, 10, 10);
 
-		uvec3 num_groups = ceil(vec3(vre) / (float)voxel_size);
-
+std::cout << "1: " << num_groups << std::endl;
 		voxelize_prog.enable(ctx);
 		voxelize_prog.set_uniform(ctx, "min", min);
 		voxelize_prog.set_uniform(ctx, "max", max);
@@ -90,7 +92,7 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 
 		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
 
-		//int length = num_groups[0] * num_groups[1] * num_groups[2];
+		int length = num_groups[0] * num_groups[1] * num_groups[2];
 
 
 		//glGenBuffers(1, &m_cntBuffer);
@@ -117,9 +119,12 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 
 
 		// read texture into memory
-		std::vector<vec4> voxelID_data(num_groups[0] * num_groups[1] * num_groups[2], vec4(0.0f));
-
+		std::vector<vec4> voxelID_data(length, vec4(0.0f));
+		std::cout << "2: " << voxelID_data[0] << std::endl;
 		v_id_tex.enable(ctx, 0);
+
+		
+
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)voxelID_data.data());
 		v_id_tex.disable(ctx);
 		
