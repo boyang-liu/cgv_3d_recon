@@ -5,15 +5,15 @@
 #include <iostream>
 #include <algorithm>
 
-Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]") {
+Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]") {
 
 
-	depth_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-	depth_tex.set_mag_filter(cgv::render::TF_LINEAR);
-	depth_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-	depth_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-	depth_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-	depth_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
+	pixel_depth_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
+	pixel_depth_tex.set_mag_filter(cgv::render::TF_LINEAR);
+	pixel_depth_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
+	pixel_depth_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
+	pixel_depth_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
+	pixel_depth_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
 
 	v_id_tex.set_min_filter(cgv::render::TF_LINEAR);
 	v_id_tex.set_mag_filter(cgv::render::TF_LINEAR);
@@ -24,19 +24,18 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 
 }
 
-	bool Voxelization::init_voxelization(cgv::render::context& ctx, const float step, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
+	bool Voxelization::init_voxelization(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
 	{
 		if (!voxelize_prog.build_program(ctx, "voxel_distance.glpr", true)) {
 			std::cerr << "ERROR in building shader program "  << std::endl;
 			return false;
 		}
 
-		unsigned voxel_size = step; //0.02;
-		//unsigned group_size = step;
-		uvec3 vre = max - min;
 		
-
-		depth_tex.destruct(ctx);
+		//unsigned group_size = step;
+		vec3 vre = max - min;
+		
+		pixel_depth_tex.destruct(ctx);
 		v_id_tex.destruct(ctx);
 		
 		std::vector<float> depth_data(depthimageplane.size() * 576 * 640);
@@ -51,34 +50,30 @@ Voxelization::Voxelization() : depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]")
 				
 				count_depthdata++;
 			}
-		}
-
+		}		
 		
 
 		cgv::data::data_format vol_df(depthimageplane.size(), 576, 640, cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
 		cgv::data::const_data_view vol_dv(&vol_df, &depth_data.front());
-		depth_tex.create(ctx, vol_dv, 0);
-		depth_tex.generate_mipmaps(ctx);
-
+		pixel_depth_tex.create(ctx, vol_dv, 0);
+		pixel_depth_tex.generate_mipmaps(ctx);
+	
+		uvec3 num_groups = ceil(vec3(vre) / (float)voxel_size);
+				
 		if (!v_id_tex.is_created())
-			v_id_tex.create(ctx, cgv::render::TT_3D, depthimageplane.size(), 576, 640);
+			v_id_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
 
 
-		const int depth_tex_handle = (const int&)depth_tex.handle - 1;
+		const int depth_tex_handle = (const int&)pixel_depth_tex.handle - 1;
 		const int v_id_tex_handle = (const int&)v_id_tex.handle - 1;
 		glBindImageTexture(0, depth_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		glBindImageTexture(1, v_id_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-		
-		//uvec3 num_groups = ceil(vec3(vre) / (float)voxel_size);
-		uvec3 num_groups = uvec3(10, 10, 10);
-
-std::cout << "1: " << num_groups << std::endl;
 		voxelize_prog.enable(ctx);
 		voxelize_prog.set_uniform(ctx, "min", min);
 		voxelize_prog.set_uniform(ctx, "max", max);
 		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
-		voxelize_prog.set_uniform(ctx, "resolution", vre);
+		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
 
 		voxelize_prog.set_uniform(ctx, "inver_t1", inver_t[0]);
 		voxelize_prog.set_uniform(ctx, "inver_t2", inver_t[1]);
@@ -86,30 +81,22 @@ std::cout << "1: " << num_groups << std::endl;
 		voxelize_prog.set_uniform(ctx, "inver_r1", inver_r[0]);
 		voxelize_prog.set_uniform(ctx, "inver_r2", inver_r[1]);
 		voxelize_prog.set_uniform(ctx, "inver_r3", inver_r[2]);
-		voxelize_prog.set_uniform(ctx, "step", step);
-		//voxelize_prog.set_uniform(ctx, "gradient_mode", (int)gradient_mode);
-		
+			
+		//voxelize_prog.set_uniform_array(ctx, "inver_r", inver_r);
+		//voxelize_prog.set_uniform_array(ctx, "inver_t", inver_t);
+
+		int a1 = depthimageplane.size();
+		int a2 = depthimageplane[0].size();
+		int a3 = depthimageplane[0][0].size();
+		voxelize_prog.set_uniform(ctx, "depth_x_size", a1);
+		voxelize_prog.set_uniform(ctx, "depth_y_size", a2);
+		voxelize_prog.set_uniform(ctx, "depth_z_size", a3);
+
 
 		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
 
 		int length = num_groups[0] * num_groups[1] * num_groups[2];
-
-
-		//glGenBuffers(1, &m_cntBuffer);
-		//glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_cntBuffer);
-		//glBufferData(GL_SHADER_STORAGE_BUFFER, length * sizeof(int), nullptr, GL_STATIC_DRAW);
-		//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_cntBuffer);
-
-
-		//int* writePtr = reinterpret_cast<int*>(glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY));
-		//for (int x = 0; x < length; ++x)
-		//{
-		//	writePtr[x] = 0;
-		//}
-		//if (!glUnmapBuffer(GL_SHADER_STORAGE_BUFFER))
-		//	std::cout << "unMap error\n" << std::endl;
-		
-		
+				
 		// do something else
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		voxelize_prog.disable(ctx);
@@ -117,17 +104,16 @@ std::cout << "1: " << num_groups << std::endl;
 		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		glBindImageTexture(1, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-
 		// read texture into memory
 		std::vector<vec4> voxelID_data(length, vec4(0.0f));
-		std::cout << "2: " << voxelID_data[0] << std::endl;
+		
 		v_id_tex.enable(ctx, 0);
-
 		
-
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)voxelID_data.data());
+				
 		v_id_tex.disable(ctx);
-		
+
+		//std::cout << "2: " << voxelID_data[0] << std::endl;
 		//std::cerr << "voxelID_data: " << voxelID_data [3]<< std::endl;
 
 		return true;

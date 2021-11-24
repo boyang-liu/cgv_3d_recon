@@ -32,7 +32,7 @@ private:
 	
 protected:
 	cgv::render::shader_program voxelize_prog;
-	cgv::render::texture depth_tex;
+	cgv::render::texture pixel_depth_tex;
 	cgv::render::texture v_id_tex;
 	
 	/*struct depthpixel 
@@ -48,7 +48,7 @@ public:
 	//GLuint m_cntBuffer;
 
 	uvec3 vres;
-	bool init_voxelization(cgv::render::context& ctx, const float step, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
+	bool init_voxelization(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
 };
 
 

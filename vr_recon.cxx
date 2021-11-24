@@ -601,9 +601,9 @@ vr_rgbd::~vr_rgbd()
 
 					//}
 						
-						/*p[0] = p[0]  / p[2];
+						p[0] = p[0]  / p[2];
 						p[1] = p[1]  / p[2];
-						p[2] = 1;*/
+						p[2] = 1;
 
 						v.color = c;						
 						float t;
@@ -2356,9 +2356,9 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				mydepthimageplane[i][i2][i3].depthsquare = 0;
 				mydepthimageplane[i][i2][i3].pixelcolor = rgba8(0, 0, 0, 255);}
 	Voxelization v;
+	float step1 = 0.1;
 
-
-	//v.init_voxelization(ctx, 0.1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+	//v.init_voxelization(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
 
 
 
