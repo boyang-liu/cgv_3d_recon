@@ -5,7 +5,7 @@
 #include <3rd/glew/GL/glew.h>
 #include "rgbd_pointcloud.h"
 #include <cgv/render/render_types.h>
-
+#include "PCBoundingbox.h"
 
 typedef float Crd;
 typedef cgv::math::fvec<float, 3> vec3;
@@ -21,7 +21,12 @@ typedef cgv::math::fmat<Crd, 3, 3> Mat;
 
 
 typedef cgv::math::fvec<uint32_t, 3> uvec3;
+struct voxel {
+	uvec3 id;
+	int loaction=0;
+	Rgba color;
 
+	};
 class Voxelization: public cgv::render::render_types//:
 	/*public cgv::base::node,
 	public cgv::render::drawable,
@@ -35,20 +40,25 @@ protected:
 	cgv::render::texture pixel_depth_tex;
 	cgv::render::texture v_id_tex;
 	
-	/*struct depthpixel 
-	{
-		float depthsquare;
-		rgba8 color;
-	};*/
+	std::vector<voxel> V;
+	uvec3 V_size;
+	float voxel_size;
+	vec3 min_pos;
+	vec3 max_pos;
+
+	PCBoundingbox Boundingbox;
 public:
 	Voxelization::Voxelization();
-	
-	/// resolution of the volume
-
-	//GLuint m_cntBuffer;
+	bool init_voxelization(cgv::render::context& ctx);
 
 	uvec3 vres;
-	bool init_voxelization(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
+	//bool init_voxelization(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
+	bool get_surface_from_PC(rgbd_pointcloud pc, vec3 min, vec3 max, float voxel_size );
+	bool init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
+	bool travser_voxels(cgv::render::context& ctx, std::vector<vec3>cam_pos);
+
+	
+
 };
 
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <cgv/media/axis_aligned_box.h>
+//#include <cgv/media/axis_aligned_box.h>
 class PCBoundingbox
 {
 
@@ -19,7 +19,7 @@ public:
 	float step;
 	vec3 getpos1() { return boxcenter - vec3(boxcenter[0] - length / 2, boxcenter[1] - length / 2, boxcenter[2] - height / 2); }
 	vec3 getpos2() { return boxcenter - vec3(boxcenter[0] + length / 2, boxcenter[1] + length / 2, boxcenter[2] + height / 2); }
-	void initvoxelindex() {
+	/*void initvoxelindex() {
 		voxelindex.resize(length / step);
 		for (int i = 0; i < voxelindex.size(); i++) {
 			voxelindex[i].resize(width / step);
@@ -29,7 +29,7 @@ public:
 			}
 		}
 	
-	}
+	}*/
 protected:
 	std::vector<std::vector<std::vector<int>>> voxelindex;
 };

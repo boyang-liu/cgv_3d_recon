@@ -2359,6 +2359,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	float step1 = 0.1;
 
 	//v.init_voxelization(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+	
 
 
 
