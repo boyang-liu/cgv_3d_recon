@@ -2162,6 +2162,61 @@ rgbd_pointcloud vr_rgbd::setboundingbox(rgbd_pointcloud pc1, vec3 pos1, vec3 pos
 
 	return  pc2;
 }
+void vr_rgbd::draw_grid(cgv::render::context& ctx, vec3 min, vec3 max, float voxelsize) {
+	std::vector<vec3> P;
+	std::vector<rgb> C;
+	rgb c(0.5, 0.5, 0.5);
+	uvec3 num_id = ceil((max - min) / float(voxelsize));
+	for (int i = 0; i <= num_id[0]; i++)
+	{
+		for (int j = 0; j <= num_id[1]; j++)
+		{
+			P.push_back(min + vec3(i*voxelsize, j*voxelsize, 0));
+			P.push_back(min + vec3(i*voxelsize, j*voxelsize, num_id[2] * voxelsize));
+			C.push_back(c);
+			C.push_back(c);
+		}
+	}
+	for (int i = 0; i <= num_id[0]; i++)
+	{
+		for (int j = 0; j <= num_id[2]; j++)
+		{
+			P.push_back(min + vec3(i*voxelsize,  0,j*voxelsize));
+			P.push_back(min + vec3(i*voxelsize, num_id[1] * voxelsize, j*voxelsize));
+			C.push_back(c);
+			C.push_back(c);
+		}
+	}
+	for (int i = 0; i <= num_id[1]; i++)
+	{
+		for (int j = 0; j <= num_id[2]; j++)
+		{
+			P.push_back(min + vec3(0,i*voxelsize, j*voxelsize ));
+			P.push_back(min + vec3(num_id[0] * voxelsize,i*voxelsize, j*voxelsize ));
+			C.push_back(c);
+			C.push_back(c);
+		}
+	}
+
+	
+	cgv::render::shader_program& prog = ctx.ref_default_shader_program();
+	int pi = prog.get_position_index();
+	int ci = prog.get_color_index();
+	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, pi, P);
+	cgv::render::attribute_array_binding::enable_global_array(ctx, pi);
+	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ci, C);
+	cgv::render::attribute_array_binding::enable_global_array(ctx, ci);
+	glLineWidth(0.1);
+	prog.enable(ctx);
+	glDrawArrays(GL_LINES, 0, (GLsizei)P.size());
+	prog.disable(ctx);
+	cgv::render::attribute_array_binding::disable_global_array(ctx, pi);
+	cgv::render::attribute_array_binding::disable_global_array(ctx, ci);
+	//glLineWidth(1);
+
+}
+
+
 void vr_rgbd::draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2)
 {
 	std::vector<vec3> P;
@@ -2327,37 +2382,13 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
 	
-	std::vector<Mat> inver_r;
-	inver_r.resize(3);
-	inver_r[0].identity();
-	inver_r[1].identity();
-	inver_r[2].identity();
-	std::vector<vec3> inver_t;
-	inver_t.resize(3);
-	inver_t[0] = vec3(0, 0, 0);
-	inver_t[1] = vec3(0, 0, 0);
-	inver_t[2] = vec3(0, 0, 0);
 
-	std::vector< std::vector<std::vector<depthpixel>>> mydepthimageplane;
-	mydepthimageplane.resize(3);
-	mydepthimageplane[0].resize(576);
-	mydepthimageplane[1].resize(576);
-	mydepthimageplane[2].resize(576);
 
-	for (int y = 0; y < 576; y++)
-	{
-		mydepthimageplane[0][y].resize(640);
-		mydepthimageplane[1][y].resize(640);
-		mydepthimageplane[2][y].resize(640);
-	}
-	for (int i = 0; i < 3; i++)
-		for (int i2 = 0; i2 < 576; i2++)
-			for (int i3 = 0; i3 < 640; i3++) {
-				mydepthimageplane[i][i2][i3].depthsquare = 0;
-				mydepthimageplane[i][i2][i3].pixelcolor = rgba8(0, 0, 0, 255);}
-	Voxelization v;
-	float step1 = 0.1;
+	draw_grid(ctx, vec3(0, 0, 0), vec3(1, 1, 1), 0.05);
+	
 
+	//std::cout<< r[0]<<std::endl;
+	//std::cout << u[1]<< std::endl;
 	//v.init_voxelization(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
 	
 

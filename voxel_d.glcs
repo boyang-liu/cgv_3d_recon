@@ -1,0 +1,35 @@
+#version 430
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0, r32f) uniform readonly image3D V_tex;
+layout(binding = 1, rgba32f) uniform writeonly image3D V_new_tex;
+
+uniform vec3 min;
+uniform vec3 max;
+
+
+uniform float voxel_size;
+uniform uvec3 resolution;
+
+uniform vec3 cam_pos1;
+uniform vec3 cam_pos2;
+uniform vec3 cam_pos3;
+
+vec3 get_pos(ivec3 VoxelID) {
+vec3 vc=min+vec3(VoxelID.x*voxel_size-voxel_size/2,VoxelID.y*voxel_size-voxel_size/2,VoxelID.z*voxel_size-voxel_size/2);
+return  vc;
+	
+}
+
+
+void main() {
+
+    // The voxel coordinates of this thread
+    ivec3 idx = ivec3(gl_GlobalInvocationID);
+	vec3 pos=get_pos(idx);
+	
+	
+	imageStore(V_new_tex, idx, vec4(1,0,0,0 ));
+
+}

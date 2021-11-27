@@ -353,6 +353,9 @@ public:
 	bool init(cgv::render::context& ctx);
 	void clear(cgv::render::context& ctx);
 	rgbd_pointcloud setboundingbox(rgbd_pointcloud pc1, vec3 pos1, vec3 pos2);
+
+	void vr_rgbd::draw_grid(cgv::render::context& ctx, vec3 min, vec3 max, float voxelsize);
+	
 	void draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2);
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);

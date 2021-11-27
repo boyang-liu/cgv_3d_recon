@@ -21,12 +21,7 @@ typedef cgv::math::fmat<Crd, 3, 3> Mat;
 
 
 typedef cgv::math::fvec<uint32_t, 3> uvec3;
-struct voxel {
-	uvec3 id;
-	int loaction=0;
-	Rgba color;
 
-	};
 class Voxelization: public cgv::render::render_types//:
 	/*public cgv::base::node,
 	public cgv::render::drawable,
@@ -40,23 +35,32 @@ protected:
 	cgv::render::texture pixel_depth_tex;
 	cgv::render::texture v_id_tex;
 	
-	std::vector<voxel> V;
+	cgv::render::texture V_tex;
+	cgv::render::texture V_new_tex;
+
+	std::vector<int> V;
 	uvec3 V_size;
 	float voxel_size;
 	vec3 min_pos;
 	vec3 max_pos;
 
 	PCBoundingbox Boundingbox;
+
+	std::vector<box3> boxes;
+	std::vector<rgb> box_colors;
+
+
 public:
 	Voxelization::Voxelization();
 	bool init_voxelization(cgv::render::context& ctx);
 
 	uvec3 vres;
-	//bool init_voxelization(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
-	bool get_surface_from_PC(rgbd_pointcloud pc, vec3 min, vec3 max, float voxel_size );
+	bool init_voxelization_from_image(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
+	
+	//bool get_surface_from_PC(rgbd_pointcloud pc, vec3 min, vec3 max, float voxel_size );
 	bool init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
 	bool travser_voxels(cgv::render::context& ctx, std::vector<vec3>cam_pos);
-
+	void drawvoxels(cgv::render::context& ctx);
 	
 
 };
