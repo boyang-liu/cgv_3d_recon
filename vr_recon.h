@@ -295,6 +295,12 @@ protected:
 
 
 
+	//=============================================delete=====================
+	Voxelization a;
+	//==========================================delete======================
+	
+
+
 	//mat3 testmat;
 	//vec3 testtran;
 
@@ -332,7 +338,7 @@ public:
 	
 	void registerPointCloud(rgbd_pointcloud target, rgbd_pointcloud &source, cgv::math::fmat<float, 3, 3>& r, cgv::math::fvec<float, 3>& t,int source_index);
 	//void generate_pc(std::vector<vertex>, rgbd_pointcloud& pc1);
-	void vr_rgbd::build_tree_feature_points(rgbd_pointcloud& pc1, int i);
+	void build_tree_feature_points(rgbd_pointcloud& pc1, int i);
 	void select_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void cancell_selected_feature_points(rgbd_pointcloud& pc1, vec3 p, float radius);
 	void delete_selected_points(rgbd_pointcloud& pc1);
@@ -354,7 +360,7 @@ public:
 	void clear(cgv::render::context& ctx);
 	rgbd_pointcloud setboundingbox(rgbd_pointcloud pc1, vec3 pos1, vec3 pos2);
 
-	void vr_rgbd::draw_grid(cgv::render::context& ctx, vec3 min, vec3 max, float voxelsize);
+	void draw_grid(cgv::render::context& ctx, vec3 min, vec3 max, float voxelsize);
 	
 	void draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2);
 	void draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc);

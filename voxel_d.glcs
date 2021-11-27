@@ -16,20 +16,58 @@ uniform vec3 cam_pos1;
 uniform vec3 cam_pos2;
 uniform vec3 cam_pos3;
 
-vec3 get_pos(ivec3 VoxelID) {
+vec3 get_center_pos(ivec3 VoxelID) {
 vec3 vc=min+vec3(VoxelID.x*voxel_size-voxel_size/2,VoxelID.y*voxel_size-voxel_size/2,VoxelID.z*voxel_size-voxel_size/2);
 return  vc;
 	
 }
+vec3 first_point_Ray(vec3 ray,vec3 currentpoint){
 
+	float a=abs(ray.x);
+	float b=abs(ray.y);
+	float c=abs(ray.z);
+	float max=a;
+	if(b>a)
+		max=b;
+	if(c>max)
+		max=c;
+
+	if(max == a){
+	 float Point_X=currentpoint.x + (ray.x/a) * voxel_size/2;
+	 float Point_Y=currentpoint.y + ray.y/ray.x * (ray.x/a) * voxel_size/2;
+	 float Point_Z=currentpoint.z + ray.z/ray.x * (ray.x/a) * voxel_size/2;
+	 return vec3 (Point_X,Point_Y,Point_Z);
+
+	} else if (max == b){
+
+	 float Point_Y=currentpoint.y + (ray.y/b)*voxel_size/2;
+	 float Point_X=currentpoint.x + ray.x/ray.y * (ray.y/b) * voxel_size/2;
+	 float Point_Z=currentpoint.z + ray.z/ray.y * (ray.y/b) * voxel_size/2;
+	 return vec3 (Point_X,Point_Y,Point_Z);
+
+	}else(max == c){
+
+	 float Point_Z=currentpoint.z + (ray.z/c) * voxel_size/2;
+	 float Point_Y=currentpoint.y + ray.y/ray.z * (ray.z/a) * voxel_size/2;
+	 float Point_X=currentpoint.x + ray.x/ray.z * (ray.z/a) * voxel_size/2;
+	 return vec3 (Point_X,Point_Y,Point_Z);
+
+	}
+	return vec3(0,0,0);
+	
+}
 
 void main() {
 
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
-	vec3 pos=get_pos(idx);
+	vec3 pos=get_center_pos(idx);
+	vec3 voxel_cam_ray_1=cam_pos1-pos;
+
+	vec3 firstpoint=first_point_Ray(voxel_cam_ray_1,pos);
+
+
 	
-	
-	imageStore(V_new_tex, idx, vec4(1,0,0,0 ));
+	imageStore(V_new_tex, idx, vec4(1,1,1,0 ));
 
 }

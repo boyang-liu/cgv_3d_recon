@@ -28,7 +28,7 @@
 #include "GoICP.h"
 #include "SICP.h"
 #include <numeric>
-#include "Voxelization.h"
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -2133,6 +2133,13 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
 			
 		}
+		
+
+		//=======================delete===========================
+		if (!a.voxelize_prog.is_created()) {
+			a.voxelize_prog.build_program(ctx, "glsl/sky.glpr");		
+		}
+		//=======================delete==============================
 
 
 
@@ -2382,17 +2389,42 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
 	
+	//=======================delete===========================
+
+	//draw_grid(ctx, vec3(0.83623,- 0.728815,2.74123), vec3(2.83623,1.27119,4.74123), 0.05);
+	if (rgbdpc.size() > 1)
+	{
+		
+		//std::cout << "1:"<< a.voxel_size<< std::endl;
+		//a.init_voxelization(ctx);
+		std::vector<rgbd_pointcloud> o;
+		
+		for (int i = 0; i < rgbdpc.size(); i++) {
+			o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.27119, 4.74123)));
+		}
+		//std::cout << "1" << std::endl;
+		a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.27119, 4.74123),0.01);
+		//std::cout << "2" << std::endl;
+
+		std::vector<vec3>l;
+		l.push_back(vec3(0, 0, 0));
+		l.push_back(vec3(0, 0, 0));
+		l.push_back(vec3(0, 0, 0));
+		a.travser_voxels(ctx,l);
 
 
-	draw_grid(ctx, vec3(0, 0, 0), vec3(1, 1, 1), 0.05);
-	
+		a.draw_voxels(ctx);
+		
+		
+		
+	}
 
 	//std::cout<< r[0]<<std::endl;
 	//std::cout << u[1]<< std::endl;
 	//v.init_voxelization(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
 	
 
-
+//=======================delete===========================
 
 
 		if (show_points) {
@@ -2470,7 +2502,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					draw_boudingbox(ctx, pos1, pos2);
 					pcbb.pos1 = pos1;
 					pcbb.pos2 = pos2;
-
+					std::cout<<"pcbb.pos1"<<pcbb.pos1<<std::endl;
+					std::cout<<"pcbb.pos2"<<pcbb.pos2<<std::endl;
 					pcbb.step = BoundingBoxstep;
 
 

@@ -1,42 +1,13 @@
 #include "Voxelization.h"
-#include "rgbd_pointcloud.h"
+
 
 
 #include <iostream>
 #include <algorithm>
 
-Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]") {
 
 
-	pixel_depth_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-	pixel_depth_tex.set_mag_filter(cgv::render::TF_LINEAR);
-	pixel_depth_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-	pixel_depth_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-	pixel_depth_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-	pixel_depth_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
-
-	v_id_tex.set_min_filter(cgv::render::TF_LINEAR);
-	v_id_tex.set_mag_filter(cgv::render::TF_LINEAR);
-	v_id_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
-	v_id_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-	v_id_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
-
-
-	V_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-	V_tex.set_mag_filter(cgv::render::TF_LINEAR);
-	V_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-	V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-	V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-	V_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
-
-	V_new_tex.set_min_filter(cgv::render::TF_LINEAR);
-	V_new_tex.set_mag_filter(cgv::render::TF_LINEAR);
-	V_new_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
-	V_new_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-	V_new_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
-}
-
-	bool Voxelization::init_voxelization_from_image(cgv::render::context& ctx, const float voxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
+	bool Voxelization::init_voxelization_from_image(cgv::render::context& ctx,float myvoxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
 	{
 		if (!voxelize_prog.build_program(ctx, "voxel_distance.glpr", true)) {
 			std::cerr << "ERROR in building shader program "  << std::endl;
@@ -46,7 +17,7 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 		
 		//unsigned group_size = step;
 		vec3 vre = max - min;
-		
+		voxel_size = myvoxel_size;
 		pixel_depth_tex.destruct(ctx);
 		v_id_tex.destruct(ctx);
 		
@@ -70,7 +41,7 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 		pixel_depth_tex.create(ctx, vol_dv, 0);
 		pixel_depth_tex.generate_mipmaps(ctx);
 	
-		uvec3 num_groups = ceil(vec3(vre) / (float)voxel_size);
+		uvec3 num_groups = ceil(vec3(vre) / (float)myvoxel_size);
 				
 		if (!v_id_tex.is_created())
 			v_id_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
@@ -84,7 +55,7 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 		voxelize_prog.enable(ctx);
 		voxelize_prog.set_uniform(ctx, "min", min);
 		voxelize_prog.set_uniform(ctx, "max", max);
-		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
+		voxelize_prog.set_uniform(ctx, "voxel_size", myvoxel_size);
 		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
 
 		voxelize_prog.set_uniform(ctx, "inver_t1", inver_t[0]);
@@ -145,37 +116,49 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 
 
 
-	bool Voxelization::init_voxelization(cgv::render::context& ctx) {
-			if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
-				std::cerr << "ERROR in building shader program "  << std::endl;
-				return false;
-			}
-		//============================================================================================	
-		
-			return true;
-	
-	}
+	//bool Voxelization::init_voxelization(cgv::render::context& ctx) {
+	//		if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
+	//			std::cerr << "ERROR in building shader program "  << std::endl;
+	//			return false;
+	//		}
+	//	//============================================================================================	
+	//	
+	//		return true;
+	//
+	//}
 
 	bool Voxelization::init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length) {
-		V.clear();					
+		V.clear();	
+		voxel_size = voxel_length;
 		V_size = ceil((max - min) / (float)voxel_size);
-		V.resize(V_size[0]* V_size[1] * V_size[2],0);
+		int length = V_size[0] * V_size[1] * V_size[2];
+		V.resize(length,0);
 		for(int i = 0; i < pc.size(); i++)
 			for (int j = 0; j < pc[i].get_nr_Points(); j++)
 			{
-				uvec3 a = ceil((pc[i].pnt(j) - min) / (float)voxel_size);					
-				V[a[0] * V_size[1] * V_size[2] + a[1] * V_size[2] + a[2] - 1] = 1;
+				uvec3 a = ceil((pc[i].pnt(j) - min) / (float)voxel_size);	
+				int temp = (a[0]-1) * V_size[1] * V_size[2] + (a[1]-1) * V_size[2] + a[2] - 1;
+				V[temp] = 1;
 			}
 
-		Boundingbox.pos1 = min;
-		Boundingbox.pos2 = max;
-		voxel_size = voxel_length;
+		voxelboundingbox.pos1 = min;
+		voxelboundingbox.pos2 = max;
+		min_pos = min;
+		max_pos = max;
+		//voxel_size = voxel_length;
 		return true;
 	}
 
 
 	
 	bool Voxelization::travser_voxels(cgv::render::context& ctx,std::vector<vec3>cam_pos) {
+		/*if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
+			std::cerr << "ERROR in building shader program " << std::endl;
+			return false;
+		}*/
+		if(!voxelize_prog.is_created())
+			voxelize_prog.build_program(ctx, "voxel_d.glpr");
+
 		if (!V_size)
 			return false;
 		uvec3 num_groups = V_size;
@@ -184,7 +167,10 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 		V_new_tex.destruct(ctx);
 		cgv::data::data_format vol_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
 		cgv::data::const_data_view vol_dv(&vol_df, &V.front());
-		V_tex.create(ctx, vol_dv, 0);
+
+		if (!V_tex.is_created())
+			V_tex.create(ctx, vol_dv, 0);
+
 		V_tex.generate_mipmaps(ctx);
 
 		if (!V_new_tex.is_created())
@@ -198,8 +184,8 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 
 
 		voxelize_prog.enable(ctx);
-		voxelize_prog.set_uniform(ctx, "min", Boundingbox.pos1);
-		voxelize_prog.set_uniform(ctx, "max", Boundingbox.pos2);
+		voxelize_prog.set_uniform(ctx, "min", voxelboundingbox.pos1);
+		voxelize_prog.set_uniform(ctx, "max", voxelboundingbox.pos2);
 		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
 		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
 		voxelize_prog.set_uniform(ctx, "cam_pos1", cam_pos[0]);
@@ -216,17 +202,20 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 
 		// read texture into memory
 		std::vector<vec4> V_new_data(length, vec4(0.0f));
-
+std::cout << "555555555555555555555 " << std::endl;
 		V_new_tex.enable(ctx, 0);
-
+std::cout << "66666666666666666666666 " << std::endl;
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)V_new_data.data());
 
 		V_new_tex.disable(ctx);
 
+		std::cout<<"V_new_data[0]:"<< V_new_data[0] <<std::endl;
+		std::cout << "V_new_data[1]:" << V_new_data[1] << std::endl;
+		std::cout << "V_new_data[2]:" << V_new_data[2] << std::endl;
 		return true;
 	}
 
-	void Voxelization::drawvoxels(cgv::render::context& ctx){
+	void Voxelization::draw_voxels(cgv::render::context& ctx){
 		
 
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
@@ -234,14 +223,16 @@ Voxelization::Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,
 		box_colors.clear();
 
 		rgb table_clr(0.3f, 0.2f, 0.0f);
-		for (int i = 0; i < V_size[0];i++) 
-			for (int j = 0; j < V_size[1]; j++)
-				for(int k = 0;k < V_size[2]; k++)
+		for (int i = 1; i <= V_size[0];i++) 
+			for (int j = 1; j <= V_size[1]; j++)
+				for(int k = 1;k <= V_size[2]; k++)
 				{
-					vec3 min1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
-					vec3 max1 = min_pos + vec3((i+1)*voxel_size, (j + 1)*voxel_size, (k + 1)*voxel_size);
+					if (V[(i - 1) * V_size[1] * V_size[2] + (j - 1) * V_size[2] + k - 1] == 1) {
+					vec3 min1 = min_pos + vec3((i-1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
+					vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
 					boxes.push_back(box3(min1, max1));				
 					box_colors.push_back(table_clr);
+					}
 				}
 		cgv::render::box_render_style style;
 		renderer.set_render_style(style);
