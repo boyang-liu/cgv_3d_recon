@@ -67,12 +67,12 @@ public:
 	
 	//bool init_voxelization(cgv::render::context& ctx);
 
-	uvec3 vres;
+	//uvec3 vres;
 	bool init_voxelization_from_image(cgv::render::context& ctx, float myvoxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
 	
 	
 	bool init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
-	bool travser_voxels(cgv::render::context& ctx, std::vector<vec3>cam_pos);
+	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3>cam_pos);
 	void draw_voxels(cgv::render::context& ctx);
 	
 	cgv::render::shader_program voxelize_prog;
@@ -84,7 +84,7 @@ protected:
 	cgv::render::texture V_tex;
 	cgv::render::texture V_new_tex;
 	float voxel_size;
-	std::vector<int> V;
+	std::vector<float> V;
 	uvec3 V_size;
 	
 	vec3 min_pos;

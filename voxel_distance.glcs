@@ -3,7 +3,9 @@
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(binding = 0, r32f) uniform readonly image3D depth_tex;
-layout(binding = 1, rgba32f) uniform writeonly image3D v_id_tex;
+//layout(binding = 1, rgba32f) uniform writeonly image3D v_id_tex;
+layout(binding = 2, r32f) uniform readonly image3D V_tex;
+layout(binding = 3, rgba32f) uniform writeonly image3D V_new_tex;
 
 uniform vec3 min;
 uniform vec3 max;
@@ -88,5 +90,5 @@ void main() {
 	
 	*/
 	
-	imageStore(v_id_tex, idx, vec4(idx, inver_t[0].x));
+	imageStore(V_new_tex, idx, vec4(idx, inver_t[0].x));
 }

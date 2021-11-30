@@ -9,7 +9,7 @@
 
 	bool Voxelization::init_voxelization_from_image(cgv::render::context& ctx,float myvoxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
 	{
-		if (!voxelize_prog.build_program(ctx, "voxel_distance.glpr", true)) {
+		if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
 			std::cerr << "ERROR in building shader program "  << std::endl;
 			return false;
 		}
@@ -17,7 +17,7 @@
 		
 		//unsigned group_size = step;
 		vec3 vre = max - min;
-		voxel_size = myvoxel_size;
+		//voxel_size = myvoxel_size;
 		pixel_depth_tex.destruct(ctx);
 		v_id_tex.destruct(ctx);
 		
@@ -36,9 +36,9 @@
 			}		
 		
 
-		cgv::data::data_format vol_df(depthimageplane.size(), 576, 640, cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
-		cgv::data::const_data_view vol_dv(&vol_df, &depth_data.front());
-		pixel_depth_tex.create(ctx, vol_dv, 0);
+		cgv::data::data_format vol_df1(depthimageplane.size(), 576, 640, cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
+		cgv::data::const_data_view vol_dv1(&vol_df1, &depth_data.front());
+		pixel_depth_tex.create(ctx, vol_dv1, 0);
 		pixel_depth_tex.generate_mipmaps(ctx);
 	
 		uvec3 num_groups = ceil(vec3(vre) / (float)myvoxel_size);
@@ -47,36 +47,81 @@
 			v_id_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
 
 
+
+
+
+		int le = num_groups[0] * num_groups[1] * num_groups[2];
+
+		V_size = vec3(num_groups[0], num_groups[1], num_groups[2]);
+		voxel_size = myvoxel_size;
+		V.resize(le, 3);
+
+
+		V_tex.destruct(ctx);
+		V_new_tex.destruct(ctx);
+		std::cout << "V_size: " << V_size << std::endl;
+		std::cout << "voxel_size: " << voxel_size << std::endl;
+		std::cout << "V.size(): " << V.size() << std::endl;
+		std::cout << "num_groups: " << num_groups << std::endl;
+		cgv::data::data_format vol_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
+		cgv::data::const_data_view vol_dv(&vol_df, &V.front());
+		V_tex.create(ctx, vol_dv, 0);
+		V_tex.generate_mipmaps(ctx);
+
+		if (!V_new_tex.is_created())
+			V_new_tex.create(ctx, cgv::render::TT_3D, 5,4, 3);
+
+		const int V_tex_handle = (const int&)V_tex.handle - 1;
+		const int V_new_tex_handle = (const int&)V_new_tex.handle - 1;
+		glBindImageTexture(2, V_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(3, V_new_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		const int depth_tex_handle = (const int&)pixel_depth_tex.handle - 1;
 		const int v_id_tex_handle = (const int&)v_id_tex.handle - 1;
 		glBindImageTexture(0, depth_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		glBindImageTexture(1, v_id_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		voxelize_prog.enable(ctx);
-		voxelize_prog.set_uniform(ctx, "min", min);
-		voxelize_prog.set_uniform(ctx, "max", max);
-		voxelize_prog.set_uniform(ctx, "voxel_size", myvoxel_size);
-		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
+		//voxelize_prog.set_uniform(ctx, "min", min);
+		//voxelize_prog.set_uniform(ctx, "max", max);
+		//voxelize_prog.set_uniform(ctx, "voxel_size", myvoxel_size);
+		//voxelize_prog.set_uniform(ctx, "resolution", num_groups);
 
-		voxelize_prog.set_uniform(ctx, "inver_t1", inver_t[0]);
-		voxelize_prog.set_uniform(ctx, "inver_t2", inver_t[1]);
-		voxelize_prog.set_uniform(ctx, "inver_t3", inver_t[2]);
-		voxelize_prog.set_uniform(ctx, "inver_r1", inver_r[0]);
-		voxelize_prog.set_uniform(ctx, "inver_r2", inver_r[1]);
-		voxelize_prog.set_uniform(ctx, "inver_r3", inver_r[2]);
-			
-		//voxelize_prog.set_uniform_array(ctx, "inver_r", inver_r);
-		//voxelize_prog.set_uniform_array(ctx, "inver_t", inver_t);
+		//voxelize_prog.set_uniform(ctx, "inver_t1", inver_t[0]);
+		//voxelize_prog.set_uniform(ctx, "inver_t2", inver_t[1]);
+		//voxelize_prog.set_uniform(ctx, "inver_t3", inver_t[2]);
+		//voxelize_prog.set_uniform(ctx, "inver_r1", inver_r[0]);
+		//voxelize_prog.set_uniform(ctx, "inver_r2", inver_r[1]);
+		//voxelize_prog.set_uniform(ctx, "inver_r3", inver_r[2]);
+		//	
+		////voxelize_prog.set_uniform_array(ctx, "inver_r", inver_r);
+		////voxelize_prog.set_uniform_array(ctx, "inver_t", inver_t);
 
-		int a1 = depthimageplane.size();
-		int a2 = depthimageplane[0].size();
-		int a3 = depthimageplane[0][0].size();
-		voxelize_prog.set_uniform(ctx, "depth_x_size", a1);
-		voxelize_prog.set_uniform(ctx, "depth_y_size", a2);
-		voxelize_prog.set_uniform(ctx, "depth_z_size", a3);
+		//int a1 = depthimageplane.size();
+		//int a2 = depthimageplane[0].size();
+		//int a3 = depthimageplane[0][0].size();
+		//voxelize_prog.set_uniform(ctx, "depth_x_size", a1);
+		//voxelize_prog.set_uniform(ctx, "depth_y_size", a2);
+		//voxelize_prog.set_uniform(ctx, "depth_z_size", a3);
 
 
-		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
+		glDispatchCompute(5,4,3);
 
 		int length = num_groups[0] * num_groups[1] * num_groups[2];
 				
@@ -85,20 +130,32 @@
 		voxelize_prog.disable(ctx);
 		// clear 3D image bindings
 		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		glBindImageTexture(1, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
+		//glBindImageTexture(1, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(2, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(3, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		// read texture into memory
-		std::vector<vec4> voxelID_data(length, vec4(0.0f));
+		std::vector<vec4> voxelID_data(60, vec4(0.0f));
 		
-		v_id_tex.enable(ctx, 0);
+		/*v_id_tex.enable(ctx, 0);
 		
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)voxelID_data.data());
 				
-		v_id_tex.disable(ctx);
+		v_id_tex.disable(ctx);*/
+		V_new_tex.enable(ctx, 0);
 
-		//std::cout << "2: " << voxelID_data[0] << std::endl;
-		//std::cerr << "voxelID_data: " << voxelID_data [3]<< std::endl;
+		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)voxelID_data.data());
 
+		V_new_tex.disable(ctx);
+		std::cout << "2: " << voxelID_data[0] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data [1]<< std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[2] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[3] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[4] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[5] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[6] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[15] << std::endl;
+		std::cerr << "voxelID_data: " << voxelID_data[51] << std::endl;
+		//std::cerr << "voxelID_data: " << voxelID_data[200] << std::endl;
 		return true;
 
 
@@ -151,26 +208,32 @@
 
 
 	
-	bool Voxelization::travser_voxels(cgv::render::context& ctx,std::vector<vec3>cam_pos) {
+	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		/*if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
 			std::cerr << "ERROR in building shader program " << std::endl;
 			return false;
 		}*/
 		if(!voxelize_prog.is_created())
-			voxelize_prog.build_program(ctx, "voxel_d.glpr");
-
+			voxelize_prog.build_program(ctx, "voxel_d.glpr", true);
+1		V_size = uvec3(11,12,13);
 		if (!V_size)
 			return false;
 		uvec3 num_groups = V_size;
+
 		//std::vector<float> V_data;
+		V.clear();
+		std::vector<float> V_n(1716, 0);
+1		V = V_n;
 		V_tex.destruct(ctx);
 		V_new_tex.destruct(ctx);
+		voxel_size = 0.2f;
+		std::cout << "V_size: " << V_size << std::endl;
+		std::cout << "voxel_size: "<< voxel_size << std::endl;
+		std::cout << "V.size(): " << V.size() << std::endl;
+		std::cout << "num_groups: " << num_groups << std::endl;
 		cgv::data::data_format vol_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
-		cgv::data::const_data_view vol_dv(&vol_df, &V.front());
-
-		if (!V_tex.is_created())
-			V_tex.create(ctx, vol_dv, 0);
-
+		cgv::data::const_data_view vol_dv(&vol_df, &V.front());		
+		V_tex.create(ctx, vol_dv, 0);
 		V_tex.generate_mipmaps(ctx);
 
 		if (!V_new_tex.is_created())
@@ -178,14 +241,14 @@
 
 		const int V_tex_handle = (const int&)V_tex.handle - 1;
 		const int V_new_tex_handle = (const int&)V_new_tex.handle - 1;
-		glBindImageTexture(0, V_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		glBindImageTexture(1, V_new_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(2, V_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(3, V_new_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 
 
 		voxelize_prog.enable(ctx);
-		voxelize_prog.set_uniform(ctx, "min", voxelboundingbox.pos1);
-		voxelize_prog.set_uniform(ctx, "max", voxelboundingbox.pos2);
+		//voxelize_prog.set_uniform(ctx, "min", voxelboundingbox.pos1);
+		//voxelize_prog.set_uniform(ctx, "max", voxelboundingbox.pos2);
 		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
 		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
 		voxelize_prog.set_uniform(ctx, "cam_pos1", cam_pos[0]);
@@ -197,14 +260,18 @@
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		voxelize_prog.disable(ctx);
 		// clear 3D image bindings
-		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		glBindImageTexture(1, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(2, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(3, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		// read texture into memory
 		std::vector<vec4> V_new_data(length, vec4(0.0f));
+
 std::cout << "555555555555555555555 " << std::endl;
+
 		V_new_tex.enable(ctx, 0);
+
 std::cout << "66666666666666666666666 " << std::endl;
+
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)V_new_data.data());
 
 		V_new_tex.disable(ctx);

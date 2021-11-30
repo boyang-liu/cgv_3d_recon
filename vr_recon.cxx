@@ -2392,36 +2392,70 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//=======================delete===========================
 
 	//draw_grid(ctx, vec3(0.83623,- 0.728815,2.74123), vec3(2.83623,1.27119,4.74123), 0.05);
-	if (rgbdpc.size() > 1)
+
+	//if (rgbdpc.size() > 1)
+	//{
+	//	
+	//	//std::cout << "1:"<< a.voxel_size<< std::endl;
+	//	//a.init_voxelization(ctx);
+	//	std::vector<rgbd_pointcloud> o;
+	//	
+	//	for (int i = 0; i < rgbdpc.size(); i++) {
+	//		o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
+	//	}
+	//	//std::cout << "1" << std::endl;
+	//	a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123),0.04);
+	//	//std::cout << "2" << std::endl;
+
+	//	std::vector<vec3> l;
+	//	l.push_back(vec3(0, 0, 0));
+	//	l.push_back(vec3(0, 0, 0));
+	//	l.push_back(vec3(0, 0, 0));
+	//	a.travser_voxels(ctx,l);
+
+
+	//	a.draw_voxels(ctx);
+	//	
+	//	
+	//	
+	//}
+
+	std::vector<Mat> inver_r;
+	inver_r.resize(3);
+	inver_r[0].identity();
+	inver_r[1].identity();
+	inver_r[2].identity();
+	std::vector<vec3> inver_t;
+	inver_t.resize(3);
+	inver_t[0] = vec3(0, 0, 0);
+	inver_t[1] = vec3(0, 0, 0);
+	inver_t[2] = vec3(0, 0, 0);
+	std::vector< std::vector<std::vector<depthpixel>>> mydepthimageplane;
+	mydepthimageplane.resize(3);
+	mydepthimageplane[0].resize(576);
+	mydepthimageplane[1].resize(576);
+	mydepthimageplane[2].resize(576);
+	for (int y = 0; y < 576; y++)
 	{
-		
-		//std::cout << "1:"<< a.voxel_size<< std::endl;
-		//a.init_voxelization(ctx);
-		std::vector<rgbd_pointcloud> o;
-		
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.27119, 4.74123)));
-		}
-		//std::cout << "1" << std::endl;
-		a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.27119, 4.74123),0.01);
-		//std::cout << "2" << std::endl;
-
-		std::vector<vec3>l;
-		l.push_back(vec3(0, 0, 0));
-		l.push_back(vec3(0, 0, 0));
-		l.push_back(vec3(0, 0, 0));
-		a.travser_voxels(ctx,l);
-
-
-		a.draw_voxels(ctx);
-		
-		
-		
+		mydepthimageplane[0][y].resize(640);
+		mydepthimageplane[1][y].resize(640);
+		mydepthimageplane[2][y].resize(640);
 	}
+	for (int i = 0; i < 3; i++)
+		for (int i2 = 0; i2 < 576; i2++)
+			for (int i3 = 0; i3 < 640; i3++) {
+				mydepthimageplane[i][i2][i3].depthsquare = 0;
+				mydepthimageplane[i][i2][i3].pixelcolor = rgba8(0, 0, 0, 255);
+			}
+	Voxelization v;
+	float step1 = 0.1;
 
-	//std::cout<< r[0]<<std::endl;
-	//std::cout << u[1]<< std::endl;
-	//v.init_voxelization(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+	//v.init_voxelization_from_image(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+	std::vector<vec3> l;
+	l.push_back(vec3(0, 0, 0));
+	l.push_back(vec3(0, 0, 0));
+	l.push_back(vec3(0, 0, 0));
+	v.traverse_voxels(ctx, l);
 	
 
 //=======================delete===========================

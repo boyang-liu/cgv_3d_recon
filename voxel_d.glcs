@@ -2,8 +2,8 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout(binding = 0, r32f) uniform readonly image3D V_tex;
-layout(binding = 1, rgba32f) uniform writeonly image3D V_new_tex;
+layout(binding = 2, r32f) uniform readonly image3D V_tex;
+layout(binding = 3, rgba32f) uniform writeonly image3D V_new_tex;
 
 uniform vec3 min;
 uniform vec3 max;
@@ -15,6 +15,12 @@ uniform uvec3 resolution;
 uniform vec3 cam_pos1;
 uniform vec3 cam_pos2;
 uniform vec3 cam_pos3;
+
+struct point_in_voxel{
+uvec3 id;
+vec3 pos;
+int inside;
+}
 
 vec3 get_center_pos(ivec3 VoxelID) {
 vec3 vc=min+vec3(VoxelID.x*voxel_size-voxel_size/2,VoxelID.y*voxel_size-voxel_size/2,VoxelID.z*voxel_size-voxel_size/2);
@@ -45,7 +51,7 @@ vec3 first_point_Ray(vec3 ray,vec3 currentpoint){
 	 float Point_Z=currentpoint.z + ray.z/ray.y * (ray.y/b) * voxel_size/2;
 	 return vec3 (Point_X,Point_Y,Point_Z);
 
-	}else(max == c){
+	}else{
 
 	 float Point_Z=currentpoint.z + (ray.z/c) * voxel_size/2;
 	 float Point_Y=currentpoint.y + ray.y/ray.z * (ray.z/a) * voxel_size/2;
@@ -56,18 +62,55 @@ vec3 first_point_Ray(vec3 ray,vec3 currentpoint){
 	return vec3(0,0,0);
 	
 }
+point_in_voxel next_point(vec3 ray,point_in_voxel p){
+float x,y,z;
+if(p.pos.x==0){
+	p.pos.x=p.pos.x+voxel_size;
+	p.id.x=p.id.x+ray.x/abs(ray.x);
+}
+	
+if(p.pos.y==0){
+	p.pos.y=p.pos.y+voxel_size;
+	p.id.y=p.id.y+ray.y/abs(ray.y);
+}
+	
+if(p.pos.z==0){
+	p.pos.z=p.pos.z+voxel_size;
+	p.id.z=p.id.z+ray.z/abs(ray.z);
+}
 
+float time1,time2,time3;
+if(abs(ray.x)!=0)
+	time1=p.pos.x/abs(ray.x);
+
+if(abs(ray.y)!=0)
+	time2=p.pos.y/abs(ray.y);
+
+if(abs(ray.z)!=0)
+	time3=p.pos.z/abs(ray.z);
+
+
+
+return p;
+}
 void main() {
 
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
+	/*
 	vec3 pos=get_center_pos(idx);
 	vec3 voxel_cam_ray_1=cam_pos1-pos;
 
-	vec3 firstpoint=first_point_Ray(voxel_cam_ray_1,pos);
+	while (){
+	
+	
+	}
+
+
+	vec3 firstpoint=first_point_Ray(voxel_cam_ray_1,pos);*/
 
 
 	
-	imageStore(V_new_tex, idx, vec4(1,1,1,0 ));
-
+	
+	imageStore(V_new_tex, idx, vec4(idx, 0));
 }
