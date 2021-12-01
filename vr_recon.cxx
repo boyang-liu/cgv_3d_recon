@@ -2136,9 +2136,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 		
 
 		//=======================delete===========================
-		if (!a.voxelize_prog.is_created()) {
-			a.voxelize_prog.build_program(ctx, "glsl/sky.glpr");		
-		}
+		
 		//=======================delete==============================
 
 
@@ -2392,35 +2390,36 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//=======================delete===========================
 
 	//draw_grid(ctx, vec3(0.83623,- 0.728815,2.74123), vec3(2.83623,1.27119,4.74123), 0.05);
+	if (rgbdpc.size() > 1)
+	{
+		Voxelization a;
 
-	//if (rgbdpc.size() > 1)
-	//{
-	//	
-	//	//std::cout << "1:"<< a.voxel_size<< std::endl;
-	//	//a.init_voxelization(ctx);
-	//	std::vector<rgbd_pointcloud> o;
-	//	
-	//	for (int i = 0; i < rgbdpc.size(); i++) {
-	//		o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
-	//	}
-	//	//std::cout << "1" << std::endl;
-	//	a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123),0.04);
-	//	//std::cout << "2" << std::endl;
+		//std::cout << "1:"<< a.voxel_size<< std::endl;
+		a.init_voxelization(ctx);
+		std::vector<rgbd_pointcloud> o;
+		
+		for (int i = 0; i < rgbdpc.size(); i++) {
+			o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
+		}
+		//std::cout << "1" << std::endl;
+		a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123),0.02);
+		//std::cout << "2" << std::endl;
 
-	//	std::vector<vec3> l;
-	//	l.push_back(vec3(0, 0, 0));
-	//	l.push_back(vec3(0, 0, 0));
-	//	l.push_back(vec3(0, 0, 0));
-	//	a.travser_voxels(ctx,l);
+		std::vector<vec3> l;
+		l.push_back(vec3(0, 0, 0));
+		//l.push_back(vec3(1.83623, 0.271185, 5));
+		l.push_back(vec3(0, 5, 5));
+		l.push_back(vec3(0, 0, 0));
+		a.travser_voxels(ctx,l);
 
 
-	//	a.draw_voxels(ctx);
-	//	
-	//	
-	//	
-	//}
-
-	std::vector<Mat> inver_r;
+		a.draw_voxels(ctx);
+		
+		
+		
+	}
+	
+	/*std::vector<Mat> inver_r;
 	inver_r.resize(3);
 	inver_r[0].identity();
 	inver_r[1].identity();
@@ -2450,12 +2449,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	Voxelization v;
 	float step1 = 0.1;
 
-	//v.init_voxelization_from_image(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
-	std::vector<vec3> l;
-	l.push_back(vec3(0, 0, 0));
-	l.push_back(vec3(0, 0, 0));
-	l.push_back(vec3(0, 0, 0));
-	v.traverse_voxels(ctx, l);
+	v.init_voxelization_from_image(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
+*/
 	
 
 //=======================delete===========================
