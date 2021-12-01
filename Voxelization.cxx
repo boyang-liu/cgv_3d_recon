@@ -201,8 +201,8 @@
 		
 		for (int i = 0; i < V_new_data.size(); i++)
 		{
-			if (V_new_data[i][0] == 2)
-				V[i] = 2;
+			
+				V[i] = V_new_data[i][0];
 
 		}
 		//std::cout << "V_size:" << V_size << std::endl;
@@ -229,8 +229,7 @@
 					vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
 					boxes.push_back(box3(min1, max1));				
 					box_colors.push_back(table_clr);
-					}
-					else if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 2)
+					}else if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 2)
 					{
 						vec3 min1 = min_pos + vec3((i - 1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 						vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);

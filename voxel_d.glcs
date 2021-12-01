@@ -73,8 +73,9 @@ point_in_voxel next_point(vec3 ray,point_in_voxel p)
 		p.pos.y=p.pos.y-time3*abs(ray.y);	
 	}
 
-	p.inside=(p.inside+int(when_eq(imageLoad(V_tex, p.id).r,1)))%2;
-
+	//p.inside=(p.inside+int(when_eq(imageLoad(V_tex, p.id).r,1)))%2;
+	if(imageLoad(V_tex, p.id).r==1)
+		p.inside=1;
 	return p;
 
 }
@@ -129,6 +130,20 @@ void main() {
 	}
 	//store the info of current calcaulated voxel
 	if(imageLoad(V_tex, idx).r==1){
+	//denoise
+	ivec3 idx_1=ivec3(idx.x-1,idx.y,idx.z);
+	ivec3 idx_2=ivec3(idx.x+1,idx.y,idx.z);
+	ivec3 idx_3=ivec3(idx.x,idx.y-1,idx.z);
+	ivec3 idx_4=ivec3(idx.x,idx.y+1,idx.z);
+	ivec3 idx_5=ivec3(idx.x,idx.y,idx.z-1);
+	ivec3 idx_6=ivec3(idx.x,idx.y,idx.z+1);
+
+	if(idx.x>0 && idx.y>0 && idx.z>0 && idx.x<resolution.x-1 && idx.y<resolution.y-1 && idx.z<resolution.z-1 
+	&& imageLoad(V_tex, idx_1).r==0&& imageLoad(V_tex, idx_2).r==0&& imageLoad(V_tex, idx_3).r==0&& imageLoad(V_tex, idx_4).r==0
+	&& imageLoad(V_tex, idx_5).r==0&& imageLoad(V_tex, idx_6).r==0
+	)
+		imageStore(V_new_tex, idx, vec4(0,pv2.id));
+	else
 		imageStore(V_new_tex, idx, vec4(1,pv2.id));
 		
 	}else if((pv1.inside+pv2.inside+pv3.inside)==3)

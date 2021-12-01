@@ -235,7 +235,7 @@ protected:
 	float position_scale;
 	float rotation_scale;
 	//controller mode for immersive interaction
-	
+	bool showvoxelizationmode;
 	bool setboundingboxmode;
 	bool selectPointsmode;
 	bool boundingboxisfixed;

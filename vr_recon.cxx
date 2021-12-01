@@ -496,6 +496,7 @@ vr_rgbd::vr_rgbd()
 	generate_pc_from_rgbd = false;
 	selectPointsmode = false;
 	setboundingboxmode = false;
+	showvoxelizationmode = false;
 	boundingboxisfixed = false;
 	manualcorrectmode = false;
 	manualcorrectstarted = false;
@@ -588,11 +589,17 @@ vr_rgbd::~vr_rgbd()
 					static const rgba8 filter_color = rgba8(0, 0, 0, 255);
 					//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
 					
-					//if (!(c == filter_color)) {
+					if (!(c == filter_color)) {
 					
 					/*p[0] = p[0]*10 / p[2];
 					p[1] = p[1] * 10 / p[2];
 					p[2] = 10;*/
+						if (x == 256 && y == 256) {
+							std::cout<<depths[i]<<std::endl;
+							std::cout << p << std::endl;
+						}
+					//p = vec3(x/1000,y/1000, depths[i] / 1000);
+
 
 					//if () {
 					imageplanes[index][y][x].depthsquare = p.length();//p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
@@ -601,9 +608,9 @@ vr_rgbd::~vr_rgbd()
 
 					//}
 						
-						p[0] = p[0]  / p[2];
+						/*p[0] = p[0]  / p[2];
 						p[1] = p[1]  / p[2];
-						p[2] = 1;
+						p[2] = 1;*/
 
 						v.color = c;						
 						float t;
@@ -622,7 +629,7 @@ vr_rgbd::~vr_rgbd()
 						v.point = p;
 						
 						intermediate_rgbdpc[index].add_point(v.point, v.color);					
-					//}
+					}
 						
 				}
 				else {
@@ -950,11 +957,11 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
-		std::cout << pcbb.pos1 << std::endl;
-		std::cout << pcbb.pos2 << std::endl;
+		//std::cout << pcbb.pos1 << std::endl;
+		//std::cout << pcbb.pos2 << std::endl;
 		
 
-
+		showvoxelizationmode = true;
 
 
 
@@ -1461,7 +1468,7 @@ void vr_rgbd::create_gui()
 
 		//std::cout << "num_devices:"<< num_devices << std::endl;
 		//std::cout << "////////////////////////////////"  << std::endl;
-		add_member_control(this, "currentcamera", currentcamera, "value_slider", "min=-1;max=1;ticks=true");
+		add_member_control(this, "currentcamera", currentcamera, "value_slider", "min=-1;max=2;ticks=true");
 
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
 		add_member_control(this, "rgbd_started", rgbd_started, "check");
@@ -2390,34 +2397,11 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//=======================delete===========================
 
 	//draw_grid(ctx, vec3(0.83623,- 0.728815,2.74123), vec3(2.83623,1.27119,4.74123), 0.05);
-	if (rgbdpc.size() > 1)
-	{
-		Voxelization a;
+	// 
+	// 
 
-		//std::cout << "1:"<< a.voxel_size<< std::endl;
-		a.init_voxelization(ctx);
-		std::vector<rgbd_pointcloud> o;
-		
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			o.push_back( setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
-		}
-		//std::cout << "1" << std::endl;
-		a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123),0.02);
-		//std::cout << "2" << std::endl;
-
-		std::vector<vec3> l;
-		l.push_back(vec3(0, 0, 0));
-		//l.push_back(vec3(1.83623, 0.271185, 5));
-		l.push_back(vec3(0, 5, 5));
-		l.push_back(vec3(0, 0, 0));
-		a.travser_voxels(ctx,l);
-
-
-		a.draw_voxels(ctx);
-		
-		
-		
-	}
+	
+	
 	
 	/*std::vector<Mat> inver_r;
 	inver_r.resize(3);
@@ -2649,6 +2633,33 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			}
 		}
 		
+		else if (showvoxelizationmode)
+		{
+			//std::cout << rgbdpc[0].cam_rotation << std::endl;
+			Voxelization a;
+
+			//std::cout << "1:"<< a.voxel_size<< std::endl;
+			a.init_voxelization(ctx);
+			std::vector<rgbd_pointcloud> o;
+
+			for (int i = 0; i < rgbdpc.size(); i++) {
+				o.push_back(setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
+			}
+			//std::cout << "1" << std::endl;
+			a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+			//std::cout << "2" << std::endl;
+
+			std::vector<vec3> l;
+			l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+			//l.push_back(vec3(1.83623, 0.271185, 5));
+			l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+			l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
+			a.travser_voxels(ctx, l);
+
+
+			a.draw_voxels(ctx);
+
+		}
 		else{
 			
 		if (rgbdpc.size() != 0) {
