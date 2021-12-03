@@ -63,6 +63,8 @@ public:
 		V_new_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
 		V_new_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
 
+		
+		
 	};
 	
 	
@@ -78,13 +80,16 @@ public:
 	
 protected:
 	cgv::render::shader_program voxelize_prog;
+	cgv::render::shader_program color_prog;
 	cgv::render::texture pixel_depth_tex;
 	cgv::render::texture v_id_tex;
 	
 	cgv::render::texture V_tex;
 	cgv::render::texture V_new_tex;
+	
 	float voxel_size;
 	std::vector<float> V;
+	std::vector<vec4> V_color;
 	uvec3 V_size;
 	
 	vec3 min_pos;

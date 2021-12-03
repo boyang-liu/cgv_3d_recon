@@ -9,7 +9,7 @@
 
 	bool Voxelization::init_voxelization_from_image(cgv::render::context& ctx,float myvoxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane)
 	{
-		if (!voxelize_prog.build_program(ctx, "voxel_distance.glpr", true)) {
+		if (!voxelize_prog.build_program(ctx, "glsl/voxel_distance.glpr", true)) {
 			std::cerr << "ERROR in building shader program "  << std::endl;
 			return false;
 		}
@@ -117,10 +117,11 @@
 
 
 	bool Voxelization::init_voxelization(cgv::render::context& ctx) {
-			if (!voxelize_prog.build_program(ctx, "voxel_d.glpr", true)) {
+			if (!voxelize_prog.build_program(ctx, "glsl/voxel_d.glpr", true)) {
 				std::cerr << "ERROR in building shader program "  << std::endl;
 				return false;
-			}				
+			}	
+			
 			return true;
 	
 	}
@@ -137,26 +138,32 @@
 				uvec3 a = ceil((pc[i].pnt(j) - min) / (float)voxel_size);	
 				int temp = (a[2]-1) * V_size[1] * V_size[0] + (a[1]-1) * V_size[0] + a[0] - 1;
 				V[temp] = 1;
+
+				//color
+
 			}
 
 		//voxelboundingbox.pos1 = min;
 		//voxelboundingbox.pos2 = max;
 		min_pos = min;
 		max_pos = max;
+		//====================================================================================
 		
+
 		return true;
 	}
 
 
 	
 	bool Voxelization::travser_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
-		//voxelize_prog.build_program(ctx, "voxel_d.glpr", true);
+		//voxelize_prog.build_program(ctx, "glsl/voxel_d.glpr", true);
 		
 		if (!V_size)
 			return false;
 		uvec3 num_groups = V_size;
 
 		//std::vector<float> V_data;
+		//clear
 		V_tex.destruct(ctx);
 		V_new_tex.destruct(ctx);
 		
@@ -213,10 +220,12 @@
 
 	void Voxelization::draw_voxels(cgv::render::context& ctx){
 		
+		
+
 
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
 		boxes.clear();
-		box_colors.clear();
+		box_colors.clear();  
 
 		rgb table_clr(0.3f, 0.2f, 0.0f);
 		rgb table_clr2(0.9f, 0.9f, 0.9f);

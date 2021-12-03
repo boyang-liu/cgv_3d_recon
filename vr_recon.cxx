@@ -203,6 +203,7 @@ void vr_rgbd::attach_all_devices()
 	current_corrected_cam = -1;
 	//save point cloud
 	intermediate_rgbdpc.resize(rgbd_inp.get_nr_devices());
+	intermediate_rgbdpc_bbox.resize(rgbd_inp.get_nr_devices());
 	//cur_pc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
@@ -254,6 +255,7 @@ void vr_rgbd::detach_all_devices() {
 		rgbd_inp.detach();
 		rgbdpc.clear();
 		intermediate_rgbdpc.clear();
+		intermediate_rgbdpc_bbox.clear();
 		imageplanes.clear();
 		rgbdpc_in_box.clear();
 		cam_coarse_t.clear();
@@ -571,14 +573,17 @@ vr_rgbd::~vr_rgbd()
 		
 		int i = 0;
 		
-		
+		mat3 pc_cam_r = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_r[index];
+		vec3 pc_cam_t = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_t[index] + manualcorrect_rotation[index] * cam_fine_t[index] + manualcorrect_translation[index];
 
+		float t;
 
 		intermediate_rgbdpc[index].clear();
+		intermediate_rgbdpc_bbox[index].clear();
 		for (int y =0; y < depth_frame_2.height; ++y)
 			for (int x = 0; x < depth_frame_2.width; ++x) {//
 				vec3 p;
-				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {//,index&p[0]
+				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {
 					// flipping y to make it the same direction as in pixel y coordinate
 							
 					rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
@@ -591,64 +596,57 @@ vr_rgbd::~vr_rgbd()
 					
 					if (!(c == filter_color)) {
 					
-					/*p[0] = p[0]*10 / p[2];
-					p[1] = p[1] * 10 / p[2];
-					p[2] = 10;*/
-						if (x == 256 && y == 256) {
+					
+						/*if (x == 256 && y == 256) {
 							std::cout<<depths[i]<<std::endl;
 							std::cout << p << std::endl;
-						}
-					//p = vec3(x/1000,y/1000, depths[i] / 1000);
+						}*/				
 
-
-					//if () {
-					imageplanes[index][y][x].depthsquare = p.length();//p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
-					imageplanes[index][y][x].pixelcolor = c;
-
-
-					//}
-						
+					//get depth image info
+					//imageplanes[index][y][x].depthsquare = p.length();//p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
+					//imageplanes[index][y][x].pixelcolor = c;
+									
 						/*p[0] = p[0]  / p[2];
 						p[1] = p[1]  / p[2];
 						p[2] = 1;*/
 
 						v.color = c;						
-						float t;
+						
 						t = p[1];
 						p[1] = p[2];
 						p[2] = t;
 
 
-
-						p = cam_coarse_r[index] * p;															
+						p = pc_cam_r * p + pc_cam_t;
+						/*p = cam_coarse_r[index] * p;															
 						p = p + cam_coarse_t[index];	
 						p = cam_fine_r[index] * p;
 						p = p + cam_fine_t[index];
 						p = manualcorrect_rotation[index] * p;
-						p = p + manualcorrect_translation[index];
+						p = p + manualcorrect_translation[index];*/
 						v.point = p;
-						
-						intermediate_rgbdpc[index].add_point(v.point, v.color);					
+						if (boundingboxisfixed|| setboundingboxmode)
+						{
+							if(p[0]<pcbb.pos2[0] &&p[1] < pcbb.pos2[1] &&p[2] < pcbb.pos2[2] && 
+								p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2] )
+							intermediate_rgbdpc_bbox[index].add_point(v.point, v.color);
+						}
+						else
+							intermediate_rgbdpc[index].add_point(v.point, v.color);					
 					}
 						
-				}
-				else {
+				}//get depth image info
+				/*else {
 					imageplanes[index][y][x].depthsquare = -1;
 					imageplanes[index][y][x].pixelcolor = rgba8(0, 0, 0, 255);
-				}
+				}*/
 				++i;
 			}
 		
 		//std::cout << "im:" << imageplanes[index].size() << std::endl;
 		/*std::cout << "depths:" << depths[130000] << std::endl;*/
-
-		intermediate_rgbdpc[index].cam_pos = cam_coarse_r[index] * vec3(0, 0, 0) + cam_coarse_t[index];
-		intermediate_rgbdpc[index].cam_pos = cam_fine_r[index] * vec3(0, 0, 0) + cam_fine_t[index];
-
-		
-		
-		//std::cout << "depth_frame_2.width:" << depth_frame_2.width << std::endl;
-		//std::cout << "intermediate_rgbdpc[0]:" << intermediate_rgbdpc[0].get_nr_Points() << std::endl;
+		intermediate_rgbdpc_bbox[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
+		intermediate_rgbdpc[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
 		return intermediate_rgbdpc[index].get_nr_Points();
 	
 	}
@@ -962,8 +960,7 @@ vr_rgbd::~vr_rgbd()
 		
 
 		showvoxelizationmode = true;
-
-
+	
 
 
 		//mat3 c;
@@ -1394,11 +1391,22 @@ vr_rgbd::~vr_rgbd()
 			if (generate_pc_from_rgbd) 
 			{
 			//current_pc = intermediate_pc;
+				if (boundingboxisfixed||setboundingboxmode) {
+					rgbdpc_in_box = intermediate_rgbdpc_bbox;
+					
+					for (int i = 0; i < rgbdpc.size(); i++) {
+						rgbdpc_in_box[i].cam_pos = intermediate_rgbdpc[i].cam_pos;
+
+					}
+				
+				}
+				else{
 				rgbdpc = intermediate_rgbdpc;
 				for (int i = 0; i < rgbdpc.size(); i++) {
 					rgbdpc[i].cam_pos = intermediate_rgbdpc[i].cam_pos;
 				
 				}
+				
 				if (record_pc_started && num_recorded_pc <= 1000) {
 					for (int i = 0; i < rgbdpc.size(); i++)
 					{
@@ -1409,6 +1417,7 @@ vr_rgbd::~vr_rgbd()
 					num_recorded_pc++;
 
 				}
+				} 
 				post_redraw();
 			}
 			else {
@@ -2520,11 +2529,11 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					pcbb.step = BoundingBoxstep;
 
 
-					if (rgbdpc.size() > 0) {
+					/*if (rgbdpc.size() > 0) {
 					for (int i = 0; i < rgbdpc.size(); i++) {
 						rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], pos1, pos2);
 					}
-					}
+					}*/
 					
 					
 
@@ -2635,6 +2644,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		
 		else if (showvoxelizationmode)
 		{
+			if (rgbdpc.size() > 0) {
 			//std::cout << rgbdpc[0].cam_rotation << std::endl;
 			Voxelization a;
 
@@ -2658,7 +2668,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 
 			a.draw_voxels(ctx);
-
+			}
 		}
 		else{
 			

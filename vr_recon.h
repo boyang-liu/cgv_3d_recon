@@ -273,6 +273,7 @@ protected:
 	int total_loaded_pc=1000;
 	std::vector<std::string> pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
+	std::vector<rgbd_pointcloud> intermediate_rgbdpc_bbox;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
