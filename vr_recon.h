@@ -294,7 +294,7 @@ protected:
 	vec3 viewpoint1 =vec3(0,0,0);
 	vec3 viewpoint2 = vec3(0, 0, 0);
 
-
+	Voxelization *Vox = new  Voxelization();
 
 	//mat3 testmat;
 	//vec3 testtran;

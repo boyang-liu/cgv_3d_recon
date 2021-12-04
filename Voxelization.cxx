@@ -140,6 +140,7 @@
 				V[temp] = 1;
 
 				//color
+				//V_color[temp] = pc[i].clr(j);
 
 			}
 

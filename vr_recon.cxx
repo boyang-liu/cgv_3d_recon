@@ -2646,17 +2646,17 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		{
 			if (rgbdpc.size() > 0) {
 			//std::cout << rgbdpc[0].cam_rotation << std::endl;
-			Voxelization a;
+			//Voxelization a;
 
 			//std::cout << "1:"<< a.voxel_size<< std::endl;
-			a.init_voxelization(ctx);
+			Vox->init_voxelization(ctx);
 			std::vector<rgbd_pointcloud> o;
 
 			for (int i = 0; i < rgbdpc.size(); i++) {
 				o.push_back(setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
 			}
 			//std::cout << "1" << std::endl;
-			a.init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+			Vox->init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
 			//std::cout << "2" << std::endl;
 
 			std::vector<vec3> l;
@@ -2664,10 +2664,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			//l.push_back(vec3(1.83623, 0.271185, 5));
 			l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
 			l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
-			a.travser_voxels(ctx, l);
+			Vox->travser_voxels(ctx, l);
 
 
-			a.draw_voxels(ctx);
+			Vox->draw_voxels(ctx);
 			}
 		}
 		else{
