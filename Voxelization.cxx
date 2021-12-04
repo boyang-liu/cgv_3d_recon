@@ -156,7 +156,7 @@
 
 
 	
-	bool Voxelization::travser_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
+	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		//voxelize_prog.build_program(ctx, "glsl/voxel_d.glpr", true);
 		
 		if (!V_size)
@@ -213,9 +213,65 @@
 				V[i] = V_new_data[i][0];
 
 		}
+		
 		//std::cout << "V_size:" << V_size << std::endl;
 		//std::cout<<"V_new_data[0]:"<< V_new_data[0] <<std::endl;
 		
+
+
+
+
+
+		/*cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		boxes.clear();
+		box_colors.clear();
+
+		rgb table_clr(0.3f, 0.2f, 0.0f);
+		rgb table_clr2(0.9f, 0.9f, 0.9f);
+		for (int i = 0; i <= V_size[0]-1; i++)
+			for (int j = 0; j <= V_size[1] - 1; j++)
+				for (int k = 0; k <= V_size[2] - 1; k++)
+				{
+					if (V_new_data[k  * V_size[1] * V_size[0] + j  * V_size[0] + i ][0] == 1) {
+						vec3 min1 = min_pos + vec3(i  * voxel_size, j  * voxel_size, k * voxel_size);
+						vec3 max1 = min_pos + vec3((i+1) * voxel_size, (j + 1) * voxel_size, (k + 1) * voxel_size);
+						boxes.emplace_back(box3(min1, max1));
+						box_colors.emplace_back(table_clr);
+					}
+					else if (V_new_data[k  * V_size[1] * V_size[0] + j * V_size[0] + i][0] == 2)
+					{
+						vec3 min1 = min_pos + vec3(i  * voxel_size, j * voxel_size, k  * voxel_size);
+						vec3 max1 = min_pos + vec3((i+1) * voxel_size, (j+1) * voxel_size, (k + 1) * voxel_size);
+						boxes.emplace_back(box3(min1, max1));
+						box_colors.emplace_back(table_clr2);
+					}
+
+				}
+		cgv::render::box_render_style style;
+		renderer.set_render_style(style);
+
+
+		renderer.set_box_array(ctx, boxes);
+		renderer.set_color_array(ctx, box_colors);
+		if (renderer.validate_and_enable(ctx)) {
+			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		}
+		renderer.disable(ctx);*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		return true;
 	}
 
@@ -237,14 +293,14 @@
 					if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 1) {
 					vec3 min1 = min_pos + vec3((i-1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 					vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
-					boxes.push_back(box3(min1, max1));				
-					box_colors.push_back(table_clr);
+					boxes.emplace_back(box3(min1, max1));
+					box_colors.emplace_back(table_clr);
 					}else if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 2)
 					{
 						vec3 min1 = min_pos + vec3((i - 1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 						vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
-						boxes.push_back(box3(min1, max1));
-						box_colors.push_back(table_clr2);
+						boxes.emplace_back(box3(min1, max1));
+						box_colors.emplace_back(table_clr2);
 					}
 					
 				}

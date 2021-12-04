@@ -506,7 +506,7 @@ vr_rgbd::vr_rgbd()
 	int mode = 0;
 	currentpointcloud = 0;
 	Radius_SelectMode = 0.1;
-	currentcamera = 0;
+	currentcamera = -1;
 
 	BoundingBoxlength = 2.0;
 	BoundingBoxheight = 2.0;
@@ -833,8 +833,11 @@ vr_rgbd::~vr_rgbd()
 		manualcorrect_translation.resize(rgbdpc.size());
 		imageplanes.resize(rgbdpc.size());
 		for (int i = 0; i < cam_fine_r.size(); i++) {
-			cam_coarse_r[i].identity();
-			cam_coarse_t[i] = vec3(0, 0, 0);
+			//cam_coarse_r[i].identity();
+			//cam_coarse_t[i] = vec3(0, 0, 0);
+
+			cam_coarse_r[i] = rgbdpc[i].cam_rotation;
+			cam_coarse_t[i] = rgbdpc[i].cam_translation;
 
 			cam_fine_r[i].identity();
 			cam_fine_t[i] = vec3(0, 0, 0);
@@ -886,8 +889,11 @@ vr_rgbd::~vr_rgbd()
 		manualcorrect_rotation.resize(rgbdpc.size());
 		manualcorrect_translation.resize(rgbdpc.size());
 		imageplanes.resize(rgbdpc.size());
-		cam_coarse_r[rgbdpc.size()-1].identity();
-		cam_coarse_t[rgbdpc.size() - 1] = vec3(0, 0, 0);
+		//cam_coarse_r[rgbdpc.size()-1].identity();
+		//cam_coarse_t[rgbdpc.size() - 1] = vec3(0, 0, 0);
+
+		cam_coarse_r[rgbdpc.size() - 1]= rgbdpc[rgbdpc.size()-1].cam_rotation;
+		cam_coarse_t[rgbdpc.size() - 1] = rgbdpc[rgbdpc.size() - 1].cam_translation;
 
 		cam_fine_r[rgbdpc.size() - 1].identity();
 		cam_fine_t[rgbdpc.size() - 1] = vec3(0, 0, 0);
@@ -909,7 +915,7 @@ vr_rgbd::~vr_rgbd()
 		}
 		
 		std::string fn;
-		rgbd_pointcloud mytemppc, mytemppc2;
+		rgbd_pointcloud mytemppc;//, mytemppc2;
 		
 		fn = pc_load_dir[index] + to_string(num_loaded_pc) + ".lbypc";
 		
@@ -920,7 +926,7 @@ vr_rgbd::~vr_rgbd()
 
 		//rgbdpc[index].read_pc(fn);
 		mytemppc.read_pc(fn);
-		for (int i = 0; i < mytemppc.get_nr_Points(); i++) {
+		/*for (int i = 0; i < mytemppc.get_nr_Points(); i++) {
 			vec3 p = mytemppc.pnt(i);
 			p = cam_coarse_r[index] * p;
 			p = p + cam_coarse_t[index];
@@ -929,10 +935,11 @@ vr_rgbd::~vr_rgbd()
 			p = manualcorrect_rotation[index] * p;
 			p = p + manualcorrect_translation[index];
 			mytemppc2.add_point(p, mytemppc.clr(i));
-		}
-		
-		
-		rgbdpc[index] = mytemppc2;
+		}*/
+		rgbdpc[index] = mytemppc;
+		cam_coarse_r[index] = rgbdpc[index].cam_rotation;
+		cam_coarse_t[index] = rgbdpc[index].cam_translation;
+		//rgbdpc[index] = mytemppc2;
 		
 		post_redraw();
 
@@ -2149,7 +2156,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
 			
 		}
-		
+		Vox->init_voxelization(ctx);
 
 		//=======================delete===========================
 		
@@ -2341,15 +2348,16 @@ void vr_rgbd::draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcl
 
 }
 
-void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C) {
+void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C,mat3 r,vec3 t) {
 	vec3 a = vec3(0.275, 0.25, 0.2375);
 	vec3 b = vec3(0.275, 0.25, -0.1525);
 	vec3 c = vec3(-0.2875, 0.25, -0.1525);
 	vec3 d = vec3(-0.2875, 0.25, 0.2375);
 	vec3 e = vec3(0, 0, 0);
 
-	mat3 r = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_r[index];
-	vec3 t = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_t[index] + manualcorrect_rotation[index] * cam_fine_t[index] + manualcorrect_translation[index];
+	//mat3 r = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_r[index];
+	//vec3 t = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_t[index] + manualcorrect_rotation[index] * cam_fine_t[index] + manualcorrect_translation[index];
+	
 	/*getviewconeposition(a, cam_coarse_r[cc], cam_coarse_t[cc]);
 	getviewconeposition(b, cam_coarse_r[cc], cam_coarse_t[cc]);
 	getviewconeposition(c, cam_coarse_r[cc], cam_coarse_t[cc]);
@@ -2409,9 +2417,36 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	// 
 	// 
 
-	
-	
-	
+	if (rgbdpc.size() > 2) {
+		//std::cout << rgbdpc[0].cam_rotation << std::endl;
+		//Voxelization a;
+
+		//std::cout << "1:"<< a.voxel_size<< std::endl;
+		
+		std::vector<rgbd_pointcloud> allpc;
+
+		for (int i = 0; i < rgbdpc.size(); i++) {
+			allpc.push_back(setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
+		}
+		//std::cout << "1" << std::endl;
+		Vox->init_surface_from_PC(allpc, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+		//std::cout << "2" << std::endl;
+
+		std::vector<vec3> l;
+		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+		//l.push_back(vec3(1.83623, 0.271185, 5));
+		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
+		Vox->traverse_voxels(ctx, l);
+		
+		Vox->draw_voxels(ctx);
+
+	}	
+	//=======================delete===========================
+
+
+
+
 	/*std::vector<Mat> inver_r;
 	inver_r.resize(3);
 	inver_r[0].identity();
@@ -2478,11 +2513,17 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			if (rgbdpc.size() != 0) {
 				if (currentcamera == -1) {
 					for (int i = 0; i < rgbdpc.size(); i++) {
-						draw_viewingcone(ctx, i, P, C);
+						mat3 r_viewing = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_r[i];
+						vec3 t_viewing = manualcorrect_rotation[i] * cam_fine_r[i] * cam_coarse_t[i] + manualcorrect_rotation[i] * cam_fine_t[i] + manualcorrect_translation[i];
+						draw_viewingcone(ctx, i, P, C, r_viewing, t_viewing);
 					}
 				}
-				else
-					draw_viewingcone(ctx, currentcamera, P, C);
+				else {
+					
+					mat3 r_viewing = manualcorrect_rotation[currentcamera] * cam_fine_r[currentcamera] * cam_coarse_r[currentcamera];
+					vec3 t_viewing = manualcorrect_rotation[currentcamera] * cam_fine_r[currentcamera] * cam_coarse_t[currentcamera] + manualcorrect_rotation[currentcamera] * cam_fine_t[currentcamera] + manualcorrect_translation[currentcamera];
+					draw_viewingcone(ctx, currentcamera, P, C, r_viewing, t_viewing);
+				}
 			}
 			if (state_ptr) {
 				if (selectPointsmode ) {
@@ -2664,15 +2705,22 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			//l.push_back(vec3(1.83623, 0.271185, 5));
 			l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
 			l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
-			Vox->travser_voxels(ctx, l);
+			Vox->traverse_voxels(ctx, l);
 
 
-			Vox->draw_voxels(ctx);
+			//Vox->draw_voxels(ctx);
 			}
 		}
 		else{
 			
 		if (rgbdpc.size() != 0) {
+
+			//===================delete================
+
+			if (rgbdpc.size()<3){
+
+			//===================delete================
+
 			//std::cout << "manualcorrect_rotation[0]:" << manualcorrect_rotation[0] << std::endl;
 			for (int i = 0; i < rgbdpc.size(); i++)
 			{	
@@ -2685,6 +2733,12 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			}
 			if (record_pc_started && num_recorded_pc <= 1000)
 				num_recorded_pc++;
+
+			//===================delete================
+
+			}
+
+			//===================delete================
 		}
 		}
 

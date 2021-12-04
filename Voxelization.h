@@ -74,7 +74,7 @@ public:
 
 	bool init_voxelization(cgv::render::context& ctx);
 	bool init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
-	bool travser_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
+	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void draw_voxels(cgv::render::context& ctx);
 	
 	
@@ -100,6 +100,7 @@ protected:
 	std::vector<box3> boxes;
 	std::vector<rgb> box_colors;	
 
+	
 };
 
 

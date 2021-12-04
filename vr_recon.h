@@ -362,7 +362,7 @@ public:
 	void draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc);
 	void draw(cgv::render::context& ctx);
-	void draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C);
+	void draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C, mat3 r, vec3 t);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
 	int mytime=0;
