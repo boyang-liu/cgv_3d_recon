@@ -127,11 +127,17 @@
 	}
 
 	bool Voxelization::init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length) {
-		V.clear();	
+		V.clear();
+		V_color.clear();
+		num_p_in_voxel.clear();
 		voxel_size = voxel_length;
 		V_size = ceil((max - min) / (float)voxel_size);
 		int length = V_size[0] * V_size[1] * V_size[2];
 		V.resize(length,0);
+		V_color.resize(length, vec3(0, 0, 0));
+		num_p_in_voxel.resize(length, 0);
+		
+		float r_v, g_v, b_v;
 		for(int i = 0; i < pc.size(); i++)
 			for (int j = 0; j < pc[i].get_nr_Points(); j++)
 			{
@@ -140,9 +146,18 @@
 				V[temp] = 1;
 
 				//color
-				//V_color[temp] = pc[i].clr(j);
-
+				
+				r_v = float(pc[i].clr(j)[0]);
+				g_v = float(pc[i].clr(j)[1]);
+				b_v = float(pc[i].clr(j)[2]);
+				V_color[temp] = vec3((r_v+ num_p_in_voxel[temp]* V_color[temp][0])/ (num_p_in_voxel[temp]+1), 
+					(g_v + num_p_in_voxel[temp] * V_color[temp][1]) / (num_p_in_voxel[temp] + 1), 
+					(b_v + num_p_in_voxel[temp] * V_color[temp][1]) / (num_p_in_voxel[temp] + 1)
+					);
+				num_p_in_voxel[temp] += 1;
 			}
+
+		
 
 		//voxelboundingbox.pos1 = min;
 		//voxelboundingbox.pos2 = max;
@@ -159,6 +174,7 @@
 	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		//voxelize_prog.build_program(ctx, "glsl/voxel_d.glpr", true);
 		
+
 		if (!V_size)
 			return false;
 		uvec3 num_groups = V_size;
@@ -290,12 +306,17 @@
 			for (int j = 1; j <= V_size[1]; j++)
 				for(int k = 1;k <= V_size[2]; k++)
 				{
-					if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 1) {
+					int index_V = (k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1;
+					if (V[index_V] == 1) {
 					vec3 min1 = min_pos + vec3((i-1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 					vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
 					boxes.emplace_back(box3(min1, max1));
-					box_colors.emplace_back(table_clr);
-					}else if (V[(k - 1) * V_size[1] * V_size[0] + (j - 1) * V_size[0] + i - 1] == 2)
+					int r = int(V_color[index_V][0]);
+					int g = int(V_color[index_V][1]);
+					int b = int(V_color[index_V][2]);
+					rgb8 clr(r,g,b);
+					box_colors.emplace_back(clr);
+					}else if (V[index_V] == 2)
 					{
 						vec3 min1 = min_pos + vec3((i - 1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 						vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);

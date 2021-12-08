@@ -965,9 +965,11 @@ vr_rgbd::~vr_rgbd()
 		//std::cout << pcbb.pos1 << std::endl;
 		//std::cout << pcbb.pos2 << std::endl;
 		
-
-		showvoxelizationmode = true;
-	
+		if(!showvoxelizationmode)
+			showvoxelizationmode = true;
+		else
+			showvoxelizationmode = false;
+		
 
 
 		//mat3 c;
@@ -2417,19 +2419,24 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	// 
 	// 
 
+
+
+
 	if (rgbdpc.size() > 2) {
 		//std::cout << rgbdpc[0].cam_rotation << std::endl;
-		//Voxelization a;
-
-		//std::cout << "1:"<< a.voxel_size<< std::endl;
+		//Voxelization a;		
 		
+		auto start_draw = std::chrono::steady_clock::now();
+
 		std::vector<rgbd_pointcloud> allpc;
 
 		for (int i = 0; i < rgbdpc.size(); i++) {
 			allpc.push_back(setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
 		}
-		//std::cout << "1" << std::endl;
+		//std::cout << "1" << std::endl;		
+
 		Vox->init_surface_from_PC(allpc, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+		
 		//std::cout << "2" << std::endl;
 
 		std::vector<vec3> l;
@@ -2437,11 +2444,25 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		//l.push_back(vec3(1.83623, 0.271185, 5));
 		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
 		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
+
+		
+
+		
+
 		Vox->traverse_voxels(ctx, l);
+
 		
 		Vox->draw_voxels(ctx);
 
+		auto stop_draw = std::chrono::steady_clock::now();
+		std::chrono::duration<double> diff_draw;
+		diff_draw = stop_draw - start_draw;
+		std::cout << diff_draw.count() << std::endl;
 	}	
+
+
+
+
 	//=======================delete===========================
 
 
@@ -2697,7 +2718,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				o.push_back(setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123)));
 			}
 			//std::cout << "1" << std::endl;
-			Vox->init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+			Vox->init_surface_from_PC(o, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.05);
 			//std::cout << "2" << std::endl;
 
 			std::vector<vec3> l;
@@ -2708,7 +2729,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			Vox->traverse_voxels(ctx, l);
 
 
-			//Vox->draw_voxels(ctx);
+			Vox->draw_voxels(ctx);
 			}
 		}
 		else{
@@ -2717,7 +2738,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			//===================delete================
 
-			if (rgbdpc.size()<3){
+			if (rgbdpc.size()<3&& showvoxelizationmode){
 
 			//===================delete================
 

@@ -89,7 +89,8 @@ protected:
 	
 	float voxel_size;
 	std::vector<float> V;
-	std::vector<vec4> V_color;
+	std::vector<vec3> V_color;
+	std::vector<int> num_p_in_voxel;
 	uvec3 V_size;
 	
 	vec3 min_pos;

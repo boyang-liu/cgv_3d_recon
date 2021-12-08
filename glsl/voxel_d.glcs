@@ -111,19 +111,19 @@ void main() {
 	pv3.inside=0;
 	
 	//if ray arrives the boundary,stop
-	while (pv1.id.x>=0 && pv1.id.y>=0 && pv1.id.z>=0 && pv1.id.x< resolution.x && pv1.id.y< resolution.y && pv1.id.z< resolution.z ){
+	while (pv1.id.x>=0 && pv1.id.y>=0 && pv1.id.z>=0 && pv1.id.x< resolution.x && pv1.id.y< resolution.y && pv1.id.z< resolution.z && pv1.inside==0 ){
 	
 	pv1=next_point( voxel_cam_ray_1,pv1);
 	
 	}
 	
-	while (pv2.id.x>=0 && pv2.id.y>=0 && pv2.id.z>=0 && pv2.id.x< resolution.x && pv2.id.y< resolution.y && pv2.id.z< resolution.z){
+	while (pv2.id.x>=0 && pv2.id.y>=0 && pv2.id.z>=0 && pv2.id.x< resolution.x && pv2.id.y< resolution.y && pv2.id.z< resolution.z && pv2.inside==0 && pv1.inside==1){
 	
 	pv2=next_point( voxel_cam_ray_2,pv2);
 	
 	}
 
-	while (pv3.id.x>=0 && pv3.id.y>=0 && pv3.id.z>=0 && pv3.id.x< resolution.x && pv3.id.y< resolution.y && pv3.id.z< resolution.z){
+	while (pv3.id.x>=0 && pv3.id.y>=0 && pv3.id.z>=0 && pv3.id.x< resolution.x && pv3.id.y< resolution.y && pv3.id.z< resolution.z && pv3.inside==0&& pv2.inside==1 && pv1.inside==1){
 	
 	pv3=next_point( voxel_cam_ray_3,pv3);
 	
