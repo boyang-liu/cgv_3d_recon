@@ -118,6 +118,7 @@ public:
 	size_t add_point(const Pnt& p);
 	size_t add_point(const Pnt& p, const Rgba& c);
 	bool read_lbypc(const std::string& file_name);
+	bool read_obj(const std::string& _file_name);
 	bool write_lbypc(const std::string& file_name);
 	bool read_txt(const std::string& file_name);
 	bool write_txt(const std::string& file_name);
@@ -165,6 +166,8 @@ public:
 	std::vector<Rgba> renderColors;
 	std::vector<Rgba> Colors;
 	//void set_mean() { mean=accumulate(&pnt(0), &pnt(0) + get_nr_Points(), Pnt(0, 0, 0)) / ((float)get_nr_Points()); }
+
+
 protected:
 	
 	//bool read(const std::string& file_name);

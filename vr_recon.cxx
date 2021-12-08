@@ -852,8 +852,8 @@ vr_rgbd::~vr_rgbd()
 		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;
 
 		//pc_load_dir = fn.substr(0, fn.length() - 8);
-
-
+		
+		
 	}
 	void vr_rgbd::start_load_recorded_pc() {
 		if (rgbd_inp.is_multi_started() || rgbd_inp.is_started()) {
@@ -2435,7 +2435,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 		//std::cout << "1" << std::endl;		
 
-		Vox->init_surface_from_PC(allpc, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+		Vox->init_surface_from_PC(allpc, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.01);
 		
 		//std::cout << "2" << std::endl;
 

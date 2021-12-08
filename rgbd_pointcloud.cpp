@@ -17,6 +17,7 @@
 #include <cgv/utils/scan.h>
 #include <cgv/utils/advanced_scan.h>
 #include <cgv/utils/stopwatch.h>
+#include <cgv/media/mesh/obj_reader.h>
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -29,7 +30,32 @@ using namespace cgv::utils;
 using namespace cgv::media::mesh;
 
 
+class point_cloud_obj_loader : public obj_reader, public point_cloud_types
+{
+protected:
+	std::vector<Pnt>& P;
+	std::vector<Nml>& N;
+	std::vector<Clr>& C;
+public:
+	///
+	point_cloud_obj_loader(std::vector<Pnt>& _P, std::vector<Nml>& _N, std::vector<Clr>& _C) : P(_P), N(_N), C(_C) {}
+	/// overide this function to process a vertex
+	void process_vertex(const v3d_type& p)
+	{
+		P.push_back(rgbd_pointcloud::Pnt(p));
+	}
+	/// overide this function to process a normal
+	void process_normal(const v3d_type& n)
+	{
+		N.push_back(rgbd_pointcloud::Nml(n));
+	}
+	/// overide this function to process a color (this called for vc prefixes which is is not in the standard but for example used in pobj-files)
+	void process_color(const color_type& c)
+	{
+		C.push_back(c);
+	}
 
+};
 
 
 
@@ -49,6 +75,9 @@ bool rgbd_pointcloud::read_pc(const std::string& _file_name)
 		return read_lbypc(_file_name);
 	if (ext == "txt")
 		return read_txt(_file_name);
+	if (ext == "obj" || ext == "pobj")
+		return read_obj(_file_name);
+
 	return false;
 }
 
@@ -200,6 +229,32 @@ bool rgbd_pointcloud::read_txt(const std::string& file_name)
 	watch.add_time();
 	return true;
 }
+
+bool rgbd_pointcloud::read_obj(const std::string& _file_name)
+{
+	vector<Clr> myColor;
+	point_cloud_obj_loader pc_obj(Points, Normals, myColor);
+	if (!exists(_file_name))
+		return false;
+	clear();
+	if (!pc_obj.read_obj(_file_name))
+		return false;
+	Colors.clear();
+	if (myColor.size() == 0)
+		Colors.resize(Points.size(),Rgba(255,255,255,255));
+	else
+	{
+	for (int i = 0; i < myColor.size(); i++)
+		Colors.emplace_back(Rgba(myColor[i][0], myColor[i][1], myColor[i][2], 255));
+	}
+	return true;
+}
+
+
+
+
+
+
 bool rgbd_pointcloud::write_txt(const std::string& file_name)
 {
 	ofstream ofile;
