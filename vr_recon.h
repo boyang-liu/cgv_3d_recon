@@ -277,7 +277,7 @@ protected:
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
-
+	rgbd_pointcloud allpc_in_bbox;
 	std::vector < std::vector<std::vector<depthpixel>>> imageplanes;
 
 	std::vector<int> knn;
@@ -306,7 +306,7 @@ public:
 	~vr_rgbd();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
-	size_t construct_multi_point_cloud(int index);//
+	void construct_multi_point_cloud(int index);//
 	//size_t construct_point_clouds();
 
 	//void getviewconeposition(vec3 &a, mat3 r, vec3 t);

@@ -18,6 +18,7 @@
 #include <cgv/utils/advanced_scan.h>
 #include <cgv/utils/stopwatch.h>
 #include <cgv/media/mesh/obj_reader.h>
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
