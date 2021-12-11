@@ -220,6 +220,12 @@ void vr_rgbd::attach_all_devices()
 	manualcorrect_rotation.resize(rgbd_inp.get_nr_devices());
 	trees.resize(rgbd_inp.get_nr_devices());
 
+	
+	color_frame_2.resize(rgbd_inp.get_nr_devices());
+	depth_frame_2.resize(rgbd_inp.get_nr_devices());
+	warped_color_frame_2.resize(rgbd_inp.get_nr_devices());
+	ir_frame_2.resize(rgbd_inp.get_nr_devices());
+
 	imageplanes.resize(rgbd_inp.get_nr_devices());
 	for (int i = 0; i < cam_fine_r.size(); i++) {
 		cam_coarse_r[i].identity();
@@ -268,7 +274,10 @@ void vr_rgbd::detach_all_devices() {
 		trees.clear();
 		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 		current_pc.clear();
-	
+		color_frame_2.clear();
+		depth_frame_2.clear();
+		warped_color_frame_2.clear();
+		ir_frame_2.clear();
 	
 	
 	}
@@ -503,6 +512,9 @@ vr_rgbd::vr_rgbd()
 	manualcorrectmode = false;
 	manualcorrectstarted = false;
 	generate_pc_from_files = false;
+
+	drawvoexls = true;
+
 	int mode = 0;
 	currentpointcloud = 0;
 	Radius_SelectMode = 0.1;
@@ -524,15 +536,15 @@ vr_rgbd::~vr_rgbd()
 	size_t vr_rgbd::construct_point_cloud()
 	{
 		intermediate_pc.clear();
-		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
-		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
+		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2[0].frame_data.front());
+		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2[0].frame_data.front());
 	
-		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2);
-		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
+		rgbd_inp.map_color_to_depth(depth_frame_2[0], color_frame_2[0], warped_color_frame_2[0]);
+		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2[0].frame_data.front());
 		
 		int i = 0;
-		for (int y = 0; y < depth_frame_2.height; ++y)
-			for (int x = 0; x < depth_frame_2.width; ++x) {
+		for (int y = 0; y < depth_frame_2[0].height; ++y)
+			for (int x = 0; x < depth_frame_2[0].width; ++x) {
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0])) {
 					// flipping y to make it the same direction as in pixel y coordinate
@@ -564,11 +576,11 @@ vr_rgbd::~vr_rgbd()
 		
 		//}
 			
-		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2.frame_data.front());
-		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2.frame_data.front());
+		const unsigned short* depths = reinterpret_cast<const unsigned short*>(&depth_frame_2[index].frame_data.front());
+		const unsigned char* colors = reinterpret_cast<const unsigned char*>(&color_frame_2[index].frame_data.front());
 
-		rgbd_inp.map_color_to_depth(depth_frame_2, color_frame_2, warped_color_frame_2, index);
-		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2.frame_data.front());
+		rgbd_inp.map_color_to_depth(depth_frame_2[index], color_frame_2[index], warped_color_frame_2[index], index);
+		colors = reinterpret_cast<const unsigned char*>(&warped_color_frame_2[index].frame_data.front());
 
 		
 		int i = 0;
@@ -580,8 +592,8 @@ vr_rgbd::~vr_rgbd()
 
 		intermediate_rgbdpc[index].clear();
 		intermediate_rgbdpc_bbox[index].clear();
-		for (int y =0; y < depth_frame_2.height; ++y)
-			for (int x = 0; x < depth_frame_2.width; ++x) {//
+		for (int y =0; y < depth_frame_2[index].height; ++y)
+			for (int x = 0; x < depth_frame_2[index].width; ++x) {//
 				vec3 p;
 				if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {
 					// flipping y to make it the same direction as in pixel y coordinate
@@ -1347,8 +1359,8 @@ vr_rgbd::~vr_rgbd()
 					
 					if (!future_handle.valid()) { //
 						if (!in_calibration) {
-							color_frame_2 = color_frame;
-							depth_frame_2 = depth_frame;
+							color_frame_2[0] = color_frame;
+							depth_frame_2[0] = depth_frame;
 							
 						}
 						if (zoom_out && !zoom_in)
@@ -1380,7 +1392,7 @@ vr_rgbd::~vr_rgbd()
 
 
 		if (rgbd_inp.is_multi_started()) {
-			vector<thread*> threads;
+			vector<thread> mythreads;
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
 				
@@ -1390,21 +1402,16 @@ vr_rgbd::~vr_rgbd()
 					
 				if (color_frame.is_allocated() && depth_frame.is_allocated())  //&&(color_frame_changed || depth_frame_changed)
 					{
-					color_frame_2 = color_frame;
-					depth_frame_2 = depth_frame;
+					color_frame_2[mm] = color_frame;
+					depth_frame_2[mm] = depth_frame;
 					vr_rgbd::construct_multi_point_cloud(mm);
-					thread* t = new thread(&vr_rgbd::construct_multi_point_cloud,mm);
-					threads.push_back(t);
+					//mythreads.emplace_back( thread(&vr_rgbd::construct_multi_point_cloud ,this,ref(mm)));
 					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
 				}	
 				
 			}
-			for (thread* t : threads) {
-				if (t->joinable()) {
-					t->join();
-				}
-				cout << "destroying " << t << "\n";
-				delete t;
+			for (auto&  th : mythreads) {				
+					th.join();								
 			}
 
 
@@ -2434,11 +2441,11 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 
 
-	if (rgbdpc.size() > 2) {
+	if (rgbdpc.size() > 2 && drawvoexls) {
 		//std::cout << rgbdpc[0].cam_rotation << std::endl;
 		//Voxelization a;		
 		
-	auto start_draw = std::chrono::steady_clock::now();	
+	//auto start_draw = std::chrono::steady_clock::now();	
 
 		rgbdpc_in_box.clear();
 		rgbdpc_in_box.resize(rgbdpc.size());
@@ -2447,10 +2454,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123));
 		}
 		//std::cout << "1" << std::endl;		
-auto stop_draw = std::chrono::steady_clock::now();
-		std::chrono::duration<double> diff_draw;
-		diff_draw = stop_draw - start_draw;
-		std::cout << diff_draw.count() << std::endl;
+//auto stop_draw = std::chrono::steady_clock::now();
+//		std::chrono::duration<double> diff_draw;
+//		diff_draw = stop_draw - start_draw;
+//		std::cout << diff_draw.count() << std::endl;
 		Vox->init_surface_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
 		
 		//std::cout << "2" << std::endl;
@@ -2463,11 +2470,11 @@ auto stop_draw = std::chrono::steady_clock::now();
 
 		Vox->traverse_voxels(ctx, l);
 		
-		Vox->draw_voxels(ctx);
+		drawvoexls = false;
 
 		
 	}	
-
+	Vox->draw_voxels(ctx);
 
 
 

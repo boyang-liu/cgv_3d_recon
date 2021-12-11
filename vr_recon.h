@@ -73,7 +73,7 @@ protected:
 	};*/
 	/// internal members used for data storage
 	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
-	rgbd::frame_type color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
+	std::vector<rgbd::frame_type> color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
 
 
 	rgbd::frame_type mycolor_frame, mydepth_frame;
@@ -261,6 +261,9 @@ protected:
 	std::string data_dir = std::string(cgv_data);
 	bool generate_pc_from_rgbd;
 	bool generate_pc_from_files;
+	bool drawvoexls;
+
+
 	std::vector<std::shared_ptr<ann_tree>> trees;
 
 	int save_time = 0;

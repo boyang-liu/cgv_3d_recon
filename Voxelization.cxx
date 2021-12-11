@@ -121,7 +121,10 @@
 				std::cerr << "ERROR in building shader program "  << std::endl;
 				return false;
 			}	
-			
+			if (!points_prog.build_program(ctx, "glsl/points.glpr", true)) {
+				std::cerr << "ERROR in building shader program " << std::endl;
+				return false;
+			}
 			return true;
 	
 	}
@@ -293,8 +296,8 @@
 
 	void Voxelization::draw_voxels(cgv::render::context& ctx){
 		
-		
-
+		if (V.size() == 0)
+			return;
 
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
 		boxes.clear();

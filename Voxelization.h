@@ -32,10 +32,10 @@ private:
 
 public:
 	
-	Voxelization() : pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"), V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]")
+	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R,G,B]"), init_V_tex("flt32[R]")//pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"),
 	{
 
-		voxel_size = 0.1;
+		/*voxel_size = 0.1;
 		pixel_depth_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
 		pixel_depth_tex.set_mag_filter(cgv::render::TF_LINEAR);
 		pixel_depth_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
@@ -47,7 +47,7 @@ public:
 		v_id_tex.set_mag_filter(cgv::render::TF_LINEAR);
 		v_id_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
 		v_id_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-		v_id_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
+		v_id_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);*/
 
 
 		V_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
@@ -80,13 +80,15 @@ public:
 	
 protected:
 	cgv::render::shader_program voxelize_prog;
-	cgv::render::shader_program color_prog;
-	cgv::render::texture pixel_depth_tex;
-	cgv::render::texture v_id_tex;
+	cgv::render::shader_program points_prog;
+	//cgv::render::texture pixel_depth_tex;
+	//cgv::render::texture v_id_tex;
 	
 	cgv::render::texture V_tex;
 	cgv::render::texture V_new_tex;
-	
+	cgv::render::texture P_tex;
+	cgv::render::texture init_V_tex;
+
 	float voxel_size;
 	std::vector<float> V;
 	std::vector<vec3> V_color;
