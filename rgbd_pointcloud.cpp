@@ -287,7 +287,22 @@ bool rgbd_pointcloud::write_txt(const std::string& file_name)
 	return true;
 }
 
+bool rgbd_pointcloud::write_pts(const std::string& file_name) {
 
+	ofstream ofile;
+	ofile.open(file_name.c_str());
+	
+	for (int i = 0; i < Points.size(); i++) {
+
+		ofile << Points[i] << " ";
+		
+		ofile << "\n";
+
+	}
+	ofile.close();
+
+	return true;
+}
 
 size_t rgbd_pointcloud::add_point(const Pnt& p)
 {

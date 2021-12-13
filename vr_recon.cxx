@@ -974,14 +974,30 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
-		//std::cout << pcbb.pos1 << std::endl;
-		//std::cout << pcbb.pos2 << std::endl;
+		
 		
 		if(!showvoxelizationmode)
 			showvoxelizationmode = true;
 		else
 			showvoxelizationmode = false;
 		
+
+		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
+		
+
+			if (fn.empty())
+				return;
+			FILE* fp = fopen(fn.c_str(), "wb");
+			if (!fp)
+				return;
+
+			rgbdpc[0].write_pts(fn);
+
+			fclose(fp);
+
+		
+		return;
+
 
 
 		//mat3 c;
@@ -2458,7 +2474,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 //		std::chrono::duration<double> diff_draw;
 //		diff_draw = stop_draw - start_draw;
 //		std::cout << diff_draw.count() << std::endl;
-		Vox->init_surface_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
+		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
 		
 		//std::cout << "2" << std::endl;
 
@@ -2732,7 +2748,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			//	rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123));
 			//}
 			////std::cout << "1" << std::endl;
-			//Vox->init_surface_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.05);
+			//Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.05);
 			////std::cout << "2" << std::endl;
 
 			//std::vector<vec3> l;

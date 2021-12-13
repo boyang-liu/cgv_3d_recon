@@ -121,7 +121,7 @@
 				std::cerr << "ERROR in building shader program "  << std::endl;
 				return false;
 			}	
-			if (!points_prog.build_program(ctx, "glsl/points.glpr", true)) {
+			if (!points_prog.build_program(ctx, "glsl/denoise.glpr", true)) {
 				std::cerr << "ERROR in building shader program " << std::endl;
 				return false;
 			}
@@ -129,7 +129,7 @@
 	
 	}
 
-	bool Voxelization::init_surface_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length) {
+	bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length) {
 		V.clear();
 		V_color.clear();
 		num_p_in_voxel.clear();
@@ -172,7 +172,33 @@
 		return true;
 	}
 
+	bool Voxelization::denoise(cgv::render::context& ctx) {
+	
+		if (!V_size)
+			return false;
+		uvec3 num_groups = V_size;
 
+		P_tex.destruct(ctx);
+		init_V_tex.destruct(ctx);
+
+		cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
+		cgv::data::const_data_view ptex_dv(&ptex_df, &V.front());
+		P_tex.create(ctx, ptex_dv, 0);
+		P_tex.generate_mipmaps(ctx);
+
+		//if (!V_new_tex.is_created())
+		init_V_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
+
+		const int P_tex_handle = (const int&)P_tex.handle - 1;
+		const int init_V_tex_handle = (const int&)init_V_tex.handle - 1;
+		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
+
+
+		return true;
+
+
+	}
 	
 	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		//voxelize_prog.build_program(ctx, "glsl/voxel_d.glpr", true);

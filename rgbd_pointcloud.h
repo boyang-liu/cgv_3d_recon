@@ -122,7 +122,7 @@ public:
 	bool write_lbypc(const std::string& file_name);
 	bool read_txt(const std::string& file_name);
 	bool write_txt(const std::string& file_name);
-
+	bool write_pts(const std::string& file_name);
 	Cnt get_nr_Points() const { return (Cnt)Points.size(); };
 	const Pnt& pnt(size_t i) const { return Points[i]; }
 	Pnt& pnt(size_t i) { return Points[i]; }
