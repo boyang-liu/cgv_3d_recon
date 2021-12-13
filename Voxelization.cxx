@@ -194,7 +194,13 @@
 		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
 
-
+		voxelize_prog.enable(ctx);
+		voxelize_prog.set_uniform(ctx, "min_bbox", min_pos);
+		voxelize_prog.set_uniform(ctx, "max_bbox", max_pos);
+		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
+		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
+		voxelize_prog.set_uniform(ctx, "cam_pos1", cam_pos[0]);
+		voxelize_prog.set_uniform(ctx, "cam_pos2", cam_pos[1]);
 		return true;
 
 
