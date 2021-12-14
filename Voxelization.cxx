@@ -174,33 +174,33 @@
 
 	bool Voxelization::denoise(cgv::render::context& ctx) {
 	
-		if (!V_size)
-			return false;
-		uvec3 num_groups = V_size;
+		//if (!V_size)
+		//	return false;
+		//uvec3 num_groups = V_size;
 
-		P_tex.destruct(ctx);
-		init_V_tex.destruct(ctx);
+		//P_tex.destruct(ctx);
+		//init_V_tex.destruct(ctx);
 
-		cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
-		cgv::data::const_data_view ptex_dv(&ptex_df, &V.front());
-		P_tex.create(ctx, ptex_dv, 0);
-		P_tex.generate_mipmaps(ctx);
+		//cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
+		//cgv::data::const_data_view ptex_dv(&ptex_df, &V.front());
+		//P_tex.create(ctx, ptex_dv, 0);
+		//P_tex.generate_mipmaps(ctx);
 
-		//if (!V_new_tex.is_created())
-		init_V_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
+		////if (!V_new_tex.is_created())
+		//init_V_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
 
-		const int P_tex_handle = (const int&)P_tex.handle - 1;
-		const int init_V_tex_handle = (const int&)init_V_tex.handle - 1;
-		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
+		//const int P_tex_handle = (const int&)P_tex.handle - 1;
+		//const int init_V_tex_handle = (const int&)init_V_tex.handle - 1;
+		//glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		//glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
 
-		voxelize_prog.enable(ctx);
-		voxelize_prog.set_uniform(ctx, "min_bbox", min_pos);
-		voxelize_prog.set_uniform(ctx, "max_bbox", max_pos);
-		voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
-		voxelize_prog.set_uniform(ctx, "resolution", num_groups);
-		voxelize_prog.set_uniform(ctx, "cam_pos1", cam_pos[0]);
-		voxelize_prog.set_uniform(ctx, "cam_pos2", cam_pos[1]);
+		//voxelize_prog.enable(ctx);
+		//voxelize_prog.set_uniform(ctx, "min_bbox", min_pos);
+		//voxelize_prog.set_uniform(ctx, "max_bbox", max_pos);
+		//voxelize_prog.set_uniform(ctx, "voxel_size", voxel_size);
+		//voxelize_prog.set_uniform(ctx, "resolution", num_groups);
+		//voxelize_prog.set_uniform(ctx, "cam_pos1", cam_pos[0]);
+		//voxelize_prog.set_uniform(ctx, "cam_pos2", cam_pos[1]);
 		return true;
 
 

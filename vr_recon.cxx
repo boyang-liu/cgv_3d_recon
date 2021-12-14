@@ -722,7 +722,7 @@ vr_rgbd::~vr_rgbd()
 		
 		
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
-		for (int i = 0; i < 10; i++) {
+		//for (int i = 0; i < 10; i++) {
 					
 		if (fn.empty())
 			return;
@@ -734,7 +734,7 @@ vr_rgbd::~vr_rgbd()
 		
 		fclose(fp);
 		
-		}
+		//}
 		return;
 	}
 	void vr_rgbd::Record_PC_FromOneCam(int cam)
@@ -974,14 +974,16 @@ vr_rgbd::~vr_rgbd()
 
 	void vr_rgbd::temp_test() {
 
-		
-		
-		if(!showvoxelizationmode)
+
+
+		/*if(!showvoxelizationmode)
 			showvoxelizationmode = true;
 		else
-			showvoxelizationmode = false;
-		
-
+			showvoxelizationmode = false;*/
+		rgbd_pointcloud savepc_1;
+		for (int i = 0;i<rgbdpc[0].get_nr_Points();i++) {
+			savepc_1.add_point(vec3(rgbdpc[0].pnt(i)[0] / 150, rgbdpc[0].pnt(i)[1] / 150, rgbdpc[0].pnt(i)[2] / 150));
+		}
 		std::string fn = cgv::gui::file_save_dialog("point cloud", "Point Cloud Files (lbypc,ply,bpc,apc,obj):*.txt;*.lbypc");
 		
 
@@ -991,7 +993,7 @@ vr_rgbd::~vr_rgbd()
 			if (!fp)
 				return;
 
-			rgbdpc[0].write_pts(fn);
+			savepc_1.write_pts(fn);
 
 			fclose(fp);
 
