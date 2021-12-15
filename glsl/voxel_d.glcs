@@ -131,7 +131,9 @@ void main() {
 	//store the info of current calcaulated voxel
 	if(imageLoad(V_tex, idx).r==1){
 	//denoise
-	ivec3 idx_1=ivec3(idx.x-1,idx.y,idx.z);
+
+
+	/*ivec3 idx_1=ivec3(idx.x-1,idx.y,idx.z);
 	ivec3 idx_2=ivec3(idx.x+1,idx.y,idx.z);
 	ivec3 idx_3=ivec3(idx.x,idx.y-1,idx.z);
 	ivec3 idx_4=ivec3(idx.x,idx.y+1,idx.z);
@@ -143,7 +145,10 @@ void main() {
 	&& imageLoad(V_tex, idx_5).r==0&& imageLoad(V_tex, idx_6).r==0
 	)
 		imageStore(V_new_tex, idx, vec4(0,pv2.id));
-	else
+	else*/
+
+
+
 		imageStore(V_new_tex, idx, vec4(1,pv2.id));
 		
 	}else if((pv1.inside+pv2.inside+pv3.inside)==3)

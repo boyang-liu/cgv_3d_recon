@@ -3,17 +3,61 @@
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(binding = 0, r32f) uniform readonly image3D P_tex;
-layout(binding = 1, r32f) uniform writeonly image3D init_V_tex;
+//layout(binding = 1, r32f) uniform writeonly image3D init_V_tex;
+
+layout (std430, binding = 1) buffer CountBuffer{
+    int cnts[];
+};
 
 uniform uvec3 resolution;
+int get_index(ivec3 VoxelID,uvec3 V_resolution) {
+int ind;
+ind=int(VoxelID.x+V_resolution.x*VoxelID.y+V_resolution.x*V_resolution.y*VoxelID.z);
+return  ind;
+	
+}
+
+
+
+int denoise(ivec3 VoxelID){
+
+int count=0;
+
+for(int i=-1;i<2;i++)
+	for(int j=-1;j<2;j++)
+		for(int k=-1;k<2;k++)
+		{
+		if((VoxelID.x+i)<resolution.x && (VoxelID.x+i)>=0 &&
+		(VoxelID.y+j)<resolution.y && (VoxelID.y+j)>=0 &&
+		(VoxelID.z+k)<resolution.z && (VoxelID.z+k)>=0
+		)
+		count=count+int(imageLoad(P_tex, ivec3((VoxelID.x+i),(VoxelID.y+j),(VoxelID.z+k))).r);
+	
+		}
+if(count>4)
+	{return 1;}
+else 
+	{return 0;}
+}
+
+
+
+
 
 void main() {
 
+	
     // The voxel coordinates of this thread
     ivec3 idx = ivec3(gl_GlobalInvocationID);
+	int index= get_index(idx,resolution);
+	if(imageLoad(P_tex, idx).r==1){
 
 	
-
 	
-	imageStore(init_V_tex, idx, 1.0);
+	//imageStore(init_V_tex, idx, a);
+	if(denoise(idx)==1)
+		atomicAdd(cnts[index],1 );//denoise(idx)
+	}
+	//atomicAdd(cnts[index],0 );
+
 }
