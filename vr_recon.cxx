@@ -2485,7 +2485,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		//l.push_back(vec3(1.83623, 0.271185, 5));
 		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
 		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
-
+		Vox->denoise(ctx);
 		Vox->traverse_voxels(ctx, l);
 		
 		drawvoexls = false;

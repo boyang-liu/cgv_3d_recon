@@ -92,7 +92,7 @@ public:
 	
 protected:
 	cgv::render::shader_program voxelize_prog;
-	cgv::render::shader_program points_prog;
+	cgv::render::shader_program denoise_prog;
 	//cgv::render::texture pixel_depth_tex;
 	//cgv::render::texture v_id_tex;
 	
