@@ -76,6 +76,10 @@ public:
 		init_V_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
 		init_V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
 		init_V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
+
+		glCreateBuffers(1, &V_results_buffer);
+
+
 	};
 	
 	
@@ -91,6 +95,8 @@ public:
 	
 	
 protected:
+	GLuint V_results_buffer;
+
 	cgv::render::shader_program voxelize_prog;
 	cgv::render::shader_program denoise_prog;
 	//cgv::render::texture pixel_depth_tex;
