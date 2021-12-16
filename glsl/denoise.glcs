@@ -5,8 +5,14 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 layout(binding = 0, r32f) uniform readonly image3D P_tex;
 //layout(binding = 1, r32f) uniform writeonly image3D init_V_tex;
 
+
+
 layout (std430, binding = 1) buffer CountBuffer{
     int cnts[];
+};
+
+layout(std430, binding = 2) readonly buffer V1Buffer {
+	uvec3 V1[];
 };
 
 uniform uvec3 resolution;
@@ -59,5 +65,7 @@ void main() {
 		atomicAdd(cnts[index],1 );//denoise(idx)
 	}
 	//atomicAdd(cnts[index],0 );
-
+	
+	/*if(V1[0].x!=0)
+		atomicAdd(cnts[index],1 );//denoise(idx)*/
 }
