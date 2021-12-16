@@ -131,6 +131,9 @@
 
 	bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length) {
 		V.clear();
+
+		V_1.clear();
+
 		V_color.clear();
 		num_p_in_voxel.clear();
 		voxel_size = voxel_length;
@@ -147,6 +150,8 @@
 				uvec3 a = ceil((pc[i].pnt(j) - min) / (float)voxel_size);	
 				int temp = (a[2]-1) * V_size[1] * V_size[0] + (a[1]-1) * V_size[0] + a[0] - 1;
 				V[temp] = 1;
+
+				V_1.push_back(a);
 
 				//color
 				
@@ -184,19 +189,34 @@
 
 		P_tex.destruct(ctx);
 		//init_V_tex.destruct(ctx);
+		
 
 		cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
 		cgv::data::const_data_view ptex_dv(&ptex_df, &V.front());
 		P_tex.create(ctx, ptex_dv, 0);
 		P_tex.generate_mipmaps(ctx);
 
-		//if (!V_new_tex.is_created())
-		//init_V_tex.create(ctx, cgv::render::TT_3D, num_groups[0], num_groups[1], num_groups[2]);
+
+		
+
+
+		
 
 		const int P_tex_handle = (const int&)P_tex.handle - 1;
 		//const int init_V_tex_handle = (const int&)init_V_tex.handle - 1;
 		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 		//glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
+
+
+		/*V_1_tex.destruct(ctx);
+		cgv::data::data_format V1tex_df(V_1.size(), 1, 1, cgv::type::info::TypeId::TI_UINT32, cgv::data::ComponentFormat::CF_RGB);
+		cgv::data::const_data_view V1tex_dv(&V1tex_df, &V_1.front());
+		V_1_tex.create(ctx, V1tex_dv, 2);
+		V_1_tex.generate_mipmaps(ctx);
+		const int V1_tex_handle = (const int&)V_1_tex.handle - 1;
+		glBindImageTexture(2, V1_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGB32UI);*/
+
+
 
 		denoise_prog.enable(ctx);
 	
@@ -205,11 +225,16 @@
 		glNamedBufferData(V_results_buffer, sizeof(int) * V_length, results.data(), GL_DYNAMIC_READ);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, V_results_buffer);
 		//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, points_pos, ch.point_buffer());
-		
+
+		//glGenBuffers(2, &V_1_buffer);
+		//glBindBuffer(GL_SHADER_STORAGE_BUFFER, V_1_buffer);
+		glNamedBufferData(V_1_buffer, sizeof(uvec3) * V_1.size(), V_1.data(), GL_STATIC_READ);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, V_1_buffer);
 
 
+		//glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
 		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
-		
+
 		// do something else
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		denoise_prog.disable(ctx);

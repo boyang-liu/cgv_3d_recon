@@ -32,22 +32,12 @@ private:
 
 public:
 	
-	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R]"), init_V_tex("flt32[R]")//pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"),
+	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R]"), init_V_tex("flt32[R]")
+		//, V_1_tex("uint32[R,G,B]")
+		//pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"),
 	{
 
-		/*voxel_size = 0.1;
-		pixel_depth_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-		pixel_depth_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		pixel_depth_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-		pixel_depth_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-		pixel_depth_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-		pixel_depth_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
-
-		v_id_tex.set_min_filter(cgv::render::TF_LINEAR);
-		v_id_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		v_id_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
-		v_id_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-		v_id_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);*/
+		/*voxel_size = 0.1;*/
 
 
 		V_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
@@ -77,6 +67,15 @@ public:
 		init_V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
 		init_V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
 
+
+		/*V_1_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
+		V_1_tex.set_mag_filter(cgv::render::TF_LINEAR);
+		V_1_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
+		V_1_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
+		V_1_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
+		V_1_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);*/
+
+
 		glCreateBuffers(1, &V_results_buffer);
 
 
@@ -96,6 +95,7 @@ public:
 	
 protected:
 	GLuint V_results_buffer;
+	GLuint V_1_buffer;
 
 	cgv::render::shader_program voxelize_prog;
 	cgv::render::shader_program denoise_prog;
@@ -106,9 +106,14 @@ protected:
 	cgv::render::texture V_new_tex;
 	cgv::render::texture P_tex;
 	cgv::render::texture init_V_tex;
+	//cgv::render::texture V_1_tex;
+
 
 	float voxel_size;
 	std::vector<float> V;
+
+	std::vector<uvec3> V_1;
+
 	std::vector<vec3> V_color;
 	std::vector<int> num_p_in_voxel;
 	uvec3 V_size;
