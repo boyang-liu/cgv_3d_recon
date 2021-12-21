@@ -125,6 +125,8 @@
 				std::cerr << "ERROR in building shader program " << std::endl;
 				return false;
 			}*/
+			denoise_prog.build_program(ctx, "glsl/denoise.glpr", true);
+
 			return true;
 	
 	}
@@ -147,11 +149,17 @@
 		for(int i = 0; i < pc.size(); i++)
 			for (int j = 0; j < pc[i].get_nr_Points(); j++)
 			{
-				uvec3 a = ceil((pc[i].pnt(j) - min) / (float)voxel_size);	
-				int temp = (a[2]-1) * V_size[1] * V_size[0] + (a[1]-1) * V_size[0] + a[0] - 1;
-				V[temp] = 1;
+				uvec3 v1 = ceil((pc[i].pnt(j) - min) / (float)voxel_size);	
+				int temp = (v1[2]-1) * V_size[1] * V_size[0] + (v1[1]-1) * V_size[0] + v1[0] - 1;
 
-				V_1.push_back(a);
+				/*if (V[temp] == 0)
+				{
+				V_1.push_back(temp);*/
+				V[temp] = 1;
+				//}
+				
+
+				
 
 				//color
 				
@@ -172,24 +180,43 @@
 		min_pos = min;
 		max_pos = max;
 		//====================================================================================
+
 		
+		
+
+
+
+
+
+
+
 
 		return true;
 	}
 
-	bool Voxelization::denoise(cgv::render::context& ctx) {
-		denoise_prog.build_program(ctx, "glsl/denoise.glpr", true);
+	bool Voxelization::denoise(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
+		V_1.clear();
+
+		for (int i = 0; i < V.size(); i++) {
+			if(V[i]!=0)
+				V_1.push_back(i);
+		}
+			
+
+		//denoise_prog.build_program(ctx, "glsl/denoise.glpr", true);
+
 		if (!V_size)
 			return false;
 		uvec3 num_groups = V_size;
 
-		int V_length = num_groups[0] * num_groups[1] * num_groups[2];
-		std::vector<int> results(V_length, 0);
 
+		int V_length = num_groups[0] * num_groups[1] * num_groups[2];
+		//std::vector<int> results(V.begin(),V.end());
+		std::vector<int> results(V_length, 0);
 
 		P_tex.destruct(ctx);
 		//init_V_tex.destruct(ctx);
-		
+
 
 		cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);
 		cgv::data::const_data_view ptex_dv(&ptex_df, &V.front());
@@ -197,43 +224,29 @@
 		P_tex.generate_mipmaps(ctx);
 
 
-		
-
-
-		
-
 		const int P_tex_handle = (const int&)P_tex.handle - 1;
-		//const int init_V_tex_handle = (const int&)init_V_tex.handle - 1;
-		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		//glBindImageTexture(1, init_V_tex_handle, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
-
-
-		/*V_1_tex.destruct(ctx);
-		cgv::data::data_format V1tex_df(V_1.size(), 1, 1, cgv::type::info::TypeId::TI_UINT32, cgv::data::ComponentFormat::CF_RGB);
-		cgv::data::const_data_view V1tex_dv(&V1tex_df, &V_1.front());
-		V_1_tex.create(ctx, V1tex_dv, 2);
-		V_1_tex.generate_mipmaps(ctx);
-		const int V1_tex_handle = (const int&)V_1_tex.handle - 1;
-		glBindImageTexture(2, V1_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGB32UI);*/
-
-
-
-		denoise_prog.enable(ctx);
-	
-		denoise_prog.set_uniform(ctx, "resolution", num_groups);
 		
+		glBindImageTexture(0, P_tex_handle, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		
+
+
+		denoise_prog.set_uniform(ctx, "resolution", num_groups);
+		denoise_prog.set_uniform(ctx, "threshold", filter_threshold);
+		denoise_prog.set_uniform(ctx, "range", kernel_range);
+
+
 		glNamedBufferData(V_results_buffer, sizeof(int) * V_length, results.data(), GL_DYNAMIC_READ);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, V_results_buffer);
-		//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, points_pos, ch.point_buffer());
+		
+		glGenBuffers(1, &V_1_buffer);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, V_1_buffer);//
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int)* V_1.size(), V_1.data(), GL_DYNAMIC_READ); //sizeof(data) only works for statically sized C/C++ arrays.
 
-		//glGenBuffers(2, &V_1_buffer);
-		//glBindBuffer(GL_SHADER_STORAGE_BUFFER, V_1_buffer);
-		glNamedBufferData(V_1_buffer, sizeof(uvec3) * V_1.size(), V_1.data(), GL_STATIC_READ);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, V_1_buffer);
 
-
-		//glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
-		glDispatchCompute(num_groups[0], num_groups[1], num_groups[2]);
+		denoise_prog.enable(ctx);
+		
+		glDispatchCompute(V_1.size() , 1, 1);
 
 		// do something else
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -241,8 +254,7 @@
 
 
 		// clear 3D image bindings
-		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
-		//glBindImageTexture(1, 0, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
+		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);		
 
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -251,21 +263,7 @@
 
 		std::memcpy(results.data(), results_ptr, results.size() * sizeof(int));
 		glUnmapNamedBuffer(V_results_buffer);
-
-		// read texture into memory
-		//std::vector<float> V_new_data(V_length, 0.0f);
-
-		/*init_V_tex.enable(ctx, 0);
-
-		glGetTexImage(GL_TEXTURE_3D, 0, GL_RGBA, GL_FLOAT, (void*)V_new_data.data());
-
-		init_V_tex.disable(ctx);*/
-
-		std::cout << "results[200]:" << results[0] << std::endl;
-
-		
-
-		
+					
 		std::vector<float> V_float(results.begin(), results.end());
 
 		V = V_float;

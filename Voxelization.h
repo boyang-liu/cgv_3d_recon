@@ -32,7 +32,7 @@ private:
 
 public:
 	
-	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R]"), init_V_tex("flt32[R]")
+	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R]")//, init_V_tex("flt32[R]")
 		//, V_1_tex("uint32[R,G,B]")
 		//pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"),
 	{
@@ -61,11 +61,11 @@ public:
 		P_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
 		P_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
 
-		init_V_tex.set_min_filter(cgv::render::TF_LINEAR);
+		/*init_V_tex.set_min_filter(cgv::render::TF_LINEAR);
 		init_V_tex.set_mag_filter(cgv::render::TF_LINEAR);
 		init_V_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
 		init_V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-		init_V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
+		init_V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);*/
 
 
 		/*V_1_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
@@ -88,7 +88,7 @@ public:
 
 	bool init_voxelization(cgv::render::context& ctx);
 	bool init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
-	bool denoise(cgv::render::context& ctx);
+	bool denoise(cgv::render::context& ctx, int filter_threshold, int kernel_range);//the kernel_range should be odd 
 	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void draw_voxels(cgv::render::context& ctx);
 	
@@ -105,14 +105,14 @@ protected:
 	cgv::render::texture V_tex;
 	cgv::render::texture V_new_tex;
 	cgv::render::texture P_tex;
-	cgv::render::texture init_V_tex;
+	//cgv::render::texture init_V_tex;
 	//cgv::render::texture V_1_tex;
 
 
 	float voxel_size;
 	std::vector<float> V;
 
-	std::vector<uvec3> V_1;
+	std::vector<int> V_1;
 
 	std::vector<vec3> V_color;
 	std::vector<int> num_p_in_voxel;
