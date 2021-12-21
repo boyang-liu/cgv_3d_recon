@@ -1,4 +1,4 @@
-#version 440
+#version 450
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
@@ -12,13 +12,22 @@ layout (std430, binding = 1) buffer CountBuffer{
 };
 
 layout(std430, binding = 2) readonly buffer V1Buffer {
-	uvec3 V1[];
+	int V1[];
 };
 
 uniform uvec3 resolution;
-int get_index(ivec3 VoxelID,uvec3 V_resolution) {
-int ind;
-ind=int(VoxelID.x+V_resolution.x*VoxelID.y+V_resolution.x*V_resolution.y*VoxelID.z);
+uniform int threshold;
+uniform int range;
+
+
+
+ivec3 get_index(int V_ID , uvec3 V_resolution) {
+int VoxelID=V_ID+1;
+int x,y,z;
+z=int(floor(VoxelID/(V_resolution.x*V_resolution.y)));
+y=int(floor((VoxelID-(V_resolution.x*V_resolution.y)*z)/V_resolution.x));
+x=int(VoxelID-(V_resolution.x*V_resolution.y)*z-V_resolution.x*y);
+ivec3 ind=ivec3(x-1,y-1,z-1);
 return  ind;
 	
 }
@@ -29,9 +38,11 @@ int denoise(ivec3 VoxelID){
 
 int count=0;
 
-for(int i=-1;i<2;i++)
-	for(int j=-1;j<2;j++)
-		for(int k=-1;k<2;k++)
+int thr2=int(ceil(threshold/2));
+int thr1=1-thr2;
+for(int i=thr1;i<thr2;i++)
+	for(int j=thr1;j<thr2;j++)
+		for(int k=thr1;k<thr2;k++)
 		{
 		if((VoxelID.x+i)<resolution.x && (VoxelID.x+i)>=0 &&
 		(VoxelID.y+j)<resolution.y && (VoxelID.y+j)>=0 &&
@@ -40,7 +51,7 @@ for(int i=-1;i<2;i++)
 		count=count+int(imageLoad(P_tex, ivec3((VoxelID.x+i),(VoxelID.y+j),(VoxelID.z+k))).r);
 	
 		}
-if(count>4)
+if( count>threshold )
 	{return 1;}
 else 
 	{return 0;}
@@ -54,18 +65,16 @@ void main() {
 
 	
     // The voxel coordinates of this thread
-    ivec3 idx = ivec3(gl_GlobalInvocationID);
-	int index= get_index(idx,resolution);
-	if(imageLoad(P_tex, idx).r==1){
 
+	ivec3 current_V = ivec3(gl_GlobalInvocationID);
+	int current_V_id = V1[current_V.x];
+	ivec3 idx=get_index(current_V_id,resolution);
+
+
+	//int index = get_index(idx,resolution);
+		
+
+	atomicAdd(cnts[current_V_id],denoise(idx) );
 	
-	
-	//imageStore(init_V_tex, idx, a);
-	if(denoise(idx)==1)
-		atomicAdd(cnts[index],1 );//denoise(idx)
-	}
-	//atomicAdd(cnts[index],0 );
-	
-	/*if(V1[0].x!=0)
-		atomicAdd(cnts[index],1 );//denoise(idx)*/
+		
 }
