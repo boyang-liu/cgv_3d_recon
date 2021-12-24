@@ -567,6 +567,9 @@ vr_rgbd::~vr_rgbd()
 		return intermediate_pc.size();
 	}
 	
+	
+
+
 	void vr_rgbd::construct_multi_point_cloud(int index)//
 	{
 		//for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {//
@@ -1410,6 +1413,12 @@ vr_rgbd::~vr_rgbd()
 
 
 		if (rgbd_inp.is_multi_started()) {
+
+
+			auto start_draw = std::chrono::steady_clock::now();
+			
+
+
 			vector<thread> mythreads;
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
@@ -1422,16 +1431,23 @@ vr_rgbd::~vr_rgbd()
 					{
 					color_frame_2[mm] = color_frame;
 					depth_frame_2[mm] = depth_frame;
-					vr_rgbd::construct_multi_point_cloud(mm);
-					//mythreads.emplace_back( thread(&vr_rgbd::construct_multi_point_cloud ,this,ref(mm)));
+					//vr_rgbd::construct_multi_point_cloud(mm);
+					mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
+					
+					
 					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
 				}	
 				
 			}
 			for (auto&  th : mythreads) {				
-					th.join();								
+					th.join();
+				
 			}
-
+			mythreads.clear();
+			auto stop_draw = std::chrono::steady_clock::now();
+			std::chrono::duration<double> diff_draw;
+			diff_draw = stop_draw - start_draw;
+			std::cout << diff_draw.count() << std::endl;
 
 
 			if (generate_pc_from_rgbd) 
@@ -2462,7 +2478,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	if (rgbdpc.size() > 2 && drawvoexls) {
 		//std::cout << rgbdpc[0].cam_rotation << std::endl;
 		//Voxelization a;		
-		
+		auto start_draw = std::chrono::steady_clock::now();
 	
 
 		rgbdpc_in_box.clear();
@@ -2473,7 +2489,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 		//std::cout << "1" << std::endl;		
 
-		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
 		
 		//std::cout << "2" << std::endl;
 
@@ -2485,7 +2501,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		
 		Vox->denoise(ctx,5,3);
 		
-		auto start_draw = std::chrono::steady_clock::now();
+		
 		Vox->traverse_voxels(ctx, l);
 		Vox->denoise(ctx,13,5);
 		drawvoexls = false;
@@ -2497,8 +2513,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	}	
 	Vox->draw_voxels(ctx);
 	
-
-
+	
 	//=======================delete===========================
 
 
@@ -2672,15 +2687,6 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					C.push_back(c);
 					C.push_back(c);
 				}
-				
-
-
-			
-
-
-				
-				
-
 
 			}
 			if (P.size() > 0) {
