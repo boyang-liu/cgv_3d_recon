@@ -8,12 +8,7 @@
 #include "PCBoundingbox.h"
 
 
-struct Volume
-{
-	int x = 0, y = 0, z = 0, count = 0;
-	Volume();
-	Volume(int _x, int _y, int _z);
-};
+
 
 
 class MarchingCubes : public cgv::render::render_types {
@@ -24,7 +19,7 @@ private:
 
 
 public:
-
+	
 	MarchingCubes(int width, int height, int depth, float _cubeSize) : 
 		Vertices_tex("flt32[R]"),
 		cubeSize(_cubeSize),
@@ -41,14 +36,31 @@ public:
 	bool get_signed_distance_func();
 	bool set_signed_weight( std::vector<int> Voxelid, std::vector<float> Voxel, uvec3 Vox_size);
 	bool init_MC(cgv::render::context& ctx);
+	void resize();
+	bool resize(int width, int height, int depth, float _cubeSize);
 	bool generate(cgv::render::context& ctx);
 	int* flattenTriTable();
 
 	bool draw();
 
+
+	struct Volume
+	{
+		int x = 0, y = 0, z = 0, count = 0;
+		Volume();
+		Volume(int _x, int _y, int _z);
+	};
+	struct {
+		float x, y, z, max;
+	} size;
+
+
+
 protected:
 	GLuint tables_buffer;
 	GLuint cubes_buffer;
+	GLuint vertices_buffer;
+	GLuint triangles_buffer;
 	/*GLuint Voxelid_buffer;*/
 
 	std::vector<float> Vertices;
@@ -56,7 +68,8 @@ protected:
 	cgv::render::texture Vertices_tex;
 	cgv::render::shader_program marchingcubes_prog;
 
-	
+	int maxNumVertices;
+	int maxNumTriangles;
 
 private:
 	Volume cubeGrid;

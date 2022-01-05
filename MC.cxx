@@ -22,7 +22,7 @@ bool MarchingCubes::set_signed_weight(std::vector<int> Voxelid,  std::vector<flo
 
 	if (Voxelid.size() == 0 || Voxel.size() == 0)
 		return false;
-	int length_vertives =( Vox_size.x+1)*(Vox_size.y + 1)*(Vox_size.z + 1);
+	int length_vertives =( Vox_size[0]+1)*(Vox_size[1] + 1)*(Vox_size[2] + 1);
 	Vertices.resize(length_vertives,0);
 
 	
@@ -30,18 +30,18 @@ bool MarchingCubes::set_signed_weight(std::vector<int> Voxelid,  std::vector<flo
 	for (int i = 0; i < Voxelid.size(); i++)
 	{
 		
-		z = int(floor(Voxelid[i] / (Vox_size.x*Vox_size.y)));
-		y = int(floor((Voxelid[i] - (Vox_size.x*Vox_size.y)*z) / Vox_size.x));
-		x = int(Voxelid[i] - (Vox_size.x*Vox_size.y)*z - Vox_size.x*y);
-		if ( x > 0 && x < Vox_size.x && y > 0 && y < Vox_size.y && z > 0 && z < Vox_size.z )
+		z = int(floor(Voxelid[i] / (Vox_size[0] *Vox_size[1])));
+		y = int(floor((Voxelid[i] - (Vox_size[0] *Vox_size[1])*z) / Vox_size[0]));
+		x = int(Voxelid[i] - (Vox_size[0] *Vox_size[1])*z - Vox_size[0] *y);
+		if ( x > 0 && x < Vox_size[0] && y > 0 && y < Vox_size[1] && z > 0 && z < Vox_size[2])
 			if ( Voxel[Voxelid[i] + 1] != 0 && Voxel[Voxelid[i] - 1] != 0
-				&& Voxel[Voxelid[i] + Vox_size.x] != 0 && Voxel[Voxelid[i] - Vox_size.x] != 0 
-				 && Voxel[Voxelid[i] + Vox_size.x*Vox_size.y] != 0 && Voxel[Voxelid[i] - Vox_size.x*Vox_size.y] != 0)
-				Vertices[x+ y*( Vox_size.x+1) + z * (Vox_size.x + 1)* (Vox_size.y + 1)] = 1;
+				&& Voxel[Voxelid[i] + Vox_size[0]] != 0 && Voxel[Voxelid[i] - Vox_size[0]] != 0
+				 && Voxel[Voxelid[i] + Vox_size[0] *Vox_size[1]] != 0 && Voxel[Voxelid[i] - Vox_size[0] *Vox_size[1]] != 0)
+				Vertices[x+ y*( Vox_size[0] +1) + z * (Vox_size[0] + 1)* (Vox_size[1] + 1)] = 1;
 
 	}
 	
-	Vertices_size = ivec3(Vox_size.x+1, Vox_size.y+1, Vox_size.z+1);
+	Vertices_size = ivec3(Vox_size[0] +1, Vox_size[1] +1, Vox_size[2] +1);
 
 
 
@@ -58,8 +58,47 @@ bool MarchingCubes::init_MC(cgv::render::context& ctx) {
 	
 	return true;
 }
+void MarchingCubes::resize()
+{
+	int x = cubeGrid.x, y = cubeGrid.y, z = cubeGrid.z;
+	// We can deduce the maximum number of vertices the grid can have by counting
+	// the number of edges in the grid, which gives a result just below 3*(w+1)*(h+1)*(d+1)
+	maxNumVertices = y * (x + 1) * (z + 1) + (y + 1) * x * (z + 1) + (y + 1) * (x + 1) * z;
+	maxNumTriangles = cubeGrid.count * 5; // each cube can have 5 triangles at most
 
+	size.x = cubeGrid.x * cubeSize;
+	size.y = cubeGrid.y * cubeSize;
+	size.z = cubeGrid.z * cubeSize;
 
+	size.max = std::max(size.x, std::max(size.y, size.z));
+}
+bool MarchingCubes::resize(int width, int height, int depth, float _cubeSize)
+{
+	bool gridChange = width != cubeGrid.x || height != cubeGrid.y || depth != cubeGrid.z;
+	bool cubeChange = cubeSize != _cubeSize;
+
+	//densityGrid = Volume(width + 1, height + 1, depth + 1);
+	cubeGrid = Volume(width, height, depth);
+	cubeSize = _cubeSize;
+
+	resize();
+
+	/*if (gridChange) {
+		if (hasPrograms) {
+			updateDispatchParams();
+		}
+		else {
+			createPrograms();
+		}
+		if (hasBuffers) {
+			deleteBuffers();
+		}
+		createBuffers();
+	}*/
+
+	// returns true if the overall mesh size is different compared to the previous one
+	return gridChange || cubeChange;
+}
 bool MarchingCubes::generate(cgv::render::context& ctx) {
 	if (Vertices.size()==0)
 		return false;
@@ -88,6 +127,18 @@ bool MarchingCubes::generate(cgv::render::context& ctx) {
 	glGenBuffers(1, &cubes_buffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, cubes_buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, cubeGrid.count * 13 * sizeof(int), NULL, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	//vertices
+	glGenBuffers(1, &vertices_buffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertices_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, maxNumVertices * 2 * 3 * sizeof(float) + sizeof(GLuint), NULL, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	//triangles
+	glGenBuffers(1, &triangles_buffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, triangles_buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, maxNumTriangles * 3 * sizeof(int) + sizeof(GLuint), NULL, GL_DYNAMIC_COPY);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 
@@ -135,7 +186,15 @@ bool MarchingCubes::draw() {
 
 
 
+MarchingCubes::Volume::Volume()
+{
 
+}
+
+MarchingCubes::Volume::Volume(int _x, int _y, int _z) : x(_x), y(_y), z(_z), count(_x* _y* _z)
+{
+
+}
 
 /*
 if (Voxelid.size() == 0 || Voxel.size() == 0)
