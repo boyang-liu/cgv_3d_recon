@@ -29,6 +29,8 @@
 #include "SICP.h"
 #include <numeric>
 #include <thread>
+
+
 using namespace std;
 using namespace cgv::base;
 using namespace cgv::signal;
@@ -570,7 +572,7 @@ vr_rgbd::~vr_rgbd()
 	
 
 
-	void vr_rgbd::construct_multi_point_cloud(int index)//
+	void vr_rgbd:: construct_multi_point_cloud(int index)//
 	{
 		//for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {//
 			
@@ -974,16 +976,63 @@ vr_rgbd::~vr_rgbd()
 		rgbdpc.clear();
 		post_redraw();
 	}
-
+	void vr_rgbd::test1(int a) {
+	
+		std::cout << a <<std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+		std::cout << a << std::endl;
+	}
 	void vr_rgbd::temp_test() {
 
 
 
+
+		int a = rgbd_inp.get_rgbd_device(0)->generate_pointcloud();
+
+		std::cout<<a<<std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		//====================================================================
 		/*if(!showvoxelizationmode)
 			showvoxelizationmode = true;
 		else
 			showvoxelizationmode = false;*/
-		rgbd_pointcloud savepc_1;
+
+		//====================================================================
+		/*rgbd_pointcloud savepc_1;
 		for (int i = 0;i<rgbdpc[0].get_nr_Points();i++) {
 			savepc_1.add_point(vec3(rgbdpc[0].pnt(i)[0] / 150, rgbdpc[0].pnt(i)[1] / 150, rgbdpc[0].pnt(i)[2] / 150));
 		}
@@ -1001,9 +1050,25 @@ vr_rgbd::~vr_rgbd()
 			fclose(fp);
 
 		
-		return;
+		return;*/
 
 
+		//====================================================================
+		
+		/*std::vector<std::thread> some_threads;
+		for (int i = 0; i < 3; ++i)
+			some_threads.push_back(std::thread(&vr_rgbd::test1, this,i));
+
+		for (auto& t : some_threads) t.join();*/
+
+
+
+
+
+
+
+
+		//====================================================================
 
 		//mat3 c;
 		//c.identity();
@@ -1417,8 +1482,7 @@ vr_rgbd::~vr_rgbd()
 
 			auto start_draw = std::chrono::steady_clock::now();
 			
-
-
+			
 			vector<thread> mythreads;
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
@@ -1432,9 +1496,10 @@ vr_rgbd::~vr_rgbd()
 					color_frame_2[mm] = color_frame;
 					depth_frame_2[mm] = depth_frame;
 					//vr_rgbd::construct_multi_point_cloud(mm);
-					mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
-					
-					
+					//mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
+
+					//mythreads.push_back(std::thread([this]() { construct_multi_point_cloud(); }));
+					mythreads.push_back(thread(&vr_rgbd::construct_multi_point_cloud, this, mm));
 					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
 				}	
 				
@@ -1447,7 +1512,7 @@ vr_rgbd::~vr_rgbd()
 			auto stop_draw = std::chrono::steady_clock::now();
 			std::chrono::duration<double> diff_draw;
 			diff_draw = stop_draw - start_draw;
-			std::cout << diff_draw.count() << std::endl;
+			//std::cout << diff_draw.count() << std::endl;
 
 
 			if (generate_pc_from_rgbd) 

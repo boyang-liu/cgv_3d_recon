@@ -182,7 +182,12 @@
 		//====================================================================================
 
 		
-		
+		V_1.clear();
+
+		for (int i = 0; i < V.size(); i++) {
+			if (V[i] != 0)
+				V_1.push_back(i);
+		}
 
 
 
@@ -195,12 +200,7 @@
 	}
 
 	bool Voxelization::denoise(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
-		V_1.clear();
-
-		for (int i = 0; i < V.size(); i++) {
-			if(V[i]!=0)
-				V_1.push_back(i);
-		}
+		
 			
 
 		//denoise_prog.build_program(ctx, "glsl/denoise.glpr", true);
@@ -252,7 +252,6 @@
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		denoise_prog.disable(ctx);
 
-
 		// clear 3D image bindings
 		glBindImageTexture(0, 0, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);		
 
@@ -267,6 +266,15 @@
 		std::vector<float> V_float(results.begin(), results.end());
 
 		V = V_float;
+
+		V_1.clear();
+
+		for (int i = 0; i < V.size(); i++) {
+			if (V[i] != 0)
+				V_1.push_back(i);
+		}
+
+
 
 		return true;
 
@@ -332,62 +340,12 @@
 
 		}
 		
-		//std::cout << "V_size:" << V_size << std::endl;
-		//std::cout<<"V_new_data[0]:"<< V_new_data[0] <<std::endl;
-		
+		V_1.clear();
 
-
-
-
-
-		/*cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
-		boxes.clear();
-		box_colors.clear();
-
-		rgb table_clr(0.3f, 0.2f, 0.0f);
-		rgb table_clr2(0.9f, 0.9f, 0.9f);
-		for (int i = 0; i <= V_size[0]-1; i++)
-			for (int j = 0; j <= V_size[1] - 1; j++)
-				for (int k = 0; k <= V_size[2] - 1; k++)
-				{
-					if (V_new_data[k  * V_size[1] * V_size[0] + j  * V_size[0] + i ][0] == 1) {
-						vec3 min1 = min_pos + vec3(i  * voxel_size, j  * voxel_size, k * voxel_size);
-						vec3 max1 = min_pos + vec3((i+1) * voxel_size, (j + 1) * voxel_size, (k + 1) * voxel_size);
-						boxes.emplace_back(box3(min1, max1));
-						box_colors.emplace_back(table_clr);
-					}
-					else if (V_new_data[k  * V_size[1] * V_size[0] + j * V_size[0] + i][0] == 2)
-					{
-						vec3 min1 = min_pos + vec3(i  * voxel_size, j * voxel_size, k  * voxel_size);
-						vec3 max1 = min_pos + vec3((i+1) * voxel_size, (j+1) * voxel_size, (k + 1) * voxel_size);
-						boxes.emplace_back(box3(min1, max1));
-						box_colors.emplace_back(table_clr2);
-					}
-
-				}
-		cgv::render::box_render_style style;
-		renderer.set_render_style(style);
-
-
-		renderer.set_box_array(ctx, boxes);
-		renderer.set_color_array(ctx, box_colors);
-		if (renderer.validate_and_enable(ctx)) {
-			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		for (int i = 0; i < V.size(); i++) {
+			if (V[i] != 0)
+				V_1.push_back(i);
 		}
-		renderer.disable(ctx);*/
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 		return true;

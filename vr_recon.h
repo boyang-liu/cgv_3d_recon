@@ -322,6 +322,7 @@ public:
 	void load_recorded_pc(int index);
 	void clear_current_point_cloud();
 
+	void test1(int a);
 	void temp_test();
 	
 	frame_type read_rgb_frame();
