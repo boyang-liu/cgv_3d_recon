@@ -39,6 +39,7 @@
 #include "GoICP.h"
 #include <time.h>
 #include "Voxelization.h"
+#include "MarchingCubes.h"
 using namespace rgbd;
 
 #define recorded_pc_frequency 30
@@ -240,6 +241,7 @@ protected:
 	bool selectPointsmode;
 	bool boundingboxisfixed;
 	bool manualcorrectmode;
+	bool showmesh = false;
 	int mode;
 	bool manualcorrectstarted;
 	bool record_pc_started;
@@ -298,7 +300,7 @@ protected:
 	vec3 viewpoint2 = vec3(0, 0, 0);
 
 	Voxelization *Vox = new  Voxelization();
-
+	MarchingCubes *MarchingCube = new MarchingCubes();
 	//mat3 testmat;
 	//vec3 testtran;
 

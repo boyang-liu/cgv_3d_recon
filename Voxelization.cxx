@@ -214,8 +214,7 @@
 		//std::vector<int> results(V.begin(),V.end());
 		std::vector<int> results(V_length, 0);
 
-		P_tex.destruct(ctx);
-		//init_V_tex.destruct(ctx);
+		P_tex.destruct(ctx);		
 
 
 		cgv::data::data_format ptex_df(num_groups[0], num_groups[1], num_groups[2], cgv::type::info::TypeId::TI_FLT32, cgv::data::ComponentFormat::CF_R);

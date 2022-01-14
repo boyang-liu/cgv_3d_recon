@@ -27,6 +27,7 @@
 #include "PCBoundingbox.h"
 #include "GoICP.h"
 #include "SICP.h"
+
 #include <numeric>
 #include <thread>
 
@@ -1000,16 +1001,8 @@ vr_rgbd::~vr_rgbd()
 	void vr_rgbd::temp_test() {
 
 
-
-
-		int a = rgbd_inp.get_rgbd_device(0)->generate_pointcloud();
-
-		std::cout<<a<<std::endl;
-
-
-
-
-
+		
+		showmesh = true;
 
 
 
@@ -2277,6 +2270,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			
 		}
 		Vox->init_voxelization(ctx);
+		MarchingCube->init_MC(ctx);
 
 		//=======================delete===========================
 		
@@ -2531,9 +2525,11 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
 	
-	//=======================delete===========================
 
-	//draw_grid(ctx, vec3(0.83623,- 0.728815,2.74123), vec3(2.83623,1.27119,4.74123), 0.05);
+
+	
+
+	//draw_grid(ctx, vec3(0,0,0), vec3(2,2,2), 0.5);
 	// 
 	// 
 
@@ -2543,18 +2539,18 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	if (rgbdpc.size() > 2 && drawvoexls) {
 		//std::cout << rgbdpc[0].cam_rotation << std::endl;
 		//Voxelization a;		
-		auto start_draw = std::chrono::steady_clock::now();
+		//auto start_draw = std::chrono::steady_clock::now();
 	
 
 		rgbdpc_in_box.clear();
 		rgbdpc_in_box.resize(rgbdpc.size());
 
 		for (int i = 0; i < rgbdpc.size(); i++) {
-			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123));
+			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
 		}
 		//std::cout << "1" << std::endl;		
 
-		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
+		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
 		
 		//std::cout << "2" << std::endl;
 
@@ -2569,56 +2565,31 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		
 		Vox->traverse_voxels(ctx, l);
 		Vox->denoise(ctx,13,5);
-		drawvoexls = false;
-		auto stop_draw = std::chrono::steady_clock::now();
+		//drawvoexls = false;
+		/*auto stop_draw = std::chrono::steady_clock::now();
 		std::chrono::duration<double> diff_draw;
 		diff_draw = stop_draw - start_draw;
-		std::cout << diff_draw.count() << std::endl;
-		
+		std::cout << diff_draw.count() << std::endl;*/
+		if(!showmesh)
+			Vox->draw_voxels(ctx);
+		else {
+			std::vector<float> Voxels;
+			Voxels.resize(1000000, 1);
+			/*std::vector<int> Voxelids;
+			for (int i = 0; i < 64; i++)
+				Voxelids.push_back(i);*/
+			MarchingCube->set_signed_weight(Vox->get_Voxel_id(), Voxels, uvec3(100, 100, 100));
+
+			MarchingCube->ge(ctx);//, Voxelids
+
+			//showmesh = false;
+
+		}
+		MarchingCube->draw(ctx);
+
 	}	
-	Vox->draw_voxels(ctx);
+		
 	
-	
-	//=======================delete===========================
-
-
-
-
-	/*std::vector<Mat> inver_r;
-	inver_r.resize(3);
-	inver_r[0].identity();
-	inver_r[1].identity();
-	inver_r[2].identity();
-	std::vector<vec3> inver_t;
-	inver_t.resize(3);
-	inver_t[0] = vec3(0, 0, 0);
-	inver_t[1] = vec3(0, 0, 0);
-	inver_t[2] = vec3(0, 0, 0);
-	std::vector< std::vector<std::vector<depthpixel>>> mydepthimageplane;
-	mydepthimageplane.resize(3);
-	mydepthimageplane[0].resize(576);
-	mydepthimageplane[1].resize(576);
-	mydepthimageplane[2].resize(576);
-	for (int y = 0; y < 576; y++)
-	{
-		mydepthimageplane[0][y].resize(640);
-		mydepthimageplane[1][y].resize(640);
-		mydepthimageplane[2][y].resize(640);
-	}
-	for (int i = 0; i < 3; i++)
-		for (int i2 = 0; i2 < 576; i2++)
-			for (int i3 = 0; i3 < 640; i3++) {
-				mydepthimageplane[i][i2][i3].depthsquare = 0;
-				mydepthimageplane[i][i2][i3].pixelcolor = rgba8(0, 0, 0, 255);
-			}
-	Voxelization v;
-	float step1 = 0.1;
-
-	v.init_voxelization_from_image(ctx, step1, vec3(0,0,0), vec3(1,1,1), inver_r, inver_t, mydepthimageplane);
-*/
-	
-
-//=======================delete===========================
 
 
 		if (show_points) {
