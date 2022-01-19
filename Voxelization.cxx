@@ -397,5 +397,20 @@
 	
 	
 	}
+	void Voxelization::get_center_gravity() {
+		int m = V_1.size();
+		int x, y, z;
+		vec3 sum = vec3(0, 0, 0);
+		for (int i = 0; i < V_1.size(); i++)
+		{
+			z = int(floor(V_1[i] / (V_size[0] * V_size[1])));
+			y = int(floor((V_1[i] - (V_size[0] * V_size[1])*z) / V_size[0]));
+			x = int(V_1[i] - (V_size[0] * V_size[1])*z - V_size[0] * y);
+			sum = sum + vec3(x+ voxel_size/2, y + voxel_size / 2, z + voxel_size / 2);
 
+
+		}
+		center_gravity = sum / m;
+		
+	}
 

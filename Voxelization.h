@@ -91,6 +91,7 @@ public:
 	bool denoise(cgv::render::context& ctx, int filter_threshold, int kernel_range);//the kernel_range should be odd 
 	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void draw_voxels(cgv::render::context& ctx);
+	void get_center_gravity();
 	std::vector<int> get_Voxel_id() {return V_1;}
 	
 protected:
@@ -126,7 +127,7 @@ protected:
 	std::vector<box3> boxes;
 	std::vector<rgb> box_colors;	
 
-	
+	vec3 center_gravity;
 };
 
 

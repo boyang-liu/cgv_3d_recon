@@ -2532,7 +2532,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//draw_grid(ctx, vec3(0,0,0), vec3(2,2,2), 0.5);
 	// 
 	// 
-
+	MarchingCube->draw(ctx);
 
 
 

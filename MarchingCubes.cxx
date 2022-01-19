@@ -340,6 +340,59 @@ int* MarchingCubes::flattenTriTable()
 
 
 bool MarchingCubes::draw(cgv::render::context& ctx) {
+
+
+	triangles.clear();
+	vec3 a1 = vec3(0,0,0);
+	vec3 a2 = vec3(1, 0, 0);
+	vec3 a3 = vec3(0, 1, 0);
+	vec3 n1 = vec3(1,0,0);
+
+	vec3 a4 = vec3(1, 0, 0);
+	vec3 a5 = vec3(0, 0, 1);
+	vec3 a6 = vec3(0, 1, 0);
+	vec3 n2 = vec3(1, 1, 1);
+
+	vec3 a7 = vec3(0, 0, 0);
+	vec3 a8 = vec3(0, 1, 0);
+	vec3 a9 = vec3(0, 0, 1);
+	vec3 n3 = vec3(-1, 0, 0);
+
+	vec3 a10 = vec3(0, 0, 0);
+	vec3 a11 = vec3(0, 0, 1);
+	vec3 a12 = vec3(1, 0, 0);
+	vec3 n4 = vec3(0, -1, 0);
+
+	triangles.push_back(a1);
+	triangles.push_back(a2);
+	triangles.push_back(a3);
+	triangles.push_back(a4);
+	triangles.push_back(a5);
+	triangles.push_back(a6);
+	triangles.push_back(a7);
+	triangles.push_back(a8);
+	triangles.push_back(a9); 
+	triangles.push_back(a10);
+	triangles.push_back(a11);
+	triangles.push_back(a12);
+	std::vector<vec3> N;
+	N.push_back(n1);
+	N.push_back(n1);
+	N.push_back(n1);
+	N.push_back(n2);
+	N.push_back(n2);
+	N.push_back(n2);
+	N.push_back(n3);
+	N.push_back(n3);
+	N.push_back(n3);
+	N.push_back(n4);
+	N.push_back(n4);
+	N.push_back(n4);
+
+	
+
+
+
 	if (triangles.size() == 0)
 		return false;	
 	rgb c(0.5, 0.5, 0.5);
@@ -354,13 +407,15 @@ bool MarchingCubes::draw(cgv::render::context& ctx) {
 	cgv::render::attribute_array_binding::enable_global_array(ctx, pi);
 	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ci, C);
 	cgv::render::attribute_array_binding::enable_global_array(ctx, ci);
+	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ni, N);
+	cgv::render::attribute_array_binding::enable_global_array(ctx, ni);
 	
 	prog.enable(ctx);
 	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)triangles.size());
 	prog.disable(ctx);
 	cgv::render::attribute_array_binding::disable_global_array(ctx, pi);
 	cgv::render::attribute_array_binding::disable_global_array(ctx, ci);
-	
+	cgv::render::attribute_array_binding::disable_global_array(ctx, ni);
 	return true;
 }
 
