@@ -358,7 +358,7 @@
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
 		boxes.clear();
 		box_colors.clear();  
-
+		rgb8 clr(0.3,0.3, 0.3);
 		rgb table_clr(0.3f, 0.2f, 0.0f);
 		rgb table_clr2(0.9f, 0.0f, 0.0f);
 		for (int i = 1; i <= V_size[0];i++) 
@@ -370,10 +370,10 @@
 					vec3 min1 = min_pos + vec3((i-1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 					vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
 					boxes.emplace_back(box3(min1, max1));
-					int r = int(V_color[index_V][0]);
-					int g = int(V_color[index_V][1]);
-					int b = int(V_color[index_V][2]);
-					rgb8 clr(r,g,b);
+					//int r = int(V_color[index_V][0]);
+					//int g = int(V_color[index_V][1]);
+					//int b = int(V_color[index_V][2]);
+					//rgb8 clr(r,g,b);
 					box_colors.emplace_back(clr);
 					}else if (V[index_V] == 2)
 					{

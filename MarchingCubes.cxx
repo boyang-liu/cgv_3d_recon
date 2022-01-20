@@ -16,7 +16,7 @@
 
 
 
-bool MarchingCubes::get_signed_distance_func() { return false; };
+//bool MarchingCubes::get_signed_distance_func() { return false; };
 
 bool MarchingCubes::set_signed_weight(std::vector<int> Voxelid,  std::vector<float> Voxel, uvec3 Vox_resolution) {
 
@@ -402,20 +402,20 @@ bool MarchingCubes::draw(cgv::render::context& ctx) {
 	cgv::render::shader_program& prog = ctx.ref_default_shader_program();
 	int pi = prog.get_position_index();
 	int ci = prog.get_color_index();
-	int ni = prog.get_normal_index();
+	//int ni = prog.get_normal_index();
 	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, pi, triangles);
 	cgv::render::attribute_array_binding::enable_global_array(ctx, pi);
 	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ci, C);
 	cgv::render::attribute_array_binding::enable_global_array(ctx, ci);
-	cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ni, N);
-	cgv::render::attribute_array_binding::enable_global_array(ctx, ni);
+	//cgv::render::attribute_array_binding::set_global_attribute_array(ctx, ni, N);
+	//cgv::render::attribute_array_binding::enable_global_array(ctx, ni);
 	
 	prog.enable(ctx);
 	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)triangles.size());
 	prog.disable(ctx);
 	cgv::render::attribute_array_binding::disable_global_array(ctx, pi);
 	cgv::render::attribute_array_binding::disable_global_array(ctx, ci);
-	cgv::render::attribute_array_binding::disable_global_array(ctx, ni);
+	//cgv::render::attribute_array_binding::disable_global_array(ctx, ni);
 	return true;
 }
 

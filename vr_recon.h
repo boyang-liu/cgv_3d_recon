@@ -145,7 +145,7 @@ protected:
 	///
 	std::future<size_t> future_handle;
 
-	/// 
+	std::vector <std::future<size_t>> PCfuture_handle;
 
 	/// path to be set for pc files
 	std::string pc_file_path;
@@ -278,12 +278,12 @@ protected:
 	int total_loaded_pc=1000;
 	std::vector<std::string> pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
-	std::vector<rgbd_pointcloud> intermediate_rgbdpc_bbox;
+	//std::vector<rgbd_pointcloud> intermediate_rgbdpc_bbox;
 	std::vector<rgbd_pointcloud> rgbdpc;
 	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
 	rgbd_pointcloud allpc_in_bbox;
-	std::vector < std::vector<std::vector<depthpixel>>> imageplanes;
+	//std::vector < std::vector<std::vector<depthpixel>>> imageplanes;
 
 	std::vector<int> knn;
 	float Radius_SelectMode;
@@ -311,7 +311,7 @@ public:
 	~vr_rgbd();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
-	void construct_multi_point_cloud(int index);//
+	size_t construct_multi_point_cloud(int index);//
 	//size_t construct_point_clouds();
 
 	//void getviewconeposition(vec3 &a, mat3 r, vec3 t);
@@ -371,7 +371,7 @@ public:
 	void draw_viewingcone(cgv::render::context& ctx, int index, std::vector<vec3>& P, std::vector<rgb>& C, mat3 r, vec3 t);
 	enum DeviceMode {No_Device,Protocol,Has_Device};
 
-	int mytime=0;
+	//int mytime = 0;
 
 private:
 	int device_idx;

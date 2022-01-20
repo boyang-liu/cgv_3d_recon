@@ -34,7 +34,7 @@ public:
 		Vertices_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
 		Vertices_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
 	};
-	bool get_signed_distance_func();
+	//bool get_signed_distance_func();
 	bool set_signed_weight( std::vector<int> Voxelid, std::vector<float> Voxel, uvec3 Vox_resolution);
 	bool init_MC(cgv::render::context& ctx);
 	void resize();

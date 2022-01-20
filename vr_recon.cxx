@@ -206,7 +206,7 @@ void vr_rgbd::attach_all_devices()
 	current_corrected_cam = -1;
 	//save point cloud
 	intermediate_rgbdpc.resize(rgbd_inp.get_nr_devices());
-	intermediate_rgbdpc_bbox.resize(rgbd_inp.get_nr_devices());
+	//intermediate_rgbdpc_bbox.resize(rgbd_inp.get_nr_devices());
 	//cur_pc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc.resize(rgbd_inp.get_nr_devices());
 	rgbdpc_in_box.resize(rgbd_inp.get_nr_devices());
@@ -229,7 +229,10 @@ void vr_rgbd::attach_all_devices()
 	warped_color_frame_2.resize(rgbd_inp.get_nr_devices());
 	ir_frame_2.resize(rgbd_inp.get_nr_devices());
 
-	imageplanes.resize(rgbd_inp.get_nr_devices());
+	//imageplanes.resize(rgbd_inp.get_nr_devices());
+	PCfuture_handle.resize(rgbd_inp.get_nr_devices());
+
+
 	for (int i = 0; i < cam_fine_r.size(); i++) {
 		cam_coarse_r[i].identity();
 		cam_coarse_t[i] = vec3(0, 0, 0);
@@ -241,9 +244,9 @@ void vr_rgbd::attach_all_devices()
 		manualcorrect_translation[i] = vec3(0, 0, 0);
 		rgbdpc[i].cam_pos = vec3(0, 0, 0);
 
-		imageplanes[i].resize(576);
-		for (int j = 0; j < 576; j++)
-			imageplanes[i][j].resize(640);
+		//imageplanes[i].resize(576);
+		//for (int j = 0; j < 576; j++)
+			//imageplanes[i][j].resize(640);
 	}
 	
 	update_member(&all_devices_attached);
@@ -264,8 +267,8 @@ void vr_rgbd::detach_all_devices() {
 		rgbd_inp.detach();
 		rgbdpc.clear();
 		intermediate_rgbdpc.clear();
-		intermediate_rgbdpc_bbox.clear();
-		imageplanes.clear();
+		//intermediate_rgbdpc_bbox.clear();
+		//imageplanes.clear();
 		rgbdpc_in_box.clear();
 		cam_coarse_t.clear();
 		cam_coarse_r.clear();
@@ -275,6 +278,7 @@ void vr_rgbd::detach_all_devices() {
 		manualcorrect_rotation.clear();
 		current_corrected_cam = -1;
 		trees.clear();
+		PCfuture_handle.clear();
 		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 		current_pc.clear();
 		color_frame_2.clear();
@@ -573,7 +577,7 @@ vr_rgbd::~vr_rgbd()
 	
 
 
-	void vr_rgbd:: construct_multi_point_cloud(int index)//
+	size_t vr_rgbd:: construct_multi_point_cloud(int index)//
 	{
 		//for (int index_device = 0; index_device < rgbd_inp.nr_multi_de(); index_device++) {//
 			
@@ -597,7 +601,8 @@ vr_rgbd::~vr_rgbd()
 		float t;
 
 		intermediate_rgbdpc[index].clear();
-		intermediate_rgbdpc_bbox[index].clear();
+		//intermediate_rgbdpc_bbox[index].clear();
+		if (boundingboxisfixed || setboundingboxmode) {
 		for (int y =0; y < depth_frame_2[index].height; ++y)
 			for (int x = 0; x < depth_frame_2[index].width; ++x) {//
 				vec3 p;
@@ -613,60 +618,74 @@ vr_rgbd::~vr_rgbd()
 					//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
 					
 					if (!(c == filter_color)) {
-					
-					
-						/*if (x == 256 && y == 256) {
-							std::cout<<depths[i]<<std::endl;
-							std::cout << p << std::endl;
-						}*/				
-
-					//get depth image info
-					//imageplanes[index][y][x].depthsquare = p.length();//p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
-					//imageplanes[index][y][x].pixelcolor = c;
-									
-						/*p[0] = p[0]  / p[2];
-						p[1] = p[1]  / p[2];
-						p[2] = 1;*/
-
+																			
 						v.color = c;						
 						
 						t = p[1];
 						p[1] = p[2];
 						p[2] = t;
 
-
 						p = pc_cam_r * p + pc_cam_t;
-						/*p = cam_coarse_r[index] * p;															
-						p = p + cam_coarse_t[index];	
-						p = cam_fine_r[index] * p;
-						p = p + cam_fine_t[index];
-						p = manualcorrect_rotation[index] * p;
-						p = p + manualcorrect_translation[index];*/
+						
 						v.point = p;
-						if (boundingboxisfixed|| setboundingboxmode)
-						{
-							if(p[0]<pcbb.pos2[0] &&p[1] < pcbb.pos2[1] &&p[2] < pcbb.pos2[2] && 
-								p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2] )
-							intermediate_rgbdpc_bbox[index].add_point(v.point, v.color);
-						}
-						else
-							intermediate_rgbdpc[index].add_point(v.point, v.color);					
+						
+						if(p[0]<pcbb.pos2[0] &&p[1] < pcbb.pos2[1] &&p[2] < pcbb.pos2[2] && 
+							p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2] )
+						//intermediate_rgbdpc_bbox[index].add_point(v.point, v.color);
+							intermediate_rgbdpc[index].add_point(v.point, v.color);
+						
+											
 					}
 						
-				}//get depth image info
-				/*else {
-					imageplanes[index][y][x].depthsquare = -1;
-					imageplanes[index][y][x].pixelcolor = rgba8(0, 0, 0, 255);
-				}*/
+				}
 				++i;
 			}
+
+		}
+		else {
+			for (int y = 0; y < depth_frame_2[index].height; ++y)
+				for (int x = 0; x < depth_frame_2[index].width; ++x) {//
+					vec3 p;
+					if (rgbd_inp.map_depth_to_point(x, y, depths[i], &p[0], index)) {
+						// flipping y to make it the same direction as in pixel y coordinate
+
+						rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i], 255);
+						//rgba8 c(colors[4 * i + 2], colors[4 * i + 1], colors[4 * i + 0], colors[4 * i + 3]);
+
+						vertex v;
+						//filter points without color for 32 bit formats
+						static const rgba8 filter_color = rgba8(0, 0, 0, 255);
+						//static const rgba8 filter_color = rgba8(0, 0, 0, 0);
+
+						if (!(c == filter_color)) {
+
+							v.color = c;
+
+							t = p[1];
+							p[1] = p[2];
+							p[2] = t;
+
+							p = pc_cam_r * p + pc_cam_t;
+
+							v.point = p;
+							
+							intermediate_rgbdpc[index].add_point(v.point, v.color);
+						}
+
+					}
+					++i;
+				}
+
 		
+		}
+
 		//std::cout << "im:" << imageplanes[index].size() << std::endl;
 		/*std::cout << "depths:" << depths[130000] << std::endl;*/
-		intermediate_rgbdpc_bbox[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
+		//intermediate_rgbdpc_bbox[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
 		intermediate_rgbdpc[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
-		//return intermediate_rgbdpc[index].get_nr_Points();
-	
+
+		return intermediate_rgbdpc[index].get_nr_Points();
+		
 	}
 	//void vr_rgbd::getviewconeposition(vec3 &a, mat3 r, vec3 t) {
 	//	/*float temp;
@@ -849,7 +868,7 @@ vr_rgbd::~vr_rgbd()
 
 		manualcorrect_rotation.resize(rgbdpc.size());
 		manualcorrect_translation.resize(rgbdpc.size());
-		imageplanes.resize(rgbdpc.size());
+		//imageplanes.resize(rgbdpc.size());
 		for (int i = 0; i < cam_fine_r.size(); i++) {
 			//cam_coarse_r[i].identity();
 			//cam_coarse_t[i] = vec3(0, 0, 0);
@@ -867,6 +886,8 @@ vr_rgbd::~vr_rgbd()
 		trees.resize(rgbdpc.size());
 		post_redraw();
 		
+	
+
 		std::cout<< "rgbdpc.size() :"<<rgbdpc .size()<<std::endl;
 
 		//pc_load_dir = fn.substr(0, fn.length() - 8);
@@ -906,7 +927,7 @@ vr_rgbd::~vr_rgbd()
 		cam_fine_t.resize(rgbdpc.size());
 		manualcorrect_rotation.resize(rgbdpc.size());
 		manualcorrect_translation.resize(rgbdpc.size());
-		imageplanes.resize(rgbdpc.size());
+		//imageplanes.resize(rgbdpc.size());
 		//cam_coarse_r[rgbdpc.size()-1].identity();
 		//cam_coarse_t[rgbdpc.size() - 1] = vec3(0, 0, 0);
 
@@ -1473,10 +1494,10 @@ vr_rgbd::~vr_rgbd()
 		if (rgbd_inp.is_multi_started()) {
 
 
-			auto start_draw = std::chrono::steady_clock::now();
+			//auto start_draw = std::chrono::steady_clock::now();
 			
 			
-			vector<thread> mythreads;
+			
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
 				
@@ -1486,46 +1507,44 @@ vr_rgbd::~vr_rgbd()
 					
 				if (color_frame.is_allocated() && depth_frame.is_allocated())  //&&(color_frame_changed || depth_frame_changed)
 					{
+					if (!PCfuture_handle[0].valid())
+					{
+
 					color_frame_2[mm] = color_frame;
 					depth_frame_2[mm] = depth_frame;
-					//vr_rgbd::construct_multi_point_cloud(mm);
+					vr_rgbd::construct_multi_point_cloud(mm);
 					//mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
 
 					//mythreads.push_back(std::thread([this]() { construct_multi_point_cloud(); }));
-					mythreads.push_back(thread(&vr_rgbd::construct_multi_point_cloud, this, mm));
-					//future_handle = std::async(&vr_rgbd::construct_point_clouds, this);	
+					//mythreads.push_back(thread(&vr_rgbd::construct_multi_point_cloud, this, mm));
+					//PCfuture_handle[mm] = std::async(&vr_rgbd::construct_multi_point_cloud, this,mm);
+
+					}
 				}	
 				
 			}
-			for (auto&  th : mythreads) {				
-					th.join();
-				
-			}
-			mythreads.clear();
-			auto stop_draw = std::chrono::steady_clock::now();
-			std::chrono::duration<double> diff_draw;
-			diff_draw = stop_draw - start_draw;
+			
+
+			//mythreads.clear();
+			//auto stop_draw = std::chrono::steady_clock::now();
+			//std::chrono::duration<double> diff_draw;
+			//diff_draw = stop_draw - start_draw;
 			//std::cout << diff_draw.count() << std::endl;
+
 
 
 			if (generate_pc_from_rgbd) 
 			{
-			//current_pc = intermediate_pc;
-				if (boundingboxisfixed||setboundingboxmode) {
-					rgbdpc_in_box = intermediate_rgbdpc_bbox;
-					
-					for (int i = 0; i < rgbdpc.size(); i++) {
-						rgbdpc_in_box[i].cam_pos = intermediate_rgbdpc[i].cam_pos;
-
+			//current_pc = intermediate_pc;			
+					/*int finishedPC = 0;
+					for (int i = 0; i < PCfuture_handle.size(); i++) {
+						if (PCfuture_handle[i].valid())
+							finishedPC++;
 					}
-				
-				}
-				else{
-				rgbdpc = intermediate_rgbdpc;
-				for (int i = 0; i < rgbdpc.size(); i++) {
-					rgbdpc[i].cam_pos = intermediate_rgbdpc[i].cam_pos;
-				
-				}
+					if (finishedPC == rgbdpc.size()) {*/
+						rgbdpc = intermediate_rgbdpc;
+						post_redraw();
+					//}
 				
 				if (record_pc_started && num_recorded_pc <= 1000) {
 					for (int i = 0; i < rgbdpc.size(); i++)
@@ -1537,32 +1556,29 @@ vr_rgbd::~vr_rgbd()
 					num_recorded_pc++;
 
 				}
-				} 
-				post_redraw();
+				
+				
+
+
 			}
-			else {
-				/*for (int i = 0; i < rgbdpc.size(); i++)
-					rgbdpc[i].clear();*/
+			else {			
 
 				rgbdpc.clear();
 			}
 			
 		}
 		else {
-			if (mytime == 0)
-				mytime++;
-			else
-				mytime--;
-			if (num_loaded_pc < total_loaded_pc) {
-				
-			if (generate_pc_from_files&& mytime==0)
-			{
+							
+				if (generate_pc_from_files)//&& mytime==0
+				{
+					if (num_loaded_pc < total_loaded_pc) {
+
+					for(int i=0;i<rgbdpc.size();i++)
+						load_recorded_pc(i);
+					num_loaded_pc++;
+					}
+				}
 			
-				for(int i=0;i<rgbdpc.size();i++)
-					load_recorded_pc(i);
-				num_loaded_pc++;
-			}
-			}
 			else {
 				generate_pc_from_files = false;
 				update_member(&generate_pc_from_files);
@@ -2550,7 +2566,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		}
 		//std::cout << "1" << std::endl;		
 
-		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.02);
+		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
 		
 		//std::cout << "2" << std::endl;
 
