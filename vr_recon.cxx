@@ -223,6 +223,9 @@ void vr_rgbd::attach_all_devices()
 	manualcorrect_rotation.resize(rgbd_inp.get_nr_devices());
 	trees.resize(rgbd_inp.get_nr_devices());
 
+	color_frame.resize(rgbd_inp.get_nr_devices());
+	depth_frame.resize(rgbd_inp.get_nr_devices());
+	warped_color_frame.resize(rgbd_inp.get_nr_devices());
 	
 	color_frame_2.resize(rgbd_inp.get_nr_devices());
 	depth_frame_2.resize(rgbd_inp.get_nr_devices());
@@ -230,7 +233,7 @@ void vr_rgbd::attach_all_devices()
 	ir_frame_2.resize(rgbd_inp.get_nr_devices());
 
 	//imageplanes.resize(rgbd_inp.get_nr_devices());
-	
+	PCfuture_handle.resize(rgbd_inp.get_nr_devices());
 
 
 	for (int i = 0; i < cam_fine_r.size(); i++) {
@@ -281,12 +284,17 @@ void vr_rgbd::detach_all_devices() {
 		
 		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 		current_pc.clear();
+
+		color_frame.clear();
+		depth_frame.clear();
+		warped_color_frame.clear();
+
 		color_frame_2.clear();
 		depth_frame_2.clear();
 		warped_color_frame_2.clear();
 		ir_frame_2.clear();
 	
-	
+		PCfuture_handle.clear();
 	}
 		
 	all_devices_attached = rgbd_inp.is_multi_attached();
@@ -544,11 +552,35 @@ vr_rgbd::~vr_rgbd()
 
 	
 	
-size_t vr_rgbd::generate() {
-	int size = 0;
+size_t vr_rgbd::voxelize_PC() {
+	cgv::render::context& ctx = *get_context();
+	if (rgbdpc.size() <3 ) 
+		return 0;
+	 
+			//std::cout << rgbdpc[0].cam_rotation << std::endl;
+			//Voxelization a;
+				
+	//rgbdpc_in_box.clear();
+	//rgbdpc_in_box.resize(rgbdpc.size());
+	//for (int i = 0; i < rgbdpc.size(); i++) {
+	//	rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123));
+	//}
+	////std::cout << "1" << std::endl;
+	
+	Vox->init_boundary_from_PC(rgbdpc_in_box, pcbb.getpos1(), pcbb.getpos2(), 0.04);
+	
+	std::vector<vec3> camera_positions;
 	for (int i = 0; i < rgbdpc.size(); i++)
-		size=size+construct_multi_point_cloud(i);
-	return size;
+		camera_positions.push_back(rgbdpc[i].cam_pos);
+	Vox->denoise(ctx, 5, 3);
+	Vox->traverse_voxels(ctx, camera_positions);//	
+	//	
+	//	Vox->traverse_voxels(ctx, l);
+	Vox->denoise(ctx,13,5);
+	
+
+
+	return 0;
 }
 
 	size_t vr_rgbd::construct_point_cloud()
@@ -610,7 +642,7 @@ size_t vr_rgbd::generate() {
 		vec3 pc_cam_t = manualcorrect_rotation[index] * cam_fine_r[index] * cam_coarse_t[index] + manualcorrect_rotation[index] * cam_fine_t[index] + manualcorrect_translation[index];
 
 		float t;
-
+		vec3 origin = vec3(0, 0, 0);
 		intermediate_rgbdpc[index].clear();
 		//intermediate_rgbdpc_bbox[index].clear();
 		if (boundingboxisfixed || setboundingboxmode) {
@@ -693,7 +725,7 @@ size_t vr_rgbd::generate() {
 		//std::cout << "im:" << imageplanes[index].size() << std::endl;
 		/*std::cout << "depths:" << depths[130000] << std::endl;*/
 		//intermediate_rgbdpc_bbox[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
-		intermediate_rgbdpc[index].cam_pos = pc_cam_r * vec3(0, 0, 0) + pc_cam_t;
+		intermediate_rgbdpc[index].cam_pos = pc_cam_r * origin + pc_cam_t;
 
 		return intermediate_rgbdpc[index].get_nr_Points();
 		
@@ -1034,10 +1066,11 @@ size_t vr_rgbd::generate() {
 
 
 		
-		showmesh = true;
-
-
-
+		//showmesh = true;
+		if (!showvoxelizationmode)
+			showvoxelizationmode = true;
+		else
+			showvoxelizationmode = false;
 
 
 
@@ -1298,14 +1331,14 @@ size_t vr_rgbd::generate() {
 
 
 
-	frame_type vr_rgbd::read_rgb_frame()    //should be a thread
-	{
-		return color_frame;
-	}
-	frame_type vr_rgbd::read_depth_frame()
-	{
-		return depth_frame;
-	}
+	//frame_type vr_rgbd::read_rgb_frame()    //should be a thread
+	//{
+	//	return color_frame;
+	//}
+	//frame_type vr_rgbd::read_depth_frame()
+	//{
+	//	return depth_frame;
+	//}
 	
 	///cast vertex to point_cloud
 	/*void vr_rgbd::copy_pointcloud(const std::vector<vertex> input, point_cloud &output){
@@ -1434,117 +1467,134 @@ size_t vr_rgbd::generate() {
 				
 			}
 		}
-
-		if (PCfuture_handle.valid()) {
+		if (rgbd_inp.is_multi_started()) {
+		for(int i=0;i<rgbdpc.size();i++)
+		if (PCfuture_handle[i].valid()&&rgbd_inp.is_multi_started()) {
 			// check for termination of thread
-			if (PCfuture_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-				size_t N = PCfuture_handle.get();
+			if (PCfuture_handle[i].wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+				size_t N = PCfuture_handle[i].get();
 				// copy computed point cloud
-				rgbdpc = intermediate_rgbdpc;
+				rgbdpc[i] = intermediate_rgbdpc[i];
+				if (boundingboxisfixed|| setboundingboxmode)
+					rgbdpc_in_box = rgbdpc;
 				post_redraw();
 
 			}
-		}
+		}}
+		if (Vox_future_handle.valid() && showvoxelizationmode)
+		{
+			if (Vox_future_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+				size_t N = Vox_future_handle.get();							
+				post_redraw();
+
+			}
 		
+		}
+
+
 
 		//if (rgbd_inp.is_started()) {
-			if (rgbd_inp.is_started()) {
+		//	if (rgbd_inp.is_started()) {
 
-				bool new_frame;
-				bool found_frame = false;
-				bool depth_frame_changed = false;
-				bool color_frame_changed = false;			
-				do {
-					new_frame = false;
-					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0);
+		//		bool new_frame;
+		//		bool found_frame = false;
+		//		bool depth_frame_changed = false;
+		//		bool color_frame_changed = false;			
+		//		do {
+		//			new_frame = false;
+		//			bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0);
+		//			
+		//			if (new_color_frame_changed) {
+		//				
+		//				++nr_color_frames;
+		//				color_frame_changed = new_color_frame_changed;
+		//				new_frame = true;
+		//				update_member(&nr_color_frames);
+		//			}
+		//			bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0);
+		//			if (new_depth_frame_changed) {
+		//				
+		//				++nr_depth_frames;
+		//				depth_frame_changed = new_depth_frame_changed;
+		//				new_frame = true;
+		//				update_member(&nr_depth_frames);
+		//			}
+		//			if (new_frame)
+		//				found_frame = true;
+		//		} while (new_frame);
+		//		if (found_frame)
+		//			post_redraw();
+		//		if (color_frame.is_allocated() && depth_frame.is_allocated() &&
+		//			(color_frame_changed || depth_frame_changed)) {
+		//			
+		//			if (!future_handle.valid()) { //
+		//				if (!in_calibration) {
+		//					color_frame_2[0] = color_frame;
+		//					depth_frame_2[0] = depth_frame;
+		//					
+		//				}
+		//				if (zoom_out && !zoom_in)
+		//				{
+		//					controller_orientation_pc = controller_orientation * 2;
+		//					controller_position_pc = controller_position;
+		//				}
+		//				else if(zoom_in && !zoom_out)
+		//				{
+		//					controller_orientation_pc = controller_orientation * 0.5;
+		//					controller_position_pc = controller_position;
+		//				}
+		//				else {
+		//					controller_orientation_pc = controller_orientation;
+		//					controller_position_pc = controller_position;
+		//					
+		//				}
+		//				future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
+		//				//construct_point_cloud();
+		//				//current_pc = intermediate_pc;
+		//				
+		//				//post_redraw();
+		//				
+		//			}
+		//			
+		//		}
+		//	//}
+		//}
+		
+		if (!Vox_future_handle.valid()&& showvoxelizationmode ) {
 					
-					if (new_color_frame_changed) {
-						
-						++nr_color_frames;
-						color_frame_changed = new_color_frame_changed;
-						new_frame = true;
-						update_member(&nr_color_frames);
-					}
-					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0);
-					if (new_depth_frame_changed) {
-						
-						++nr_depth_frames;
-						depth_frame_changed = new_depth_frame_changed;
-						new_frame = true;
-						update_member(&nr_depth_frames);
-					}
-					if (new_frame)
-						found_frame = true;
-				} while (new_frame);
-				if (found_frame)
-					post_redraw();
-				if (color_frame.is_allocated() && depth_frame.is_allocated() &&
-					(color_frame_changed || depth_frame_changed)) {
-					
-					if (!future_handle.valid()) { //
-						if (!in_calibration) {
-							color_frame_2[0] = color_frame;
-							depth_frame_2[0] = depth_frame;
-							
-						}
-						if (zoom_out && !zoom_in)
-						{
-							controller_orientation_pc = controller_orientation * 2;
-							controller_position_pc = controller_position;
-						}
-						else if(zoom_in && !zoom_out)
-						{
-							controller_orientation_pc = controller_orientation * 0.5;
-							controller_position_pc = controller_position;
-						}
-						else {
-							controller_orientation_pc = controller_orientation;
-							controller_position_pc = controller_position;
-							
-						}
-						future_handle = std::async(&vr_rgbd::construct_point_cloud, this);
-						//construct_point_cloud();
-						//current_pc = intermediate_pc;
-						
-						//post_redraw();
-						
-					}
-					
-				}
-			//}
+			Vox_future_handle=std::async(&vr_rgbd::voxelize_PC, this);
 		}
-
-
+		
 		if (rgbd_inp.is_multi_started()) {
 
 
 			//auto start_draw = std::chrono::steady_clock::now();
 			
-			if (!PCfuture_handle.valid())
-			{
+			
 			
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
-				
-					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame, 0, mm);		
+			if (!PCfuture_handle[mm].valid())
+			{
+					bool new_color_frame_changed = rgbd_inp.get_frame(rgbd::IS_COLOR, color_frame[mm], 0, mm);		
 					
-					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame, 0, mm);		
+					bool new_depth_frame_changed = rgbd_inp.get_frame(rgbd::IS_DEPTH, depth_frame[mm], 0, mm);		
 					
-				if (color_frame.is_allocated() && depth_frame.is_allocated())  //&&(color_frame_changed || depth_frame_changed)
+				if (color_frame[mm].is_allocated() && depth_frame[mm].is_allocated())  //&&(color_frame_changed || depth_frame_changed)
 					{
 					
 
-					color_frame_2[mm] = color_frame;
-					depth_frame_2[mm] = depth_frame;
+					color_frame_2[mm] = color_frame[mm];
+					depth_frame_2[mm] = depth_frame[mm];
 					//vr_rgbd::construct_multi_point_cloud(mm);
 					//mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
 
 					//mythreads.push_back(std::thread([this]() { construct_multi_point_cloud(); }));
 					//mythreads.push_back(thread(&vr_rgbd::construct_multi_point_cloud, this, mm));
 					//PCfuture_handle[mm] = std::async(&vr_rgbd::construct_multi_point_cloud, this,mm);
-
-					PCfuture_handle = std::async(&vr_rgbd::generate, this);
-				}	
+					PCfuture_handle[mm] = std::async(&vr_rgbd::construct_multi_point_cloud, this, mm);
+					//
+					}	
 				
 			}
 			
@@ -1570,7 +1620,7 @@ size_t vr_rgbd::generate() {
 					if (finishedPC == rgbdpc.size()) {*/
 
 						//rgbdpc = intermediate_rgbdpc;
-						///post_redraw();
+						//post_redraw();
 
 
 
@@ -2579,62 +2629,65 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//draw_grid(ctx, vec3(0,0,0), vec3(2,2,2), 0.5);
 	// 
 	// 
-	MarchingCube->draw(ctx);
 
 
 
-	if (rgbdpc.size() > 2 && drawvoexls) {
-		//std::cout << rgbdpc[0].cam_rotation << std::endl;
-		//Voxelization a;		
-		//auto start_draw = std::chrono::steady_clock::now();
-	
+	//MarchingCube->draw(ctx);
 
-		rgbdpc_in_box.clear();
-		rgbdpc_in_box.resize(rgbdpc.size());
 
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-		}
-		//std::cout << "1" << std::endl;		
 
-		Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
-		
-		//std::cout << "2" << std::endl;
+	//if (rgbdpc.size() > 2 && drawvoexls) {
+	//	//std::cout << rgbdpc[0].cam_rotation << std::endl;
+	//	//Voxelization a;		
+	//	//auto start_draw = std::chrono::steady_clock::now();
+	//
 
-		std::vector<vec3> l;
-		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-		//l.push_back(vec3(1.83623, 0.271185, 5));
-		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
-		
-		Vox->denoise(ctx,5,3);
-		
-		
-		Vox->traverse_voxels(ctx, l);
-		Vox->denoise(ctx,13,5);
-		//drawvoexls = false;
-		/*auto stop_draw = std::chrono::steady_clock::now();
-		std::chrono::duration<double> diff_draw;
-		diff_draw = stop_draw - start_draw;
-		std::cout << diff_draw.count() << std::endl;*/
-		if(!showmesh)
-			Vox->draw_voxels(ctx);
-		else {
-			std::vector<float> Voxels;
-			Voxels.resize(1000000, 1);
-			/*std::vector<int> Voxelids;
-			for (int i = 0; i < 64; i++)
-				Voxelids.push_back(i);*/
-			MarchingCube->set_signed_weight(Vox->get_Voxel_id(), Voxels, uvec3(100, 100, 100));
+	//	rgbdpc_in_box.clear();
+	//	rgbdpc_in_box.resize(rgbdpc.size());
 
-			MarchingCube->ge(ctx);//, Voxelids
+	//	for (int i = 0; i < rgbdpc.size(); i++) {
+	//		rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	//	}
+	//	//std::cout << "1" << std::endl;		
 
-			//showmesh = false;
+	//	Vox->init_boundary_from_PC(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123), 0.04);
+	//	
+	//	//std::cout << "2" << std::endl;
 
-		}
-		MarchingCube->draw(ctx);
+	//	std::vector<vec3> l;
+	//	l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+	//	//l.push_back(vec3(1.83623, 0.271185, 5));
+	//	l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+	//	l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
+	//	
+	//	Vox->denoise(ctx,5,3);
+	//	
+	//	
+	//	Vox->traverse_voxels(ctx, l);
+	//	Vox->denoise(ctx,13,5);
+	//	//drawvoexls = false;
+	//	/*auto stop_draw = std::chrono::steady_clock::now();
+	//	std::chrono::duration<double> diff_draw;
+	//	diff_draw = stop_draw - start_draw;
+	//	std::cout << diff_draw.count() << std::endl;*/
+	//	if(!showmesh)
+	//		Vox->draw_voxels(ctx);
+	//	else {
+	//		std::vector<float> Voxels;
+	//		Voxels.resize(1000000, 1);
+	//		/*std::vector<int> Voxelids;
+	//		for (int i = 0; i < 64; i++)
+	//			Voxelids.push_back(i);*/
+	//		MarchingCube->set_signed_weight(Vox->get_Voxel_id(), Voxels, uvec3(100, 100, 100));
 
-	}	
+	//		MarchingCube->ge(ctx);//, Voxelids
+
+	//		//showmesh = false;
+
+	//	}
+	//	MarchingCube->draw(ctx);
+
+	//}	
 		
 	
 
@@ -2720,8 +2773,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 					draw_boudingbox(ctx, pos1, pos2);
 					pcbb.pos1 = pos1;
 					pcbb.pos2 = pos2;
-					std::cout<<"pcbb.pos1"<<pcbb.pos1<<std::endl;
-					std::cout<<"pcbb.pos2"<<pcbb.pos2<<std::endl;
+					//std::cout<<"pcbb.pos1"<<pcbb.pos1<<std::endl;
+					//std::cout<<"pcbb.pos2"<<pcbb.pos2<<std::endl;
 					pcbb.step = BoundingBoxstep;
 
 
@@ -2853,7 +2906,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			//Vox->traverse_voxels(ctx, l);
 
 
-			//Vox->draw_voxels(ctx);
+			Vox->draw_voxels(ctx);
 			//}
 		}
 		else{
@@ -2862,7 +2915,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			//===================delete================
 
-			if (rgbdpc.size()<3&& !showvoxelizationmode){
+			//if (rgbdpc.size()<3&& !showvoxelizationmode){
 
 			//===================delete================
 
@@ -2881,7 +2934,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 			//===================delete================
 
-			}
+			//}
 
 			//===================delete================
 		}

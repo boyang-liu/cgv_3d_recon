@@ -73,7 +73,7 @@ protected:
 		rgba8 color;
 	};*/
 	/// internal members used for data storage
-	rgbd::frame_type color_frame, depth_frame, warped_color_frame;
+	std::vector<rgbd::frame_type> color_frame, depth_frame, warped_color_frame;
 	std::vector<rgbd::frame_type> color_frame_2, depth_frame_2, ir_frame_2, warped_color_frame_2;
 
 
@@ -145,8 +145,8 @@ protected:
 	///
 	std::future<size_t> future_handle;
 
-	std::future<size_t> PCfuture_handle;
-
+	std::vector<std::future<size_t>> PCfuture_handle;
+	std::future<size_t> Vox_future_handle;
 	/// path to be set for pc files
 	std::string pc_file_path;
 	///
@@ -309,7 +309,7 @@ protected:
 public:
 	vr_rgbd();
 	~vr_rgbd();
-	size_t generate();
+	size_t voxelize_PC();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//
@@ -328,9 +328,9 @@ public:
 	void test1(int a);
 	void temp_test();
 	
-	frame_type read_rgb_frame();
+	//frame_type read_rgb_frame();
 	//should be a thread
-	frame_type read_depth_frame();
+	//frame_type read_depth_frame();
 	///cast vertex to point_cloud
 	//void copy_pointcloud(const std::vector<vertex> input, point_cloud& output);
 	///cast point_cloud to vertex

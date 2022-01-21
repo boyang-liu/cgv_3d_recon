@@ -380,7 +380,7 @@
 						vec3 min1 = min_pos + vec3((i - 1)*voxel_size, (j - 1) *voxel_size, (k - 1) *voxel_size);
 						vec3 max1 = min_pos + vec3(i*voxel_size, j*voxel_size, k*voxel_size);
 						boxes.emplace_back(box3(min1, max1));
-						box_colors.emplace_back(table_clr2);
+						box_colors.emplace_back(clr);
 					}
 					
 				}
