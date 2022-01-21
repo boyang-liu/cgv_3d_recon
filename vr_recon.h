@@ -145,7 +145,7 @@ protected:
 	///
 	std::future<size_t> future_handle;
 
-	std::vector <std::future<size_t>> PCfuture_handle;
+	std::future<size_t> PCfuture_handle;
 
 	/// path to be set for pc files
 	std::string pc_file_path;
@@ -309,6 +309,7 @@ protected:
 public:
 	vr_rgbd();
 	~vr_rgbd();
+	size_t generate();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//

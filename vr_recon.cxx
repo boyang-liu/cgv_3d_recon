@@ -230,7 +230,7 @@ void vr_rgbd::attach_all_devices()
 	ir_frame_2.resize(rgbd_inp.get_nr_devices());
 
 	//imageplanes.resize(rgbd_inp.get_nr_devices());
-	PCfuture_handle.resize(rgbd_inp.get_nr_devices());
+	
 
 
 	for (int i = 0; i < cam_fine_r.size(); i++) {
@@ -278,7 +278,7 @@ void vr_rgbd::detach_all_devices() {
 		manualcorrect_rotation.clear();
 		current_corrected_cam = -1;
 		trees.clear();
-		PCfuture_handle.clear();
+		
 		std::cout << "nr of attached devices" << rgbd_inp.nr_multi_de() << std::endl;
 		current_pc.clear();
 		color_frame_2.clear();
@@ -540,6 +540,17 @@ vr_rgbd::~vr_rgbd()
 {
 
 }
+
+
+	
+	
+size_t vr_rgbd::generate() {
+	int size = 0;
+	for (int i = 0; i < rgbdpc.size(); i++)
+		size=size+construct_multi_point_cloud(i);
+	return size;
+}
+
 	size_t vr_rgbd::construct_point_cloud()
 	{
 		intermediate_pc.clear();
@@ -1423,6 +1434,19 @@ vr_rgbd::~vr_rgbd()
 				
 			}
 		}
+
+		if (PCfuture_handle.valid()) {
+			// check for termination of thread
+			if (PCfuture_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+				size_t N = PCfuture_handle.get();
+				// copy computed point cloud
+				rgbdpc = intermediate_rgbdpc;
+				post_redraw();
+
+			}
+		}
+		
+
 		//if (rgbd_inp.is_started()) {
 			if (rgbd_inp.is_started()) {
 
@@ -1496,7 +1520,8 @@ vr_rgbd::~vr_rgbd()
 
 			//auto start_draw = std::chrono::steady_clock::now();
 			
-			
+			if (!PCfuture_handle.valid())
+			{
 			
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
@@ -1507,21 +1532,22 @@ vr_rgbd::~vr_rgbd()
 					
 				if (color_frame.is_allocated() && depth_frame.is_allocated())  //&&(color_frame_changed || depth_frame_changed)
 					{
-					if (!PCfuture_handle[0].valid())
-					{
+					
 
 					color_frame_2[mm] = color_frame;
 					depth_frame_2[mm] = depth_frame;
-					vr_rgbd::construct_multi_point_cloud(mm);
+					//vr_rgbd::construct_multi_point_cloud(mm);
 					//mythreads.push_back( thread(&vr_rgbd::construct_multi_point_cloud,this ,ref(mm)));//
 
 					//mythreads.push_back(std::thread([this]() { construct_multi_point_cloud(); }));
 					//mythreads.push_back(thread(&vr_rgbd::construct_multi_point_cloud, this, mm));
 					//PCfuture_handle[mm] = std::async(&vr_rgbd::construct_multi_point_cloud, this,mm);
 
-					}
+					PCfuture_handle = std::async(&vr_rgbd::generate, this);
 				}	
 				
+			}
+			
 			}
 			
 
@@ -1542,8 +1568,13 @@ vr_rgbd::~vr_rgbd()
 							finishedPC++;
 					}
 					if (finishedPC == rgbdpc.size()) {*/
-						rgbdpc = intermediate_rgbdpc;
-						post_redraw();
+
+						//rgbdpc = intermediate_rgbdpc;
+						///post_redraw();
+
+
+
+
 					//}
 				
 				if (record_pc_started && num_recorded_pc <= 1000) {
