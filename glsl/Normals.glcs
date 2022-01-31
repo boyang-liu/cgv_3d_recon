@@ -1,0 +1,53 @@
+#version 450
+
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct Vector
+{
+    float x, y, z;
+};
+
+layout (std430, binding = 4) buffer trinormalsBuffer
+{
+    Vector trinormals[];
+};
+
+
+layout (std430, binding = 7) buffer normalsBuffer
+{   
+	
+    Vector normals[];
+};
+
+layout (std430, binding = 8) buffer normalidBuffer
+{   
+	//first 16 nums are use to  save the related index of triangle
+	// 17 th saves the num of related triangles
+    int normalid[];
+};
+
+
+
+
+void main() {    
+	int id = int(gl_GlobalInvocationID.x);
+
+	vec3 normal=vec3(0,0,0);
+	Vector n;
+	for(int i=0;i<normalid[id*17+16];i++)
+	{
+	 
+	n = trinormals[normalid[id*17+i]];
+	normal.x = normal.x + n.x;
+	normal.y = normal.y + n.y;
+	normal.z  =normal.z + n.z;
+	}
+	vec3 triangle_normal=normalize(normal);
+	normals[id]=Vector(triangle_normal.x,triangle_normal.y,triangle_normal.z);
+
+
+	
+   
+	
+}

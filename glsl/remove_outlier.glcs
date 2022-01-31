@@ -1,0 +1,121 @@
+﻿#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+
+layout (std430, binding = 10) buffer filledobjectBuffer
+{
+    float filledcubes[];
+};
+
+layout (std430, binding = 12) buffer cubesBuffer
+{
+    float cubes[];
+};
+
+
+struct box{
+	float min_x;
+	float min_y;
+	float min_z;
+	float max_x;
+	float max_y;
+	float max_z;
+
+};
+layout (std430, binding = 13) buffer boxarrayBuffer
+{
+    int boxcount;
+	box boxarray[];
+};
+
+
+
+
+uniform ivec3 cubeGridDims;
+uniform int threshold;
+uniform int range;
+
+uniform vec3 min_pos;
+uniform vec3 max_pos;
+uniform float side_length;
+
+
+
+
+
+int indexCube(int x, int y, int z){
+    return (x + cubeGridDims.x * y + cubeGridDims.x * cubeGridDims.y * z) ;
+}
+
+/**/
+
+float denoise(ivec3 VoxelID){
+
+float value=0;
+
+int thr2=int(ceil(threshold/2));
+int thr1=1-thr2;
+for(int i=thr1;i<thr2;i++)
+	for(int j=thr1;j<thr2;j++)
+		for(int k=thr1;k<thr2;k++)
+		{
+		if((VoxelID.x+i)<cubeGridDims.x && (VoxelID.x+i)>=0 &&
+		(VoxelID.y+j)<cubeGridDims.y && (VoxelID.y+j)>=0 &&
+		(VoxelID.z+k)<cubeGridDims.z && (VoxelID.z+k)>=0
+		)
+		value=value+filledcubes[indexCube((VoxelID.x+i),(VoxelID.y+j),(VoxelID.z+k))];
+	
+		}
+if( value >= threshold )
+	return 1.0;
+else 
+	return 0;
+}
+
+box get_box(int x, int y, int z){
+	
+	float minx=min_pos.x+(x-1)*side_length;
+	float miny=min_pos.y+(y-1)*side_length;
+	float minz=min_pos.z+(z-1)*side_length;
+	float maxx=max_pos.x+ x*side_length;
+	float maxy=max_pos.y+ y*side_length;
+	float maxz=max_pos.z+ z*side_length;
+
+	return box(minx,miny,minz,maxx,maxy,maxz);
+
+
+}
+
+
+
+void main() {
+
+	
+    // The voxel coordinates of this thread
+	
+
+	ivec3 id = ivec3(gl_GlobalInvocationID);
+    
+	int x = id.x;
+    int y = id.y;
+    int z = id.z;
+	
+
+    int currentCubeID = indexCube(x, y, z);
+	
+	if(filledcubes[currentCubeID] != 0)	
+		cubes[currentCubeID] = denoise(ivec3(x,y,z));					
+	else 
+		cubes[currentCubeID] = 0;	
+	
+	if(cubes[currentCubeID] != 0)
+	{
+
+		
+		int boxIndex = atomicAdd(boxcount, 1);
+		boxarray[boxIndex]=get_box(x,y,z);
+
+	}
+	//cubes[currentCubeID]=1;
+}
