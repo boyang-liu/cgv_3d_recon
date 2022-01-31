@@ -1,0 +1,181 @@
+﻿
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+
+
+
+layout (std430, binding = 11) buffer denoisedcubesBuffer
+{
+    float denoisedcubes[];
+};
+
+
+
+layout (std430, binding = 10) buffer filledobjectBuffer
+{
+    float filledcubes[];
+};
+
+
+
+
+
+uniform vec3 min_pos;
+uniform vec3 max_pos;
+
+//the length of cube side 
+uniform float side_length;
+uniform ivec3 cubeGridDims;
+
+uniform vec3 cam_pos1;
+uniform vec3 cam_pos2;
+uniform vec3 cam_pos3;
+
+struct point_in_voxel{
+ivec3 id;
+vec3 pos;
+int inside;//value of 1 means it is behind the pointcloud
+};
+
+vec3 get_center_pos(ivec3 VoxelID) {
+vec3 center=min_pos+vec3((VoxelID.x+1)*side_length-side_length/2,(VoxelID.y+1)*side_length-side_length/2,(VoxelID.z+1)*side_length-side_length/2);
+return  center;	
+}
+
+//use when_eq to avoid "if" expression
+float when_eq(float x,float y){
+	return 1.0-abs(sign(x-y));
+}
+
+int indexCube(int x, int y, int z){
+    return (x + cubeGridDims.x * y + cubeGridDims.x * cubeGridDims.y * z) ;
+}
+
+//along the ray find the interscetion point in the next cube
+point_in_voxel next_point(vec3 ray,point_in_voxel p)
+{
+
+	p.id.x=p.id.x+int(sign(ray.x) * when_eq(p.pos.x,0));
+	p.pos.x=p.pos.x+side_length * when_eq(p.pos.x,0);
+
+	p.id.y=p.id.y+int(sign(ray.y)*when_eq(p.pos.y,0));
+	p.pos.y=p.pos.y+side_length*when_eq(p.pos.y,0);
+	
+	p.id.z=p.id.z+int(sign(ray.z)*when_eq(p.pos.z,0));
+	p.pos.z=p.pos.z+side_length*when_eq(p.pos.z,0);
+
+	//if ray go out of boundingbox, stop
+	if(p.id.x<0||p.id.y<0||p.id.z<0|| p.id.x== cubeGridDims.x|| p.id.y == cubeGridDims.y|| p.id.z== cubeGridDims.z)
+		return p;
+
+	float time1,time2,time3;
+
+	time1=p.pos.x/abs(ray.x);
+	time2=p.pos.y/abs(ray.y);
+	time3=p.pos.z/abs(ray.z);
+
+	float min_time = min(time1,time2);
+	min_time=min(min_time,time3);
+
+	if(min_time==time1){
+		p.pos.x=0;
+		p.pos.y=p.pos.y-time1*abs(ray.y);
+		p.pos.z=p.pos.z-time1*abs(ray.z);		
+	
+	}else if(min_time==time2){
+		p.pos.y=0;
+		p.pos.x=p.pos.x-time2*abs(ray.x);
+		p.pos.z=p.pos.z-time2*abs(ray.z);	
+	}else if(min_time==time3){
+		p.pos.z=0;
+		p.pos.x=p.pos.x-time3*abs(ray.x);
+		p.pos.y=p.pos.y-time3*abs(ray.y);	
+	}
+
+
+
+	if(denoisedcubes[indexCube(p.id.x,p.id.y,p.id.z)]==1)
+		p.inside=1;
+	return p;
+
+}
+
+
+
+void main() {
+
+
+	
+	// The voxel coordinates of this thread
+	
+
+	ivec3 idx = ivec3(gl_GlobalInvocationID);
+    
+	int x = idx.x;
+    int y = idx.y;
+    int z = idx.z;
+
+	int currentCubeID = indexCube(x, y, z);
+
+	
+	if(denoisedcubes[currentCubeID] == 1){
+	
+		filledcubes[currentCubeID] = 1;
+		
+	}else{
+	
+	
+	vec3 voxelpos=get_center_pos(idx);
+
+	//three rays from current voxel to cameras
+	vec3 voxel_cam_ray_1 = cam_pos1 - voxelpos;
+	vec3 voxel_cam_ray_2 = cam_pos2 - voxelpos;
+	vec3 voxel_cam_ray_3 = cam_pos3 - voxelpos;
+	
+	//seperately check the voxels that each ray go through
+	point_in_voxel pv1;
+	pv1.id = idx;
+	pv1.pos = vec3(side_length/2,side_length/2,side_length/2);
+	pv1.inside = 0;
+	
+	
+	point_in_voxel pv2;
+	pv2.id = idx;
+	pv2.pos = vec3(side_length/2,side_length/2,side_length/2);
+	pv2.inside = 0;
+
+	point_in_voxel pv3;
+	pv3.id = idx;
+	pv3.pos = vec3(side_length/2,side_length/2,side_length/2);
+	pv3.inside = 0;
+	
+	//if ray arrives the boundingbox boundary,stop
+	while (pv1.id.x >= 0 && pv1.id.y >= 0 && pv1.id.z >= 0 && pv1.id.x < cubeGridDims.x && pv1.id.y < cubeGridDims.y && pv1.id.z < cubeGridDims.z && pv1.inside==0 ){
+	
+	pv1=next_point( voxel_cam_ray_1,pv1);
+	
+	}
+	
+	while (pv2.id.x>=0 && pv2.id.y>=0 && pv2.id.z>=0 && pv2.id.x< cubeGridDims.x && pv2.id.y< cubeGridDims.y && pv2.id.z< cubeGridDims.z && pv2.inside==0 && pv1.inside==1){
+	
+	pv2=next_point( voxel_cam_ray_2,pv2);
+	
+	}
+
+	while (pv3.id.x>=0 && pv3.id.y>=0 && pv3.id.z>=0 && pv3.id.x< cubeGridDims.x && pv3.id.y< cubeGridDims.y && pv3.id.z< cubeGridDims.z && pv3.inside==0&& pv2.inside==1 && pv1.inside==1){
+	
+	pv3=next_point( voxel_cam_ray_3,pv3);
+	
+	}
+
+	if((pv1.inside+pv2.inside+pv3.inside)==3)		
+		filledcubes[currentCubeID] = 2;
+	else		
+		filledcubes[currentCubeID] = 0;
+
+	}
+	
+	
+}

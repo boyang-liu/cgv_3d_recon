@@ -1,0 +1,55 @@
+#version 450
+
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout (std430, binding = 0) buffer GridPointsBuffer
+{
+    float GridPoints[];
+};
+
+layout (std430, binding = 1) buffer cubesBuffer
+{
+    float cubes[];
+};
+
+uniform ivec3 vereticesGridDims;
+uniform ivec3 cubeGridDims;
+uniform float surfaceLevel;
+
+int indexVertex(int x, int y, int z){
+    return x + vereticesGridDims.x * y + vereticesGridDims.x * vereticesGridDims.y * z;
+}
+int indexCube(int x, int y, int z){
+    return (x + cubeGridDims.x * y + cubeGridDims.x * cubeGridDims.y * z) ;
+}
+int vertexvalue(int x, int y, int z){
+	if( x<0 || y<0 || z<0 || x >= cubeGridDims.x || y >= cubeGridDims.y || z >= cubeGridDims.z )
+		
+		
+		return 0;
+		
+	else if(cubes[indexCube( x, y, z)]> surfaceLevel)
+		return 1;
+	else 
+		return 0;
+}
+void main(){
+	ivec3 id = ivec3(gl_GlobalInvocationID);
+	
+	int x = id.x;
+    int y = id.y;
+    int z = id.z;
+
+	
+	
+	
+	int value=vertexvalue(x,y,z) + vertexvalue(x-1,y,z) + vertexvalue(x,y-1,z) + vertexvalue(x-1,y-1,z) +
+	vertexvalue(x,y,z-1) + vertexvalue(x-1,y,z-1) + vertexvalue(x,y-1,z-1) + vertexvalue(x-1,y-1,z-1);			
+	if(value == 8)
+		GridPoints[indexVertex(x,y,z)] = 1;
+	else //if(value == 0)
+		GridPoints[indexVertex(x,y,z)] = 0;
+	//else 
+	//	GridPoints[indexVertex(x,y,z)] = 1;
+}
