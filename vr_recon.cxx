@@ -557,30 +557,41 @@ size_t vr_rgbd::voxelize_PC() {
 	if (rgbdpc.size() <3 ) 
 		return 0;
 	 
-			//std::cout << rgbdpc[0].cam_rotation << std::endl;
-			//Voxelization a;
-				
-	//rgbdpc_in_box.clear();
-	//rgbdpc_in_box.resize(rgbdpc.size());
-	//for (int i = 0; i < rgbdpc.size(); i++) {
-	//	rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.74123), vec3(2.83623, 1.271185, 4.74123));
+		
+	rgbdpc_in_box.clear();
+	rgbdpc_in_box.resize(rgbdpc.size());
+
+	for (int i = 0; i < rgbdpc.size(); i++) {
+		rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	}
+
+
+	//if (!DevicesAreStarted) {
+
+	std::vector<vec3> currentcampos;
+	currentcampos.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+	//l.push_back(vec3(1.83623, 0.271185, 5));
+	currentcampos.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+	currentcampos.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
+	Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+	Vox->generate(ctx, currentcampos);
+
+	//Vox->draw_voxels(ctx);
+	//post_redraw();
+
+
 	//}
-	////std::cout << "1" << std::endl;
+
+
+
 	
-	Vox->init_boundary_from_PC(rgbdpc_in_box, pcbb.getpos1(), pcbb.getpos2(), 0.04);
 	
-	std::vector<vec3> camera_positions;
-	for (int i = 0; i < rgbdpc.size(); i++)
-		camera_positions.push_back(rgbdpc[i].cam_pos);
-	//Vox->denoising(ctx, 5, 3);
-	//Vox->traverse_voxels(ctx, camera_positions);//	
-	//	
-	//	Vox->traverse_voxels(ctx, l);
-	//Vox->denoising(ctx,13,5);
+	
+	
 	
 
 
-	return 0;
+	return Vox->get_numBoxes();
 }
 
 	size_t vr_rgbd::construct_point_cloud()
@@ -1065,8 +1076,8 @@ size_t vr_rgbd::voxelize_PC() {
 	void vr_rgbd::temp_test() {
 
 
-		
-		showmesh = true;
+		showvoxelizationmode = true;
+		//showmesh = true;
 		/*if (!showvoxelizationmode)
 			showvoxelizationmode = true;
 		else
@@ -1491,6 +1502,13 @@ size_t vr_rgbd::voxelize_PC() {
 		
 		}
 
+		if (!Vox_future_handle.valid()&& showvoxelizationmode ) {
+			if(showvoxelizationmode&&rgbdpc.size()>2)
+			Vox_future_handle=std::async(&vr_rgbd::voxelize_PC, this);
+		}
+
+
+
 
 
 		//if (rgbd_inp.is_started()) {
@@ -1560,10 +1578,7 @@ size_t vr_rgbd::voxelize_PC() {
 		//	//}
 		//}
 		
-		if (!Vox_future_handle.valid()&& showvoxelizationmode ) {
-					
-			Vox_future_handle=std::async(&vr_rgbd::voxelize_PC, this);
-		}
+		
 		
 		if (rgbd_inp.is_multi_started()) {
 
@@ -2621,7 +2636,29 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
-	
+	//if (rgbdpc.size() > 2) {
+	//rgbdpc_in_box.clear();
+	//rgbdpc_in_box.resize(rgbdpc.size());
+
+	//for (int i = 0; i < rgbdpc.size(); i++) {
+	//	rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	//}
+
+
+	////if (!DevicesAreStarted) {
+
+	//std::vector<vec3> currentcampos;
+	//currentcampos.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+	////l.push_back(vec3(1.83623, 0.271185, 5));
+	//currentcampos.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+	//currentcampos.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
+	//Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+	//Vox->generate(ctx, currentcampos);
+
+	////Vox->draw_voxels(ctx);
+	//}
+
+	//==============================================================================================
 	//std::vector<float> Voxels;
 	//Voxels.resize(64, 1);
 	///*std::vector<int> Voxelids;
@@ -2653,35 +2690,35 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//MarchingCube->draw(ctx);
 
 	draw_boudingbox(ctx, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-
-	if (rgbdpc.size() > 2 ) {//&& showmesh
-		//std::cout << rgbdpc[0].cam_rotation << std::endl;
-		//Voxelization a;		
-		
 	
+	//if (rgbdpc.size() > 2 ) {//&& showmesh
+	//	//std::cout << rgbdpc[0].cam_rotation << std::endl;
+	//	//Voxelization a;		
+	//	
+	//
 
-		rgbdpc_in_box.clear();
-		rgbdpc_in_box.resize(rgbdpc.size());
+	//	rgbdpc_in_box.clear();
+	//	rgbdpc_in_box.resize(rgbdpc.size());
 
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-		}
-		
+	//	for (int i = 0; i < rgbdpc.size(); i++) {
+	//		rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	//	}
+	//	
 
-		std::vector<vec3> l;
-		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-		//l.push_back(vec3(1.83623, 0.271185, 5));
-		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
-		
+	//	std::vector<vec3> l;
+	//	l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+	//	//l.push_back(vec3(1.83623, 0.271185, 5));
+	//	l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+	//	l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
+	//	
 
-		
+	//	
 
-		Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-		Vox->generate(ctx, l);//
-		
-		showmesh = false;
-	}	
+	//	Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+	//	Vox->generate(ctx, l);//
+	//	
+	//	showmesh = false;
+	//}	
 	//MarchingCube->draw(ctx);
 	Vox->draw_voxels(ctx);
 

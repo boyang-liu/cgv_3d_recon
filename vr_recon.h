@@ -309,7 +309,7 @@ protected:
 public:
 	vr_rgbd();
 	~vr_rgbd();
-	size_t voxelize_PC();
+	size_t voxelize_PC();//bool DevicesAreStarted
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//

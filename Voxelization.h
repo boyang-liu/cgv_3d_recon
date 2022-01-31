@@ -61,6 +61,7 @@ public:
 
 	std::vector<int> get_Voxel_id() {return V_1;}
 	std::vector<float> get_V() { return V; }
+	int get_numBoxes() { return numBoxes; }
 protected:
 	
 
@@ -89,10 +90,11 @@ protected:
 
 	vec3 center_gravity;
 
+	GLuint numBoxes;
 
 	ivec3 Voxel_size;
 	std::vector<float> Object_Boundary;
-
+	std::vector<float> render_content;
 
 private:
 	Buffer object_boundary;
