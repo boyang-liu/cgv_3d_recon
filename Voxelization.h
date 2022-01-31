@@ -6,7 +6,7 @@
 #include "rgbd_pointcloud.h"
 #include <cgv/render/render_types.h>
 #include "PCBoundingbox.h"
-
+#include "Buffer.h"
 //typedef float Crd;
 //typedef cgv::math::fvec<float, 3> vec3;
 //typedef cgv::math::fvec<float, 4> vec4;
@@ -16,6 +16,7 @@
 //typedef cgv::media::color<float, cgv::media::RGB> rgb;
 //typedef cgv::media::axis_aligned_box<float, 3> box3;
 typedef cgv::math::fmat<float, 3, 3> Mat;
+
 //c
 //namespace voxel {
 
@@ -32,51 +33,10 @@ private:
 
 public:
 	
-	Voxelization() :  V_tex("flt32[R]"), V_new_tex("flt32[R,G,B,A]"), P_tex("flt32[R]")//, init_V_tex("flt32[R]")
-		//, V_1_tex("uint32[R,G,B]")
-		//pixel_depth_tex("flt32[R]"), v_id_tex("flt32[R,G,B,A]"),
+	Voxelization()  
 	{
 
-		/*voxel_size = 0.1;*/
-
-
-		V_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-		V_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		V_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-		V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-		V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-		V_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
-
-		V_new_tex.set_min_filter(cgv::render::TF_LINEAR);
-		V_new_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		V_new_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
-		V_new_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-		V_new_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);
-
-		
-		P_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-		P_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		P_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-		P_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-		P_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-		P_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
-
-		/*init_V_tex.set_min_filter(cgv::render::TF_LINEAR);
-		init_V_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		init_V_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_EDGE);
-		init_V_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_EDGE);
-		init_V_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_EDGE);*/
-
-
-		/*V_1_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-		V_1_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		V_1_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-		V_1_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-		V_1_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-		V_1_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);*/
-
-
-		glCreateBuffers(1, &V_results_buffer);
+	
 
 
 	};
@@ -88,37 +48,37 @@ public:
 
 	bool init_voxelization(cgv::render::context& ctx);
 	bool init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
-	bool denoise(cgv::render::context& ctx, int filter_threshold, int kernel_range);//the kernel_range should be odd 
+	bool denoising(cgv::render::context& ctx, int filter_threshold, int kernel_range);//the kernel_range should be odd 
 	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void draw_voxels(cgv::render::context& ctx);
 	void get_center_gravity();
+
+	bool init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side);
+	bool generate(cgv::render::context& ctx, std::vector<vec3> cam_pos);
+	void bindbuffer();	
+	void createBuffers();
+	void deleteBuffers();
+
 	std::vector<int> get_Voxel_id() {return V_1;}
-	
+	std::vector<float> get_V() { return V; }
 protected:
-	GLuint V_results_buffer;
-	GLuint V_1_buffer;
+	
 
-	cgv::render::shader_program voxelize_prog;
+	cgv::render::shader_program fill_prog;
 	cgv::render::shader_program denoise_prog;
-	//cgv::render::texture pixel_depth_tex;
-	//cgv::render::texture v_id_tex;
+	cgv::render::shader_program remove_outlier_prog;
+
+
 	
-	cgv::render::texture V_tex;
-	cgv::render::texture V_new_tex;
-	cgv::render::texture P_tex;
-	//cgv::render::texture init_V_tex;
-	//cgv::render::texture V_1_tex;
-
-
-	float voxel_size;
 	std::vector<float> V;
-
 	std::vector<int> V_1;
-
 	std::vector<vec3> V_color;
-	std::vector<int> num_p_in_voxel;
+	//std::vector<int> num_p_in_voxel;
 	uvec3 V_size;
-	
+
+
+
+	float side_length;
 	vec3 min_pos;
 	vec3 max_pos;
 
@@ -128,6 +88,19 @@ protected:
 	std::vector<rgb> box_colors;	
 
 	vec3 center_gravity;
+
+
+	ivec3 Voxel_size;
+	std::vector<float> Object_Boundary;
+
+
+private:
+	Buffer object_boundary;
+	Buffer filled_object;
+	Buffer denoised_object;
+	Buffer cubes;
+	Buffer boxarray;
+	Buffer center_mass;
 };
 
 

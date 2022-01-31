@@ -7,7 +7,7 @@
 #include <cgv/render/render_types.h>
 #include "PCBoundingbox.h"
 #include <cgv_gl/sphere_renderer.h>
-
+#include "Buffer.h"
 
 
 
@@ -21,66 +21,75 @@ public:
 	{
 		vec3 a, b, c;
 	};
-	MarchingCubes() :// int width, int height, int depth, float _cubeSize
-		Vertices_tex("flt32[R]")
-		//cubeSize(_cubeSize),
-		//densityGrid(width + 1, height + 1, depth + 1),
-		//cubeGrid(width, height, depth)
-	{
-		Vertices_tex.set_min_filter(cgv::render::TF_LINEAR_MIPMAP_LINEAR);
-		Vertices_tex.set_mag_filter(cgv::render::TF_LINEAR);
-		Vertices_tex.set_wrap_s(cgv::render::TW_CLAMP_TO_BORDER);
-		Vertices_tex.set_wrap_t(cgv::render::TW_CLAMP_TO_BORDER);
-		Vertices_tex.set_wrap_r(cgv::render::TW_CLAMP_TO_BORDER);
-		Vertices_tex.set_border_color(0.0f, 0.0f, 0.0f, 0.0f);
+	MarchingCubes() {
+		min_pos = vec3(0, 0, 0);
+		max_pos = vec3(2, 2, 2);
+		hasBuffers = false;
 	};
 	//bool get_signed_distance_func();
 	bool set_signed_weight( std::vector<int> Voxelid, std::vector<float> Voxel, uvec3 Vox_resolution);
-	bool init_MC(cgv::render::context& ctx);
+	bool initialize(cgv::render::context& ctx);
+	bool initMC(std::vector<float> result_voxelization, ivec3 resolution, vec3 min, vec3 max);
+	bool initMC(std::vector<float> result_voxelization);
 	void resize();
-	bool resize(int width, int height, int depth, float _cubeSize);
+	bool resize(ivec3 resolution, vec3 min, vec3 max);
+
 	bool generate(cgv::render::context& ctx);
-	std::vector<float> get_vertices() { return Vertices; }
+
+	//std::vector<float> get_GridPoints() { return GridPoints; }
+	
 	int* flattenTriTable();
-
+	void bindbuffer();
 	bool draw(cgv::render::context& ctx);
+	void deleteBuffers();
+	void createBuffers();
+	//bool ge(cgv::render::context& ctx);//, std::vector<int> Voxelid
 
-
-	bool ge(cgv::render::context& ctx);//, std::vector<int> Voxelid
-
-
+	int get_numVertices() { return numVertices; }
 	
 	struct {
 		float x, y, z, max;
 	} size;
 
-	int numTriangles = 0;
+	
 	//std::vector<Triangle> triangles;
 
-	vec3 min_pos = vec3(0.83623, -0.728815, 2.24123);
-	vec3 max_pos = vec3(2.83623, 1.271185, 4.24123);
+	vec3 min_pos ;
+	vec3 max_pos ;
 
 
 protected:
-	GLuint tables_buffer;
-	GLuint cubes_buffer;
-	GLuint vertices_buffer;
-	GLuint triangles_buffer;
+	
 
-	float surfaceLevel = 0;
-	std::vector<float> Vertices;
-	std::vector<vec3> triangles;
-	ivec3 Vertices_size;
+	float surfaceLevel = 0.5;
+	//std::vector<float> GridPoints;
+	std::vector<float> Cubes;
+	std::vector<vec3> Triangles;
+	ivec3 GridPoints_size;
 	ivec3 Voxel_size;
 	GLuint triCount;
-	cgv::render::texture Vertices_tex;
+	//cgv::render::texture Vertices_tex;
 
-	cgv::render::shader_program marchingcubes_prog;
+	cgv::render::shader_program marchingcubes_prog,triangle_prog,normal_prog;
+	//cgv::render::shader_program Normals_prog;
+	cgv::render::shader_program GridPoints_prog;
 
 	int maxNumVertices;
 	int maxNumTriangles;
 
+	GLuint numVertices;
+	GLuint numTriangles;
+	bool hasBuffers;
 private:
 
 	float cubeSize = 0.1f;
+	Buffer gridpoints;
+	Buffer trianglenormals;
+	Buffer cubes;
+	Buffer triangles;
+	Buffer tables;
+	Buffer cubeedges;
+	Buffer vertices;
+	Buffer normals;
+	Buffer normalid;
 };
