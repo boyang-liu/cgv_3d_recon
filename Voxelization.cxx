@@ -11,7 +11,6 @@
 #define DENOISEDOBJ_SSB_BP        11
 #define CUBES_SSB_BP        12
 
-#define BOXARRAY_SSB_BP        13
 
 	
 
@@ -38,32 +37,17 @@
 
 	bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
 		
-
-
-
-
-
-
-
 		return true;
 	}
 
 	bool Voxelization::denoising(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
-		
-			
-
-
-
-
+				
 		return true;
-
 
 	}
 	
 	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		
-
-
 		return true;
 	}
 
@@ -73,35 +57,34 @@
 			return;
 
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+
+		
 		boxes.clear();
 		box_colors.clear();  
-		rgb8 clr(0.3,0.3, 0.3);
-		rgb table_clr(0.3f, 0.2f, 0.0f);
-		rgb table_clr2(0.9f, 0.0f, 0.0f);
+		rgba8 clr(255,255, 255,255);		
 
+		center_gravity = vec3(0, 0, 0);
+		vec3 sum = vec3(0, 0, 0);
+		float sigma_m = 0;
 		for (int i = 1; i <= Voxel_size[0];i++)
 			for (int j = 1; j <= Voxel_size[1]; j++)
 				for(int k = 1;k <= Voxel_size[2]; k++)
 				{
 					int index = (k - 1) * Voxel_size[1] * Voxel_size[0] + (j - 1) * Voxel_size[0] + i - 1;
-					if (render_content[index] == 1) {
-					vec3 min1 = min_pos + vec3((i-1)*side_length, (j - 1) *side_length, (k - 1) *side_length);
-					vec3 max1 = min_pos + vec3(i*side_length, j*side_length, k*side_length);
-					boxes.emplace_back(box3(min1, max1));
-					//int r = int(V_color[index_V][0]);
-					//int g = int(V_color[index_V][1]);
-					//int b = int(V_color[index_V][2]);
-					//rgb8 clr(r,g,b);
+					if (render_content[index] != 0) {
+					vec3 BoxMinPos = min_pos + vec3((i-1)*side_length, (j - 1) *side_length, (k - 1) *side_length);
+					vec3 BoxMaxPos = min_pos + vec3(i*side_length, j*side_length, k*side_length);
+					boxes.emplace_back(box3(BoxMinPos, BoxMaxPos));
 					box_colors.emplace_back(clr);
-					}else if (render_content[index] == 2)
-					{
-						vec3 min1 = min_pos + vec3((i - 1)*side_length, (j - 1) *side_length, (k - 1) *side_length);
-						vec3 max1 = min_pos + vec3(i*side_length, j*side_length, k*side_length);
-						boxes.emplace_back(box3(min1, max1));
-						box_colors.emplace_back(clr);
+
+					sigma_m += 1;
+					sum =sum+ (BoxMinPos + BoxMaxPos)/2 ;
+
 					}
 					
 				}
+		center_gravity = sum / sigma_m;
+
 		cgv::render::box_render_style style;
 		renderer.set_render_style(style);
 
@@ -109,29 +92,23 @@
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
 		if (renderer.validate_and_enable(ctx)) {
+			/*glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glDepthMask(GL_FALSE);
+			glDisable(GL_LIGHTING);
+			*/
 			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-			//glDrawArrays(GL_POINTS, 0, (GLsizei)numBoxes);
+			//glColor4f(255, 255, 0, 120);
+			////glDrawArrays(GL_POINTS, 0, (GLsizei)numBoxes);
+			//glDisable(GL_BLEND);
+			//glEnable(GL_LIGHTING);
+			//glDepthMask(GL_TRUE);
 		}
 		renderer.disable(ctx);
 		//Object_Boundary.clear();
 	
 	}
-	void Voxelization::get_center_gravity() {
-		int m = V_1.size();
-		int x, y, z;
-		vec3 sum = vec3(0, 0, 0);
-		for (int i = 0; i < V_1.size(); i++)
-		{
-			z = int(floor(V_1[i] / (V_size[0] * V_size[1])));
-			y = int(floor((V_1[i] - (V_size[0] * V_size[1])*z) / V_size[0]));
-			x = int(V_1[i] - (V_size[0] * V_size[1])*z - V_size[0] * y);
-			sum = sum + vec3(x+ side_length /2, y + side_length / 2, z + side_length / 2);
-
-
-		}
-		center_gravity = sum / m;
-		
-	}
+	
 
 	bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
 
@@ -197,8 +174,8 @@
 		
 		
 
-		GLuint zero = 0;
-		boxarray.setSubData(0, sizeof(GLuint), &zero);
+		//GLuint zero = 0;
+		//boxarray.setSubData(0, sizeof(GLuint), &zero);
 		filter_threshold = 13;
 		kernel_range = 5;
 		remove_outlier_prog.set_uniform(ctx, "cubeGridDims", Voxel_size);
@@ -208,14 +185,12 @@
 		remove_outlier_prog.set_uniform(ctx, "min_pos", min_pos);
 		remove_outlier_prog.set_uniform(ctx, "max_pos", max_pos);
 
-
 		remove_outlier_prog.enable(ctx);
 		glDispatchCompute(Voxel_size[0], Voxel_size[1], Voxel_size[2]);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		remove_outlier_prog.disable(ctx);
 
-
-		boxarray.getSubData(0, sizeof(GLuint), &numBoxes);
+		//boxarray.getSubData(0, sizeof(GLuint), &numBoxes);
 
 		//auto start_draw = std::chrono::steady_clock::now();
 		//float a[64];
@@ -248,7 +223,7 @@
 		filled_object.setBindingPoint(OBJINSIDE_SSB_BP);
 		denoised_object.setBindingPoint(DENOISEDOBJ_SSB_BP);
 		cubes.setBindingPoint(CUBES_SSB_BP);
-		boxarray.setBindingPoint(BOXARRAY_SSB_BP);
+		//boxarray.setBindingPoint(BOXARRAY_SSB_BP);
 		
 	}
 
@@ -262,7 +237,7 @@
 		filled_object = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
 		denoised_object = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
 		cubes = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
-		boxarray = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length *6* sizeof(float)+ sizeof(GLuint));
+		//boxarray = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length *6* sizeof(float)+ sizeof(GLuint));
 		//center_mass = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * 6 * sizeof(float));
 	}
 	void Voxelization::deleteBuffers()
@@ -272,7 +247,7 @@
 		filled_object.deleteBuffer();
 		denoised_object.deleteBuffer();
 		cubes.deleteBuffer();
-		boxarray.deleteBuffer();
+		//boxarray.deleteBuffer();
 		
 		
 	}

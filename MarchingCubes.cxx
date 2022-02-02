@@ -15,6 +15,12 @@
 #define NORMALS_SSB_BP    7
 #define NORMALID_SSB_BP    8
 
+#define OBJBOUNDARY_SSB_BP        9
+#define OBJINSIDE_SSB_BP         10
+#define DENOISEDOBJ_SSB_BP        11
+#define CUBES_SSB_BP        12
+//#define BOXARRAY_SSB_BP        13
+
 struct Vector
 {
 	float x, y, z;
@@ -114,24 +120,10 @@ bool MarchingCubes::initMC(std::vector<float> result_voxelization) {
 bool MarchingCubes::generate(cgv::render::context& ctx)//, std::vector<int> Voxelid
 {
 
-	//init_MC(ctx);
-	//==================
-	//Voxel_size = ivec3(2, 2, 2);
-	//
-	//std::vector<float> lp(8,1);
-	//std::vector<float> lp2(27, 1);
-	//Cubes = lp;
-	//GridPoints = lp2;
-	//GridPoints_size = ivec3(3, 3, 3);
-	//==================
+
 
 	int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
-	//resize();
 	uvec3 num_groups = uvec3(Voxel_size);
-	
-	//createBuffers();
-	//bind buffer
-	//bindbuffer();
 	
 
 	//calculate the gridpoints weight
