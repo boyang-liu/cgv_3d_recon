@@ -37,9 +37,9 @@ public:
 	bool init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float voxel_length);
 	bool denoising(cgv::render::context& ctx, int filter_threshold, int kernel_range);//the kernel_range should be odd 
 	bool traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos);
-	void draw_voxels(cgv::render::context& ctx);
+	void draw_voxels(cgv::render::context& ctx,bool showvolume);
 	vec3 get_center_gravity() { return center_gravity; }
-
+	void draw_center_mass(cgv::render::context& ctx,vec3 center_m);
 	bool init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side);
 	bool generate(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void bindbuffer();	

@@ -1086,13 +1086,13 @@ size_t vr_rgbd::voxelize_PC() {
 	void vr_rgbd::temp_test() {
 
 
-		showvoxelizationmode = true;
+		//showvoxelizationmode = true;
 		//showmesh = true;
-		/*if (!showvoxelizationmode)
+		if (!showvoxelizationmode)
 			showvoxelizationmode = true;
 		else
-			showvoxelizationmode = false;*/
-
+			showvoxelizationmode = false;
+		post_redraw();
 
 
 
@@ -1502,20 +1502,10 @@ size_t vr_rgbd::voxelize_PC() {
 
 			}
 		}}
-		if (Vox_future_handle.valid() && showvoxelizationmode)
-		{
-			if (Vox_future_handle.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-				size_t N = Vox_future_handle.get();							
-				post_redraw();
-
-			}
+				
+		if (rgbdpc.size() > 2)//&&showvoxelizationmode				
+			voxelize_PC();
 		
-		}
-
-		if (!Vox_future_handle.valid()&& showvoxelizationmode ) {
-			if(showvoxelizationmode&&rgbdpc.size()>2)
-			Vox_future_handle=std::async(&vr_rgbd::voxelize_PC, this);
-		}
 
 
 
@@ -2699,37 +2689,39 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	//MarchingCube->draw(ctx);
 
 	draw_boudingbox(ctx, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-	
-	if (rgbdpc.size() > 2 ) {//&& showmesh
-		//std::cout << rgbdpc[0].cam_rotation << std::endl;
-		//Voxelization a;		
-		
-	
+	//===========================================================================================
+	//if (rgbdpc.size() > 2 ) {//&& showmesh
+	//	//std::cout << rgbdpc[0].cam_rotation << std::endl;
+	//	//Voxelization a;		
+	//	
+	//
 
-		rgbdpc_in_box.clear();
-		rgbdpc_in_box.resize(rgbdpc.size());
+	//	rgbdpc_in_box.clear();
+	//	rgbdpc_in_box.resize(rgbdpc.size());
 
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-		}
-		
+	//	for (int i = 0; i < rgbdpc.size(); i++) {
+	//		rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	//	}
+	//	
 
-		std::vector<vec3> l;
-		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-		//l.push_back(vec3(1.83623, 0.271185, 5));
-		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
-		
+	//	std::vector<vec3> l;
+	//	l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
+	//	//l.push_back(vec3(1.83623, 0.271185, 5));
+	//	l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
+	//	l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
+	//	
 
-		
+	//	
 
-		Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-		Vox->generate(ctx, l);//
-		
-		//showmesh = false;
-	}	
+	//	Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+	//	Vox->generate(ctx, l);//
+	//	
+	//	//showmesh = false;
+	//}	
+	//===========================================================================================
 	////MarchingCube->draw(ctx);
-	Vox->draw_voxels(ctx);
+	
+	Vox->draw_voxels(ctx, showvoxelizationmode);
 
 
 		if (show_points) {

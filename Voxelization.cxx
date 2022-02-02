@@ -6,6 +6,10 @@
 #include <algorithm>
 
 
+
+
+
+
 #define OBJBOUNDARY_SSB_BP        9
 #define OBJINSIDE_SSB_BP         10
 #define DENOISEDOBJ_SSB_BP        11
@@ -51,17 +55,17 @@
 		return true;
 	}
 
-	void Voxelization::draw_voxels(cgv::render::context& ctx){
+	void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		
 		if (render_content.size() == 0)
 			return;
 
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
-
+		//renderer.set_color_array();
 		
 		boxes.clear();
 		box_colors.clear();  
-		rgba8 clr(255,255, 255,255);		
+		//rgb clr(255,255,255);
 
 		center_gravity = vec3(0, 0, 0);
 		vec3 sum = vec3(0, 0, 0);
@@ -75,7 +79,7 @@
 					vec3 BoxMinPos = min_pos + vec3((i-1)*side_length, (j - 1) *side_length, (k - 1) *side_length);
 					vec3 BoxMaxPos = min_pos + vec3(i*side_length, j*side_length, k*side_length);
 					boxes.emplace_back(box3(BoxMinPos, BoxMaxPos));
-					box_colors.emplace_back(clr);
+					//box_colors.emplace_back(clr);
 
 					sigma_m += 1;
 					sum =sum+ (BoxMinPos + BoxMaxPos)/2 ;
@@ -84,31 +88,54 @@
 					
 				}
 		center_gravity = sum / sigma_m;
-
-		cgv::render::box_render_style style;
+		draw_center_mass(ctx, center_gravity);
+		if (showvolume) {
+		cgv::render::box_render_style style;		
 		renderer.set_render_style(style);
-
-
 		renderer.set_box_array(ctx, boxes);
-		renderer.set_color_array(ctx, box_colors);
+
+		//renderer.set_color_array(ctx, box_colors);
 		if (renderer.validate_and_enable(ctx)) {
-			/*glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			/*
 			glDepthMask(GL_FALSE);
 			glDisable(GL_LIGHTING);
 			*/
+			//glEnable(GL_BLEND);
+			//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			//glColor4f(1.f, 1.f, 1.f, 0.5f);
 			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-			//glColor4f(255, 255, 0, 120);
+			
 			////glDrawArrays(GL_POINTS, 0, (GLsizei)numBoxes);
 			//glDisable(GL_BLEND);
 			//glEnable(GL_LIGHTING);
 			//glDepthMask(GL_TRUE);
 		}
 		renderer.disable(ctx);
-		//Object_Boundary.clear();
+		}
 	
 	}
 	
+	void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
+	
+		
+		vec3 sphere_center = center_m;
+		std::vector<vec4> sphere;
+		std::vector<rgb> color;
+		float Radius_SelectMode = 0.05;
+		sphere.push_back(vec4(sphere_center, Radius_SelectMode));
+		color.push_back(rgb(0, 1, 0));
+		cgv::render::sphere_renderer& sr = ref_sphere_renderer(ctx);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//sr.set_render_style(sphere_style);
+		sr.set_color_array(ctx, color);
+		sr.set_sphere_array(ctx, sphere);
+		sr.render(ctx, 0, 1);
+		sphere.clear();
+		color.clear();
+		glDisable(GL_BLEND);
+	
+	}
 
 	bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
 
@@ -139,7 +166,6 @@
 
 		//init_voxelization(ctx);
 		
-
 		createBuffers();	
 		bindbuffer();
 		//calculate the gridpoints weight
@@ -155,11 +181,7 @@
 		glDispatchCompute(Voxel_size[0], Voxel_size[1], Voxel_size[2]);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		denoise_prog.disable(ctx);
-		
-
-		
-	
-		
+				
 		fill_prog.set_uniform(ctx, "min_pos", min_pos);
 		fill_prog.set_uniform(ctx, "max_pos", max_pos);
 		fill_prog.set_uniform(ctx, "side_length", side_length);
@@ -172,8 +194,6 @@
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		fill_prog.disable(ctx);
 		
-		
-
 		//GLuint zero = 0;
 		//boxarray.setSubData(0, sizeof(GLuint), &zero);
 		filter_threshold = 13;
@@ -190,29 +210,11 @@
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		remove_outlier_prog.disable(ctx);
 
-		//boxarray.getSubData(0, sizeof(GLuint), &numBoxes);
-
-		//auto start_draw = std::chrono::steady_clock::now();
-		//float a[64];
-		//std::vector<float> d(64);
 		Object_Boundary.clear();
 		Object_Boundary.resize(length);
 		cubes.getSubData(0, sizeof(float) * length, static_cast<void*>(Object_Boundary.data()));
 		render_content = Object_Boundary;
-		/*auto stop_draw = std::chrono::steady_clock::now();
-		std::chrono::duration<double> diff_draw;
-		diff_draw = stop_draw - start_draw;
-		std::cout << diff_draw.count() << std::endl;*/
-		 
-		/*for (int i = 0; i < 64; i++)
-			std::cout<<d[i]<<std::endl;
-		GLuint* results_ptr = static_cast<GLuint*>(glMapNamedBufferRange(
-			V_results_buffer, 0, sizeof(int) * V_length, GL_MAP_READ_BIT));
-
-		std::memcpy(results.data(), results_ptr, results.size() * sizeof(int));
-		glUnmapNamedBuffer(V_results_buffer);
-					
-		std::vector<float> V_float(results.begin(), results.end());*/
+		
 		return true;
 	}
 
