@@ -67,7 +67,7 @@ public:
 
 	
 	//std::vector<Triangle> triangles;
-	bool showmesh=true;
+	bool showmesh=false;
 	vec3 min_pos ;
 	vec3 max_pos ;
 

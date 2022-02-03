@@ -557,7 +557,6 @@ size_t vr_rgbd::voxelize_PC() {
 	if (rgbdpc.size() <3 ) 
 		return 0;
 	 
-		
 	rgbdpc_in_box.clear();
 	rgbdpc_in_box.resize(rgbdpc.size());
 
@@ -565,8 +564,6 @@ size_t vr_rgbd::voxelize_PC() {
 		rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
 	}
 
-
-	//if (!DevicesAreStarted) {
 
 	std::vector<vec3> currentcampos;
 	currentcampos.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
@@ -576,30 +573,7 @@ size_t vr_rgbd::voxelize_PC() {
 	Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
 	Vox->generate(ctx, currentcampos);
 
-	//Vox->draw_voxels(ctx);
-	post_redraw();
-	//}
-
-		//rgbdpc_in_box.clear();
-		//rgbdpc_in_box.resize(rgbdpc.size());
-		//for (int i = 0; i < rgbdpc.size(); i++) {
-		//	rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-		//}
-		//std::vector<vec3> l;
-		//l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-		////l.push_back(vec3(1.83623, 0.271185, 5));
-		//l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		//l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
-		//Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-		//Vox->generate(ctx, l);//
-
-	
-	
-	
-	
-	
-	
-
+	//post_redraw();
 
 	return Vox->get_numBoxes();
 }
@@ -1475,6 +1449,7 @@ size_t vr_rgbd::voxelize_PC() {
 
 	void vr_rgbd::timer_event(double t, double dt)
 	{
+		//auto start_draw = std::chrono::steady_clock::now();
 		// in case a point cloud is being constructed
 		
 		if (future_handle.valid()) {
@@ -1505,11 +1480,6 @@ size_t vr_rgbd::voxelize_PC() {
 				
 		if (rgbdpc.size() > 2)//&&showvoxelizationmode				
 			voxelize_PC();
-		
-
-
-
-
 
 		//if (rgbd_inp.is_started()) {
 		//	if (rgbd_inp.is_started()) {
@@ -1581,12 +1551,6 @@ size_t vr_rgbd::voxelize_PC() {
 		
 		
 		if (rgbd_inp.is_multi_started()) {
-
-
-			//auto start_draw = std::chrono::steady_clock::now();
-			
-			
-			
 			for (int mm = 0; mm < rgbd_inp.nr_multi_de();mm++ )			
 			{
 			if (!PCfuture_handle[mm].valid())
@@ -1615,7 +1579,7 @@ size_t vr_rgbd::voxelize_PC() {
 			
 			}
 			
-
+			//auto start_draw = std::chrono::steady_clock::now();
 			//mythreads.clear();
 			//auto stop_draw = std::chrono::steady_clock::now();
 			//std::chrono::duration<double> diff_draw;
@@ -1681,6 +1645,12 @@ size_t vr_rgbd::voxelize_PC() {
 			}
 		}
 		
+
+
+		/*auto stop_draw = std::chrono::steady_clock::now();
+		std::chrono::duration<double> diff_draw;
+		diff_draw = stop_draw - start_draw;
+		std::cout << diff_draw.count() << std::endl;*/
 
 }
 
@@ -1905,10 +1875,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			if (ci == 1 && vrke.get_key() == vr::VR_DPAD_UP) {
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-
-
-					
-
 					if (selectPointsmode) {
 						vec3 ray_origin, ray_direction, ray_end;
 						
@@ -2336,6 +2302,8 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 		//ctx.set_bg_color(0.7, 0.7, 0.8, 1.0);
 	
 		cgv::render::ref_point_renderer(ctx, 1);
+		cgv::render::ref_box_renderer(ctx, 1);
+		cgv::render::ref_sphere_renderer(ctx, 1);
 
 		if (!cgv::utils::has_option("NO_OPENVR"))
 			ctx.set_gamma(1.0f);
@@ -2366,10 +2334,6 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 
 			}
 		}
-
-		cgv::render::ref_box_renderer(ctx, 1);
-		cgv::render::ref_sphere_renderer(ctx, 1);	
-
 		//std::cout << "================================1231" << std::endl;
 		if (!sky_prog.is_created()) {
 			sky_prog.build_program(ctx, "glsl/sky.glpr");
@@ -2382,7 +2346,7 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 			
 		}
 		Vox->init_voxelization(ctx);
-		MarchingCube->initialize(ctx);
+		//MarchingCube->initialize(ctx);
 
 		//=======================delete===========================
 		
@@ -2540,6 +2504,7 @@ void vr_rgbd::draw_pc(cgv::render::context& ctx, const std::vector<vertex>& pc)
 		if (pc.empty())
 			return;
 		auto& pr = cgv::render::ref_point_renderer(ctx);
+		pr.set_render_style(point_style);
 		pr.set_position_array(ctx, &pc.front().point, pc.size(), sizeof(vertex));
 		pr.set_color_array(ctx, &pc.front().color, pc.size(), sizeof(vertex));
 		if (pr.validate_and_enable(ctx)) {
@@ -2553,6 +2518,7 @@ void vr_rgbd::draw_rgbdpc(cgv::render::context& ctx, const rgbd_pointcloud& pc){
 	if (pc.get_nr_Points()==0)
 		return;
 	auto& pr = cgv::render::ref_point_renderer(ctx);
+	pr.set_render_style(point_style);
 	pr.set_position_array(ctx, pc.getPoints());
 	pr.set_color_array(ctx, pc.getColors());
 	if (pr.validate_and_enable(ctx)) {
@@ -2565,6 +2531,7 @@ void vr_rgbd::draw_selected_rgbdpc(cgv::render::context& ctx, const rgbd_pointcl
 	if (pc.get_nr_Points() == 0)
 		return;
 	auto& pr = cgv::render::ref_point_renderer(ctx);
+	pr.set_render_style(point_style);
 	pr.set_position_array(ctx, pc.getPoints());
 	pr.set_color_array(ctx, pc.getrenderColors());
 	if (pr.validate_and_enable(ctx)) {
@@ -2689,14 +2656,17 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	
 
 	draw_boudingbox(ctx, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
+	
+	
+	
 	//===========================================================================================
 	if (rgbdpc.size() > 2 ) {//&& showmesh
-	//	//std::cout << rgbdpc[0].cam_rotation << std::endl;
-	//	//Voxelization a;		
-	//	
-	//
+	////	//std::cout << rgbdpc[0].cam_rotation << std::endl;
+	////	//Voxelization a;		
+	////	
+	////
 
-		rgbdpc_in_box.clear();
+		/*rgbdpc_in_box.clear();
 		rgbdpc_in_box.resize(rgbdpc.size());
 
 		for (int i = 0; i < rgbdpc.size(); i++) {
@@ -2707,35 +2677,37 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		std::vector<vec3> l;
 		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
 		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);	
-	//	
-		MarchingCube->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-		MarchingCube->generate(ctx, l);
-		//MarchingCube->draw_voxels(ctx);
-		MarchingCube->drawmesh(ctx);
-	//	
+		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);*/	
+	////	
+	//	MarchingCube->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+	//	MarchingCube->generate(ctx, l);
+	//	//MarchingCube->draw_voxels(ctx);
+	//	MarchingCube->drawmesh(ctx);
+	////	
+		
+					
+		/*Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
+		
+		
 
-	//	Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-	//	Vox->generate(ctx, l);//
-	//	
+		Vox->generate(ctx, l);//*/
+		
 	//	//showmesh = false;
 	}	
 	//===========================================================================================
 	////MarchingCube->draw(ctx);
 	
-	//Vox->draw_voxels(ctx, true);
+	Vox->draw_voxels(ctx, showvoxelizationmode);
 	
 
-		if (show_points) {
+		/*if (show_points) {
 			auto& pr = cgv::render::ref_point_renderer(ctx);
-			pr.set_render_style(point_style);
+			
 			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
 
 			if(current_pc.size()!=0)
 				draw_pc(ctx, current_pc);
 			
-			
-
 			size_t begin = 0;
 			size_t end = recorded_pcs.size();
 			if (end > max_nr_shown_recorded_pcs)
@@ -2743,11 +2715,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			
 			for (size_t i=begin; i<end; ++i)
 				draw_pc(ctx, recorded_pcs[i]);
-		}
+		}*/
 		
 
 		if (vr_view_ptr) {
-			
 			std::vector<vec3> P;
 			std::vector<rgb> C;
 			const vr::vr_kit_state* state_ptr = vr_view_ptr->get_current_vr_state();
@@ -2825,12 +2796,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				else {
 					if (boundingboxisfixed) {
 						draw_boudingbox(ctx, pcbb.pos1, pcbb.pos2);
-
-
 					}
-
-
-
 					for (int ci = 0; ci < 2; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
 						vec3 ray_origin, ray_direction;
 						state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
@@ -2839,11 +2805,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 						rgb c(float(1 - ci), 0.5f * (int)state[ci], float(ci));
 						C.push_back(c);
 						C.push_back(c);
-
 					}
 				}
 
-				
+				//drawing the tracker pose
 				for (int ci = 2; ci < 5; ++ci) if (state_ptr->controller[ci].status == vr::VRS_TRACKED) {
 					vec3 ray_origin, ray_direction;
 					state_ptr->controller[ci].put_ray(&ray_origin(0), &ray_direction(0));
@@ -2903,8 +2868,6 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				}
 
 			}
-					
-			
 		}
 		else if (manualcorrectmode) {
 			for (int i = 0; i < rgbdpc_in_box.size(); i++)
@@ -2946,8 +2909,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			//}
 		}
 		else{
-			
-		if (rgbdpc.size() != 0) {
+			if (rgbdpc.size() != 0) {
 
 			//===================delete================
 
@@ -2973,10 +2935,8 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			}
 
 			//===================delete================
+			}
 		}
-		}
-
-
 
 		float max_scene_extent = 100;
 		if (sky_prog.is_created()) {
@@ -3158,7 +3118,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		//renderer.disable(ctx);
 
 		// draw intersection points
-		if (!intersection_points.empty()) {
+		/*if (!intersection_points.empty()) {
 			auto& sr = cgv::render::ref_sphere_renderer(ctx);
 			sr.set_position_array(ctx, intersection_points);
 			sr.set_color_array(ctx, intersection_colors);
@@ -3167,7 +3127,9 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				glDrawArrays(GL_POINTS, 0, (GLsizei)intersection_points.size());
 				sr.disable(ctx);
 			}
-		}
+		}*/
+
+	
 }
 
 

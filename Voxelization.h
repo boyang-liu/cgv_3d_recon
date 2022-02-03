@@ -5,6 +5,7 @@
 #include <3rd/glew/GL/glew.h>
 #include "rgbd_pointcloud.h"
 #include <cgv/render/render_types.h>
+#include <cgv_gl/rounded_cone_renderer.h>
 #include "PCBoundingbox.h"
 #include "Buffer.h"
 
@@ -25,11 +26,11 @@ private:
 
 
 public:
-	
-	Voxelization()  
-	{
+	cgv::render::rounded_cone_render_style rcrs;
 
-	};
+
+	Voxelization();
+	~Voxelization();
 	
 	//bool init_voxelization_from_image(cgv::render::context& ctx, float myvoxel_size, vec3 min, vec3 max, std::vector<Mat> inver_r, std::vector<vec3> inver_t, std::vector< std::vector<std::vector<depthpixel>>> depthimageplane);
 	
@@ -45,8 +46,10 @@ public:
 	void bindbuffer();	
 	void createBuffers();
 	void deleteBuffers();
+	void clear(cgv::render::context& ctx);
 
 	int get_numBoxes() { return numBoxes; }
+
 protected:
 	
 	cgv::render::shader_program fill_prog;
@@ -58,6 +61,8 @@ protected:
 	std::vector<box3> boxes;
 	std::vector<Rgba> box_colors;	
 	vec3 center_gravity;
+	std::vector<vec3> center_pts;
+	std::vector<rgb> center_clrs;
 	GLuint numBoxes;
 	ivec3 Voxel_size;
 	std::vector<float> Object_Boundary;

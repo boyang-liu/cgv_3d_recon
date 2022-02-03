@@ -17,11 +17,19 @@
 
 
 	
+Voxelization::Voxelization()
+{
+	rcrs.radius = 0.03f;
+}
+
+Voxelization::~Voxelization()
+{
+
+}
 
 
 
-
-	bool Voxelization::init_voxelization(cgv::render::context& ctx) {
+bool Voxelization::init_voxelization(cgv::render::context& ctx) {
 			if (!fill_prog.build_program(ctx, "glsl/filling.glpr", true)) {
 				std::cerr << "ERROR in building shader program "  << std::endl;
 				return false;
@@ -35,27 +43,29 @@
 				std::cerr << "ERROR in building shader program " << std::endl;
 				return false;
 			}
+			cgv::render::ref_sphere_renderer(ctx, 1);
+			cgv::render::ref_rounded_cone_renderer(ctx, 1);
 			return true;
 	
 	}
 
-	bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
+bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
 		
 		return true;
 	}
 
-	bool Voxelization::denoising(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
+bool Voxelization::denoising(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
 				
 		return true;
 
 	}
 	
-	bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
+bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
 		
 		return true;
 	}
 
-	void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
+void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		/*std::vector<vec3> BoxPoses;
 		BoxPoses.push_back(vec3(0, 0, 0));
 		rgba clr(1.f, 1.f, 1.f, 0.5f);
@@ -105,29 +115,39 @@
 					
 				}
 		center_gravity = sum / sigma_m;
+		//trajectory
+	    if (center_pts.empty()) {
+				center_pts.emplace_back(center_gravity);
+				center_clrs.emplace_back(rgb(1.0, 0.0, 0.0));
+			}
+		else {
+				
+				center_pts.emplace_back(center_gravity);
+				center_clrs.emplace_back(rgb(1.0, 0.0, 0.0));
+				auto& rcr = cgv::render::ref_rounded_cone_renderer(ctx);
+				rcr.set_render_style(rcrs);
+				rcr.set_position_array(ctx, center_pts);
+				rcr.set_color_array(ctx, center_clrs);
+				rcr.render(ctx,0, center_pts.size());
+				center_pts.emplace_back(center_gravity);
+				center_clrs.emplace_back(rgb(1.0, 0.0, 0.0));
+		}
+		//draw center of mass using a sphere
 		draw_center_mass(ctx, center_gravity);
 
 
-		
-		
-
-
-		//if (showvolume) {
-		//cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
-		//cgv::render::box_render_style style;		
-		//renderer.set_render_style(style);
-		//renderer.set_box_array(ctx, boxes);
-		////renderer.set_color_array(ctx, box_colors);
-		//if (renderer.validate_and_enable(ctx)) {
-		//	glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-		//				
-		//}
-		//renderer.disable(ctx);
-		//}
+		if (showvolume) {
+		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		cgv::render::box_render_style style;		
+		renderer.set_render_style(style);
+		renderer.set_box_array(ctx, boxes);
+		renderer.render(ctx, 0, boxes.size());
+		//renderer.set_color_array(ctx, box_colors);
+		}
 	
 	}
 	
-	void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
+void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
 	
 		
 		vec3 sphere_center = center_m;
@@ -146,16 +166,13 @@
 		sphere.clear();
 		color.clear();
 		glDisable(GL_BLEND);
-	
 	}
 
-	bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
-
-		
+bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
 
 		min_pos = min;
 		max_pos = max;
-		side_length = side;
+		side_length = side;		
 		Voxel_size = ceil((max - min) / (float)side_length);
 		int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
 		Object_Boundary.clear();
@@ -167,19 +184,22 @@
 				int temp = (v1[2] - 1) * Voxel_size[1] * Voxel_size[0] + (v1[1] - 1) * Voxel_size[0] + v1[0] - 1;
 				Object_Boundary[temp] = 1;
 			}
-		deleteBuffers();
+		//deleteBuffers();
+		
+		
+		createBuffers();
+		bindbuffer();
 		
 		return true;
 	}
 
 	bool Voxelization::generate(cgv::render::context& ctx, std::vector<vec3> cam_pos) 
 	{
-		
 
 		//init_voxelization(ctx);
 		
-		createBuffers();	
-		bindbuffer();
+		/*createBuffers();	
+		bindbuffer();*/
 		//calculate the gridpoints weight
 		//if it is inside the object,its value become 1
 		
@@ -226,7 +246,7 @@
 		Object_Boundary.resize(length);
 		cubes.getSubData(0, sizeof(float) * length, static_cast<void*>(Object_Boundary.data()));
 		render_content = Object_Boundary;
-		
+		deleteBuffers();
 		return true;
 	}
 
@@ -243,9 +263,7 @@
 
 	void Voxelization::createBuffers() 
 	{
-
 		int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
-		
 		object_boundary = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
 		object_boundary.setSubData(0, sizeof(float)* Object_Boundary.size(),  Object_Boundary.data());
 		filled_object = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
@@ -256,12 +274,14 @@
 	}
 	void Voxelization::deleteBuffers()
 	{
-
 		object_boundary.deleteBuffer();
 		filled_object.deleteBuffer();
 		denoised_object.deleteBuffer();
 		cubes.deleteBuffer();
 		//boxarray.deleteBuffer();
-		
-		
+	}
+
+	void Voxelization::clear(cgv::render::context& ctx)
+	{
+		cgv::render::ref_rounded_cone_renderer(ctx, -1);
 	}
