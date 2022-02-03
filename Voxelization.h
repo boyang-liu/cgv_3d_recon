@@ -40,7 +40,7 @@ public:
 	void draw_voxels(cgv::render::context& ctx,bool showvolume);
 	vec3 get_center_gravity() { return center_gravity; }
 	void draw_center_mass(cgv::render::context& ctx,vec3 center_m);
-	bool init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side);
+	bool init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float resolution);
 	bool generate(cgv::render::context& ctx, std::vector<vec3> cam_pos);
 	void bindbuffer();	
 	void createBuffers();

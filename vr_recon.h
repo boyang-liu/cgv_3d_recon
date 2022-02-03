@@ -40,6 +40,7 @@
 #include <time.h>
 #include "Voxelization.h"
 #include "MarchingCubes.h"
+#include "rgbd_multi_input.h"
 using namespace rgbd;
 
 #define recorded_pc_frequency 30
@@ -156,7 +157,7 @@ protected:
 	std::string rgbd_protocol_path;
 	bool get_tracker_positions;
 	/// 
-	rgbd::rgbd_input rgbd_inp;
+	rgbd_multi_input rgbd_inp;
 
 	// store the scene as colored boxes
 	std::vector<box3> boxes;
