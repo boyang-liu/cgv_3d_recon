@@ -8,7 +8,7 @@ layout (std430, binding = 10) buffer filledobjectBuffer
     float filledcubes[];
 };
 
-layout (std430, binding = 12) buffer cubesBuffer
+layout (std430, binding = 1) buffer cubesBuffer
 {
     float cubes[];
 };
