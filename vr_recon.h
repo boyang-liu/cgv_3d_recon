@@ -40,7 +40,7 @@
 #include <time.h>
 #include "Voxelization.h"
 #include "MarchingCubes.h"
-#include "rgbd_multi_input.h"
+#include <rgbd_input.h>
 using namespace rgbd;
 
 #define recorded_pc_frequency 30
@@ -157,7 +157,7 @@ protected:
 	std::string rgbd_protocol_path;
 	bool get_tracker_positions;
 	/// 
-	rgbd_multi_input rgbd_inp;
+	rgbd_input rgbd_inp;
 
 	// store the scene as colored boxes
 	std::vector<box3> boxes;
@@ -237,14 +237,16 @@ protected:
 	float position_scale;
 	float rotation_scale;
 	//controller mode for immersive interaction
-	bool showvoxelizationmode;
+	bool showvoxelizationmode;//
+	bool showCenterMass=false;
 	bool setboundingboxmode;
+	bool showPCinsidebbox;
 	bool selectPointsmode;
 	bool boundingboxisfixed;
-	bool manualcorrectmode;
-	bool showmesh = false;
+	bool manualcorrectmode;//
+	bool showmesh = false;//
 	int mode;
-	bool manualcorrectstarted;
+	bool manualcorrectstarted;//
 	bool record_pc_started;
 	int current_corrected_cam;
 	int depth_stream_format_idx;
@@ -292,7 +294,7 @@ protected:
 	
 	float BoundingBoxlength;
 	float BoundingBoxheight;
-	float BoundingBoxstep;
+	float BoundingBoxstep=0.02;
 	PCBoundingbox pcbb;
 	std::vector<cgv::math::fmat<float, 3, 3>> cam_fine_r;
 	std::vector < cgv::math::fvec<float, 3>> cam_fine_t;

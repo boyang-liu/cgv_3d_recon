@@ -145,22 +145,22 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		renderer.set_render_style(style);
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
-
+renderer.render(ctx, 0, boxes.size());
 	
-		renderer.render(ctx, 0, boxes.size());
+		
 
-		//glEnable(GL_BLEND);
-		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		//glDepthMask(GL_FALSE);
-		//glDisable(GL_LIGHTING);
-		////glColor4f(1.0, 1.0, 0.0, 1.0);
-		//
-		//
-		//
-		//glColor4f(1.0, 0.0, 0.0, 0.5);
-		//glDisable(GL_BLEND);
-		//glEnable(GL_LIGHTING);
-		//glDepthMask(GL_TRUE);
+		/*glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
+		glDisable(GL_LIGHTING);
+		glColor4f(1.0, 1.0, 0.0, 1.0);
+		
+		
+		
+		glColor4f(1.0, 0.0, 0.0, 0.5);
+		glDisable(GL_BLEND);
+		glEnable(GL_LIGHTING);
+		glDepthMask(GL_TRUE);*/
 	
 		
 		
