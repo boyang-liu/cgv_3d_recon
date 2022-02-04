@@ -5,7 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cgv_gl/volume_renderer.h>
-
+#include <cgv/media/volume/volume.h>
 
 
 
@@ -69,28 +69,32 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		/*std::vector<vec3> BoxPoses;
 		BoxPoses.push_back(vec3(0, 0, 0));
 		rgba clr(1.f, 1.f, 1.f, 0.5f);
-		auto& vr = ref_volume_renderer(ctx);
+		
+		
 		cgv::render::volume_render_style vstyle;
 		cgv::render::texture density_tex;
+		cgv::media::volume::volume density_volume;
 		if (density_tex.is_created())
 			density_tex.destruct(ctx);
 		std::vector<float>& density_data = density_volume.ref_voxel_grid().data;
+
+
+		auto& vr = ref_volume_renderer(ctx);				
 		vr.set_render_style(vstyle);
-		vr.set_volume_texture();
-		vr.set_transfer_function_texture();
+		vr.set_volume_texture(&density_tex);
+		vr.set_transfer_function_texture(&tf_editor_ptr->ref_tex());
 		vr.set_bounding_box();
-		vr.transform_to_bounding_box();
-		vr.render();*/
+		vr.transform_to_bounding_box(true);
+		vr.render(ctx,0,0);*/
 
 		if (render_content.size() == 0)
 			return;
-
 		
 		//renderer.set_color_array();
 		
 		boxes.clear();
 		box_colors.clear();  
-		//rgba clr(1.f, 1.f, 1.f,0.5f);
+		rgba clr(1.f, 1.f, 1.f,1.0f);
 
 		//std::vector<vec3> BoxPoses;
 		//BoxPoses.push_back(vec3(0,0,0));
@@ -107,7 +111,7 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 					vec3 BoxMinPos = min_pos + vec3((i-1)*side_length, (j - 1) *side_length, (k - 1) *side_length);
 					vec3 BoxMaxPos = min_pos + vec3(i*side_length, j*side_length, k*side_length);
 					boxes.emplace_back(box3(BoxMinPos, BoxMaxPos));
-					//box_colors.emplace_back(clr);
+					box_colors.emplace_back(clr);
 					sigma_m += 1;
 					sum =sum+ (BoxMinPos + BoxMaxPos)/2 ;
 					//BoxPoses.push_back(BoxMinPos);
@@ -115,7 +119,7 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 					
 				}
 		center_gravity = sum / sigma_m;
-		//trajectory
+		//trajectory of center of mass 
 	    if (center_pts.empty()) {
 				center_pts.emplace_back(center_gravity);
 				center_clrs.emplace_back(rgb(1.0, 0.0, 0.0));
@@ -135,14 +139,31 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		//draw center of mass using a sphere
 		draw_center_mass(ctx, center_gravity);
 
-
 		if (showvolume) {
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
 		cgv::render::box_render_style style;		
 		renderer.set_render_style(style);
 		renderer.set_box_array(ctx, boxes);
+		renderer.set_color_array(ctx, box_colors);
+
+	
 		renderer.render(ctx, 0, boxes.size());
-		//renderer.set_color_array(ctx, box_colors);
+
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glDepthMask(GL_FALSE);
+		//glDisable(GL_LIGHTING);
+		////glColor4f(1.0, 1.0, 0.0, 1.0);
+		//
+		//
+		//
+		//glColor4f(1.0, 0.0, 0.0, 0.5);
+		//glDisable(GL_BLEND);
+		//glEnable(GL_LIGHTING);
+		//glDepthMask(GL_TRUE);
+	
+		
+		
 		}
 	
 	}

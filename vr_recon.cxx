@@ -2603,6 +2603,8 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
+	
+
 
 	//if (rgbdpc.size() > 2) {
 	//rgbdpc_in_box.clear();
