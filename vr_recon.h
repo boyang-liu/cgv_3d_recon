@@ -240,15 +240,21 @@ protected:
 	bool showvoxelizationmode;//
 	bool showCenterMass=false;
 	bool setboundingboxmode;
-	bool showPCinsidebbox;
+	//bool showPCinsidebbox;
 	bool selectPointsmode;
 	bool boundingboxisfixed;
 	bool manualcorrectmode;//
 	bool showmesh = false;//
 	int mode;
 	bool manualcorrectstarted;//
-	bool record_pc_started;
-	int current_corrected_cam;
+	bool showallpcmode;
+	bool showPCinBboxmode;
+	bool showPCoutsideBboxmode;
+	bool showvolumemode;
+	bool showcentermassmode;
+	bool showmeshmode;
+	bool record_pc_started;//
+	int current_corrected_cam;//
 	int depth_stream_format_idx;
 	int color_stream_format_idx;
 	int ir_stream_format_idx;
@@ -281,10 +287,11 @@ protected:
 	int total_loaded_pc=1000;
 	std::vector<std::string> pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
-	//std::vector<rgbd_pointcloud> intermediate_rgbdpc_bbox;
-	std::vector<rgbd_pointcloud> rgbdpc;
-	
+	std::vector<rgbd_pointcloud> intermediate_rgbdpc_bbox;
+	std::vector<rgbd_pointcloud> intermediate_rgbdpc_outside_bbox;
+	std::vector<rgbd_pointcloud> rgbdpc;	
 	std::vector<rgbd_pointcloud> rgbdpc_in_box;
+	std::vector<rgbd_pointcloud> rgbdpc_outside_box;
 	rgbd_pointcloud allpc_in_bbox;
 	//std::vector < std::vector<std::vector<depthpixel>>> imageplanes;
 
@@ -316,6 +323,7 @@ public:
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//
+	size_t generate_point_clouds();
 	//size_t construct_point_clouds();
 
 	//void getviewconeposition(vec3 &a, mat3 r, vec3 t);
@@ -327,7 +335,8 @@ public:
 	void start_load_recorded_pc();
 	void load_recorded_pc(int index);
 	void clear_current_point_cloud();
-
+	void reset_num_pc();
+	void clear_trajectory();
 	void test1(int a);
 	void temp_test();
 	

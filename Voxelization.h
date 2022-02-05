@@ -47,7 +47,7 @@ public:
 	void createBuffers();
 	void deleteBuffers();
 	void clear(cgv::render::context& ctx);
-
+	void clear_center_pts() { center_pts.clear(); }
 	int get_numBoxes() { return numBoxes; }
 
 protected:
