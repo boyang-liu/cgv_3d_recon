@@ -95,10 +95,10 @@ bool rgbd_pointcloud::write_lbypc(const std::string& file_name)
 	success = success && fwrite(&cam_rotation, sizeof(Mat), 1, fp);
 	success = success && fwrite(&cam_translation, sizeof(Pnt), 1, fp);
 	// write the content 
-	
+	if (get_nr_Points() != 0) {
 	success = success && fwrite(&Points[0], sizeof(Pnt), n, fp) == n;
 	success = success && fwrite(&Colors[0], sizeof(Rgba), n, fp) == n;
-
+	}
 
 
 

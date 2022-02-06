@@ -283,7 +283,6 @@ protected:
 
 	int num_recorded_pc;
 	int total_recorded_pc;
-	int num_loaded_pc;
 	int total_loaded_pc=1000;
 	std::vector<std::string> pc_load_dir;
 	std::vector<rgbd_pointcloud> intermediate_rgbdpc;
@@ -333,9 +332,10 @@ public:
 	void Record_PC_FromAllcams();
 	void load_pc();
 	void start_load_recorded_pc();
-	void load_recorded_pc(int index);
+	void load_recorded_pc();
 	void clear_current_point_cloud();
 	void reset_num_pc();
+	void load_recorded_PCs();
 	void clear_trajectory();
 	void test1(int a);
 	void temp_test();
