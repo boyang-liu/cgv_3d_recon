@@ -574,6 +574,7 @@ size_t vr_rgbd::voxelize_PC() {
 	//l.push_back(vec3(1.83623, 0.271185, 5));
 	currentcampos.push_back(rgbdpc[1].cam_pos);
 	currentcampos.push_back(rgbdpc[2].cam_pos);
+	std::cout<< rgbdpc[0].cam_pos << rgbdpc[1].cam_pos << rgbdpc[2].cam_pos <<std::endl;
 	Vox->init(rgbdpc_in_box, pcbb.pos1, pcbb.pos2, 0.02);
 	Vox->generate(ctx, currentcampos);
 
@@ -674,7 +675,7 @@ size_t vr_rgbd::voxelize_PC() {
 						if (p[0]<pcbb.pos2[0] && p[1] < pcbb.pos2[1] && p[2] < pcbb.pos2[2] &&
 							p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2]) {
 						
-							if(manualcorrectmode&& currentpointcloud == index)
+							if((manualcorrectmode&& currentpointcloud == index)||(manualcorrectmode&&currentpointcloud == rgbdpc.size()))
 								intermediate_rgbdpc_bbox[index].add_point(v.point, rgba8(255,0,0,255));
 							else	
 								intermediate_rgbdpc_bbox[index].add_point(v.point, v.color);
@@ -684,7 +685,7 @@ size_t vr_rgbd::voxelize_PC() {
 							intermediate_rgbdpc_outside_bbox[index].add_point(v.point, v.color);
 						
 						}
-						if (manualcorrectmode && currentpointcloud == index)
+						if ((manualcorrectmode && currentpointcloud == index) || (manualcorrectmode&&currentpointcloud == rgbdpc.size()))
 							intermediate_rgbdpc[index].add_point(v.point, rgba8(255, 0, 0, 255));
 						else
 							intermediate_rgbdpc[index].add_point(v.point, v.color);
@@ -888,12 +889,24 @@ size_t vr_rgbd::voxelize_PC() {
 		{
 			vec3 p = rgbdpc[i].pnt(j);
 			if (p[0]<pcbb.pos2[0] && p[1] < pcbb.pos2[1] && p[2] < pcbb.pos2[2] &&
-				p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2])
+				p[0] > pcbb.pos1[0] && p[1] > pcbb.pos1[1] && p[2] > pcbb.pos1[2]) {
+
 				rgbdpc_in_box[i].add_point(p, rgbdpc[i].clr(j));
-			else
+				
+			}
+				
+			else {
 				rgbdpc_outside_box[i].add_point(p, rgbdpc[i].clr(j));
+			
+			}
 		}
-		
+		rgbdpc_in_box[i].cam_pos= rgbdpc[i].cam_pos;
+		rgbdpc_in_box[i].cam_rotation = rgbdpc[i].cam_rotation;
+		rgbdpc_in_box[i].cam_translation = rgbdpc[i].cam_translation;
+
+		rgbdpc_outside_box[i].cam_pos = rgbdpc[i].cam_pos;
+		rgbdpc_outside_box[i].cam_rotation = rgbdpc[i].cam_rotation;
+		rgbdpc_outside_box[i].cam_translation = rgbdpc[i].cam_translation;
 
 		trees.resize(rgbdpc.size());
 		post_redraw();
@@ -1826,7 +1839,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS :
 								
-					if (selectPointsmode) {
+					/*if (selectPointsmode) {
 						vec3 ray_origin, ray_direction, ray_end;
 
 						vrke.get_state().controller[1].put_ray(&ray_origin(0), &ray_direction(0));
@@ -1835,7 +1848,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 							cancell_selected_feature_points(rgbdpc_in_box[currentpointcloud], ray_end, Radius_SelectMode);
 						else
 							std::cout << "no boundingbox " << std::endl;
-					}
+					}*/
 					
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -1868,7 +1881,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			{
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					currentpointcloud = (currentpointcloud + 1) % rgbdpc.size();
+					currentpointcloud = (currentpointcloud + 1) % (rgbdpc.size()+1);
 					/*if (selectPointsmode)
 					{
 						currentpointcloud = (currentpointcloud + 1) % rgbdpc.size();
@@ -1894,7 +1907,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 			{
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
-					currentpointcloud = (currentpointcloud + rgbdpc.size() - 1) % rgbdpc.size();
+					currentpointcloud = (currentpointcloud + rgbdpc.size()) % (rgbdpc.size()+1);
 					/*if (selectPointsmode)
 					{
 						currentpointcloud = (currentpointcloud + rgbdpc.size()-1) % rgbdpc.size();
@@ -1956,11 +1969,11 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				switch (vrke.get_action()) {
 				case cgv::gui::KA_PRESS:
 				{
-					if (boundingboxisfixed) {
+					/*if (boundingboxisfixed) {
 						delete_selected_points(rgbdpc_in_box[currentpointcloud]);
 						build_tree_feature_points(rgbdpc_in_box[currentpointcloud], currentpointcloud);
 				
-					}
+					}*/
 				}
 
 					break;
@@ -2102,14 +2115,22 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 				mat3 controllerRotation = vrpe.get_rotation_matrix();
 				if (rgbdpc.size() != 0) {
-					/*rgbdpc_in_box[currentpointcloud].do_transformation(-last_pos);
-					rgbdpc_in_box[currentpointcloud].do_transformation(controllerRotation);
-					rgbdpc_in_box[currentpointcloud].do_transformation(pos);
-					rgbdpc[currentpointcloud].cam_pos = rotation * (rgbdpc[currentpointcloud].cam_pos- pos) + pos- last_pos;*/
-					
+					if (currentpointcloud == rgbdpc.size())
+					{
+						for (int i = 0; i < rgbdpc.size(); i++)
+						{
+							manualcorrect_translation[i] = controllerRotation * manualcorrect_translation[i] - controllerRotation * last_pos + pos;
+							manualcorrect_rotation[i] = controllerRotation * manualcorrect_rotation[i];
+						}
+
+					}
+					else {
 
 					manualcorrect_translation[currentpointcloud]= controllerRotation * manualcorrect_translation[currentpointcloud] -controllerRotation * last_pos +pos;
 					manualcorrect_rotation[currentpointcloud]= controllerRotation* manualcorrect_rotation[currentpointcloud];
+					
+					}
+
 				}
 
 
@@ -2194,7 +2215,8 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 
 bool vr_rgbd::init(cgv::render::context& ctx)
 {
-		//ctx.set_bg_color(0.7, 0.7, 0.8, 1.0);
+
+		ctx.set_bg_color(1.0, 1.0, 1.0, 1.0);
 	
 		cgv::render::ref_point_renderer(ctx, 1);
 		cgv::render::ref_box_renderer(ctx, 1);
@@ -2229,17 +2251,17 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 
 			}
 		}
-		//std::cout << "================================1231" << std::endl;
+		//std::cout << "================================" << std::endl;
 		if (!sky_prog.is_created()) {
 			sky_prog.build_program(ctx, "glsl/sky.glpr");
 			img_tex.create_from_images(ctx, data_dir + "/skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");//
 			
 		}
-		if (!floor_prog.is_created()) {
-			floor_prog.build_program(ctx, "glsl/floor.glpr");
-			flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
-			
-		}
+		//if (!floor_prog.is_created()) {
+		//	floor_prog.build_program(ctx, "glsl/floor.glpr");
+		//	flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
+		//	
+		//}
 		Vox->init_voxelization(ctx);
 		//MarchingCube->initialize(ctx);
 
@@ -2551,7 +2573,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 	
 
 	draw_boudingbox(ctx, pcbb.pos1,pcbb.pos2);
-	
+	//std::cout<< pcbb.pos1 << pcbb.pos2 <<std::endl;
 	
 	
 	//===========================================================================================
@@ -2826,9 +2848,52 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			glEnable(GL_CULL_FACE);
 			glDepthMask(GL_TRUE);
 		}*/
+		
+		//
+		////// draw static boxes
+		//boxes.clear();
+		//vec3 min1 = vec3(0,0,0);
+		//vec3 max1 = vec3(1, 1, 1);
+		//boxes.push_back(box3(min1, max1));
+		//cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		//std::vector<rgb> box_colors2;
+		//box_colors2.clear();
+		//rgb table_clr1(1.0f, 0.0f, 0.3f);
+		//box_colors2.push_back(table_clr1);
+		//renderer.set_render_style(style);
+
+		//renderer.set_box_array(ctx, boxes);
+		//renderer.set_color_array(ctx, box_colors2);
+		//if (renderer.validate_and_enable(ctx)) {
+		//	
+
+		//	glEnable(GL_DEPTH_TEST);
+		//	glEnable(GL_BLEND);
+		//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//	
+
+		//	glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+
+		//	glDisable(GL_BLEND);
+		//
+		//	glDisable(GL_DEPTH_TEST);
 
 
-	
+		//}
+		//renderer.disable(ctx);
+		//// draw dynamic boxes 
+		//	renderer.set_render_style(movable_style);
+		//	renderer.set_box_array(ctx, movable_boxes);
+		//	renderer.set_color_array(ctx, movable_box_colors);
+		//	renderer.set_translation_array(ctx, movable_box_translations);
+		//	renderer.set_rotation_array(ctx, movable_box_rotations);
+		//	if (renderer.validate_and_enable(ctx)) {
+		//		glDrawArrays(GL_POINTS, 0, (GLsizei)movable_boxes.size());
+		//	}
+		//	renderer.disable(ctx);
+		
+		
+			
 }
 
 

@@ -145,9 +145,18 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		renderer.set_render_style(style);
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
-renderer.render(ctx, 0, boxes.size());
-	
-		
+		renderer.render(ctx, 0, boxes.size());
+		std::cout << "boxes.size()"<< boxes.size() << std::endl;
+		//glEnable(GL_DEPTH_TEST);
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		//
+		////glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+		////glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+		//glDisable(GL_BLEND);
+		//glDisable(GL_DEPTH_TEST);
 
 		/*glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -179,14 +188,15 @@ void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
 		color.push_back(rgb(0, 1, 0));
 		cgv::render::sphere_renderer& sr = ref_sphere_renderer(ctx);
 		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); glEnable(GL_DEPTH_TEST);
+		
 		//sr.set_render_style(sphere_style);
 		sr.set_color_array(ctx, color);
 		sr.set_sphere_array(ctx, sphere);
 		sr.render(ctx, 0, 1);
 		sphere.clear();
 		color.clear();
-		glDisable(GL_BLEND);
+		glDisable(GL_BLEND);glDisable(GL_DEPTH_TEST);
 	}
 
 bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
