@@ -153,54 +153,39 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 				center_clrs.emplace_back(rgb(1.0, 0.0, 0.0));
 		}
 		//draw center of mass using a sphere
-		draw_center_mass(ctx, center_gravity);
+		
 
 		if (showvolume) {
+		center_pts.clear(); 
+		center_clrs.clear();
 		cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
 		cgv::render::box_render_style style;		
 		renderer.set_render_style(style);
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
-		//renderer.render(ctx, 0, boxes.size());
-		
-	
-		//if (renderer.validate_and_enable(ctx)) {
-		//renderer.enable(ctx);
-			//glEnable(GL_DEPTH_TEST);
+		renderer.render(ctx, 0, boxes.size());
+
+			//glEnable(GL_BLEND);				
+			//glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+			//glDisable(GL_BLEND);		
+		}
+		else {	
+			draw_center_mass(ctx, center_gravity);
+			cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+			cgv::render::box_render_style style;
+			renderer.set_render_style(style);
+			renderer.set_box_array(ctx, boxes);
+			renderer.set_color_array(ctx, box_colors);
+			//renderer.render(ctx, 0, boxes.size());
 			glEnable(GL_BLEND);
-			//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-			
 			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-
 			glDisable(GL_BLEND);
-
-			//glDisable(GL_DEPTH_TEST);
-		//}
-		//renderer.disable(ctx);
-
-
-		/*glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthMask(GL_FALSE);
-		glDisable(GL_LIGHTING);
-		glColor4f(1.0, 1.0, 0.0, 1.0);
-		
-		
-		
-		glColor4f(1.0, 0.0, 0.0, 0.5);
-		glDisable(GL_BLEND);
-		glEnable(GL_LIGHTING);
-		glDepthMask(GL_TRUE);*/
-	
-		
-		
+			
 		}
 	
 	}
 	
 void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
-	
 		
 		vec3 sphere_center = center_m;
 		std::vector<vec4> sphere;
@@ -218,6 +203,7 @@ void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
 		sphere.clear();
 		color.clear();
 		glDisable(GL_BLEND);
+
 	}
 
 

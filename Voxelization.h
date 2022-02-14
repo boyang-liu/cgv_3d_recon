@@ -51,7 +51,8 @@ public:
 	void deleteBuffers(bool showmesh);
 	bool drawmesh(cgv::render::context& ctx);
 	void clear(cgv::render::context& ctx);
-	void clear_center_pts() { center_pts.clear(); }
+	void clear_center_pts() { center_pts.clear(); center_clrs.clear();
+	}
 	int get_numBoxes() { return numBoxes; }
 
 	int filter_threshold_1 = 5;

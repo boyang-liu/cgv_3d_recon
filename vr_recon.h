@@ -239,6 +239,7 @@ protected:
 	bool showvoxelizationmode;//
 	bool showCenterMass=false;
 	bool setboundingboxmode;
+	bool setboundingboxstarted;
 	//bool showPCinsidebbox;
 	bool selectPointsmode;
 	bool boundingboxisfixed;
