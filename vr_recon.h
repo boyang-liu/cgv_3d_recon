@@ -39,7 +39,6 @@
 #include "GoICP.h"
 #include <time.h>
 #include "Voxelization.h"
-#include "MarchingCubes.h"
 #include <rgbd_input.h>
 using namespace rgbd;
 
@@ -277,10 +276,16 @@ protected:
 
 	std::vector<std::shared_ptr<ann_tree>> trees;
 
+
+
 	int save_time = 0;
 	int currentpointcloud;
 	int currentcamera;
-
+	int resolution_bbox;
+	int range_1;
+	int range_2;
+	int threshold_1;
+	int threshold_2;
 	int num_recorded_pc;
 	int total_recorded_pc;
 	int total_loaded_pc=1000;
@@ -309,9 +314,8 @@ protected:
 	vec3 viewpoint2 = vec3(0, 0, 0);
 
 	Voxelization *Vox = new  Voxelization();
-	MarchingCubes *MarchingCube = new MarchingCubes();
-	//mat3 testmat;
-	//vec3 testtran;
+	
+	
 
 
 
@@ -319,6 +323,7 @@ public:
 	vr_rgbd();
 	~vr_rgbd();
 	size_t voxelize_PC();//bool DevicesAreStarted
+	size_t generate_mesh();
 	size_t construct_point_cloud();
 	//for multiple devices' point cloud
 	size_t construct_multi_point_cloud(int index);//

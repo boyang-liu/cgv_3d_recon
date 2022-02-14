@@ -1,5 +1,5 @@
 #include "Voxelization.h"
-
+#include "Tables.h"
 
 
 #include <iostream>
@@ -8,6 +8,14 @@
 #include <cgv/media/volume/volume.h>
 
 
+#define GRIDPOINTS_SSB_BP        0
+#define CUBE_EDGES_SSB_BP        2
+#define TRITABLES_SSB_BP    3
+#define TRINORMALS_SSB_BP      4
+#define TRIANGLES_SSB_BP    5
+#define VERTICES_SSB_BP    6
+#define NORMALS_SSB_BP    7
+#define NORMALID_SSB_BP    8
 
 #define CUBES_SSB_BP              1
 #define OBJBOUNDARY_SSB_BP        9
@@ -26,44 +34,52 @@ Voxelization::~Voxelization()
 {
 
 }
-
+struct Vector
+{
+	float x, y, z;
+};
 
 
 bool Voxelization::init_voxelization(cgv::render::context& ctx) {
-			if (!fill_prog.build_program(ctx, "glsl/filling.glpr", true)) {
-				std::cerr << "ERROR in building shader program "  << std::endl;
-				return false;
-			}	
-		
-			if (!denoise_prog.build_program(ctx, "glsl/denoise.glpr", true)) {
-				std::cerr << "ERROR in building shader program " << std::endl;
-				return false;
-			}
-			if (!remove_outlier_prog.build_program(ctx, "glsl/remove_outlier.glpr", true)) {
-				std::cerr << "ERROR in building shader program " << std::endl;
-				return false;
-			}
-			cgv::render::ref_sphere_renderer(ctx, 1);
-			cgv::render::ref_rounded_cone_renderer(ctx, 1);
-			return true;
+	if (!denoise_prog.build_program(ctx, "glsl/denoise.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!fill_prog.build_program(ctx, "glsl/filling.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!remove_outlier_prog.build_program(ctx, "glsl/remove_outlier.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!triangle_prog.build_program(ctx, "glsl/Triangles.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!GridPoints_prog.build_program(ctx, "glsl/GridPoints.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!marchingcubes_prog.build_program(ctx, "glsl/marchingcubes.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	if (!normal_prog.build_program(ctx, "glsl/Normals.glpr", true)) {
+		std::cerr << "ERROR in building shader program " << std::endl;
+		return false;
+	}
+	cgv::render::ref_sphere_renderer(ctx, 1);
+	cgv::render::ref_rounded_cone_renderer(ctx, 1);
+	return true;
 	
 	}
 
-bool Voxelization::init_boundary_from_PC(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
-		
-		return true;
-	}
 
-bool Voxelization::denoising(cgv::render::context& ctx,int filter_threshold,int kernel_range) {
-				
-		return true;
 
-	}
+
 	
-bool Voxelization::traverse_voxels(cgv::render::context& ctx, std::vector<vec3> cam_pos) {
-		
-		return true;
-	}
+
 
 void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		/*std::vector<vec3> BoxPoses;
@@ -94,7 +110,7 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		
 		boxes.clear();
 		box_colors.clear();  
-		rgba clr(1.f, 1.f, 1.f,1.0f);
+		rgb clr(1.0f, 1.0f, 1.0f);//,1.0f
 
 		//std::vector<vec3> BoxPoses;
 		//BoxPoses.push_back(vec3(0,0,0));
@@ -145,9 +161,24 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		renderer.set_render_style(style);
 		renderer.set_box_array(ctx, boxes);
 		renderer.set_color_array(ctx, box_colors);
-		renderer.render(ctx, 0, boxes.size());
-	
+		//renderer.render(ctx, 0, boxes.size());
 		
+	
+		//if (renderer.validate_and_enable(ctx)) {
+		//renderer.enable(ctx);
+			//glEnable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			
+			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+
+			glDisable(GL_BLEND);
+
+			//glDisable(GL_DEPTH_TEST);
+		//}
+		//renderer.disable(ctx);
+
 
 		/*glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -189,12 +220,28 @@ void Voxelization::draw_center_mass(cgv::render::context& ctx,vec3 center_m) {
 		glDisable(GL_BLEND);
 	}
 
-bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, float side) {
+
+
+
+bool Voxelization::resize()
+{
+
+	GridPoints_size = ivec3(Voxel_size[0] + 1, Voxel_size[1] + 1, Voxel_size[2] + 1);
+	maxNumTriangles = Object_Boundary.size() * 5; // each cube can have 5 triangles at most
+	maxNumVertices = Voxel_size[1] * (Voxel_size[0] + 1)*(Voxel_size[2] + 1) + (Voxel_size[1] + 1)*Voxel_size[0] * (Voxel_size[2] + 1)
+		+ (Voxel_size[1] + 1)*(Voxel_size[0] + 1)*Voxel_size[2];
+
+	return true;
+}
+
+bool Voxelization::init(std::vector<rgbd_pointcloud> pc, ivec3 resolution, vec3 min, vec3 max, bool showmesh) {//, float side
 
 		min_pos = min;
 		max_pos = max;
-		side_length = side;		
-		Voxel_size = ceil((max - min) / (float)side_length);
+		//2.0 is the length of bbox side 
+		side_length = 2.0/ float(resolution[0]);
+		Voxel_size = resolution;
+
 		int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
 		Object_Boundary.clear();
 		Object_Boundary.resize(length, 0);
@@ -205,31 +252,27 @@ bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, flo
 				int temp = (v1[2] - 1) * Voxel_size[1] * Voxel_size[0] + (v1[1] - 1) * Voxel_size[0] + v1[0] - 1;
 				Object_Boundary[temp] = 1;
 			}
-		//deleteBuffers();
-		
-		
-		createBuffers();
-		bindbuffer();
+		if (showmesh) {
+			resize();
+			deleteBuffers(showmesh);
+		}
+		createBuffers(showmesh);
+		bindbuffer(showmesh);
 		
 		return true;
 	}
 
-	bool Voxelization::generate(cgv::render::context& ctx, std::vector<vec3> cam_pos) 
+	bool Voxelization::generate(cgv::render::context& ctx, std::vector<vec3> cam_pos, bool showmesh)
 	{
-
-		//init_voxelization(ctx);
-		
-		/*createBuffers();	
-		bindbuffer();*/
+				
 		//calculate the gridpoints weight
 		//if it is inside the object,its value become 1
 		
 		int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
-		int filter_threshold = 5;
-		int kernel_range = 3;
+		
 		denoise_prog.set_uniform(ctx, "cubeGridDims", Voxel_size);
-		denoise_prog.set_uniform(ctx, "threshold", filter_threshold);
-		denoise_prog.set_uniform(ctx, "range", kernel_range);
+		denoise_prog.set_uniform(ctx, "threshold", filter_threshold_1);
+		denoise_prog.set_uniform(ctx, "range", kernel_range_1);
 		denoise_prog.enable(ctx);
 		glDispatchCompute(Voxel_size[0], Voxel_size[1], Voxel_size[2]);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -249,11 +292,10 @@ bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, flo
 		
 		//GLuint zero = 0;
 		//boxarray.setSubData(0, sizeof(GLuint), &zero);
-		filter_threshold = 13;
-		kernel_range = 5;
+		
 		remove_outlier_prog.set_uniform(ctx, "cubeGridDims", Voxel_size);
-		remove_outlier_prog.set_uniform(ctx, "threshold", filter_threshold);
-		remove_outlier_prog.set_uniform(ctx, "range", kernel_range);
+		remove_outlier_prog.set_uniform(ctx, "threshold", filter_threshold_2);
+		remove_outlier_prog.set_uniform(ctx, "range", kernel_range_2);
 		remove_outlier_prog.set_uniform(ctx, "side_length", side_length);	
 		remove_outlier_prog.set_uniform(ctx, "min_pos", min_pos);
 		remove_outlier_prog.set_uniform(ctx, "max_pos", max_pos);
@@ -263,26 +305,88 @@ bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, flo
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 		remove_outlier_prog.disable(ctx);
 
+		if (!showmesh) {
 		Object_Boundary.clear();
 		Object_Boundary.resize(length);
 		cubes.getSubData(0, sizeof(float) * length, static_cast<void*>(Object_Boundary.data()));
 		render_content = Object_Boundary;
-		deleteBuffers();
+		deleteBuffers(showmesh);
 		return true;
+		}
+		else {
+			//calculate the gridpoints weight
+			//if it is inside the object,its value become 1
+			GridPoints_prog.set_uniform(ctx, "cubeGridDims", Voxel_size);
+			GridPoints_prog.set_uniform(ctx, "vereticesGridDims", GridPoints_size);
+			GridPoints_prog.set_uniform(ctx, "surfaceLevel", surfaceLevel);
+			GridPoints_prog.enable(ctx);
+			glDispatchCompute(GridPoints_size[0], GridPoints_size[1], GridPoints_size[2]);
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			GridPoints_prog.disable(ctx);
+
+
+			//apply marchingcubes algorithm
+			marchingcubes_prog.set_uniform(ctx, "cubeGridDims", Voxel_size);
+			marchingcubes_prog.set_uniform(ctx, "surfaceLevel", surfaceLevel);
+			marchingcubes_prog.set_uniform(ctx, "vereticesGridDims", GridPoints_size);
+			marchingcubes_prog.set_uniform(ctx, "min_pos", min_pos);
+			marchingcubes_prog.set_uniform(ctx, "max_pos", max_pos);
+			marchingcubes_prog.set_uniform(ctx, "side_length", side_length);
+			marchingcubes_prog.enable(ctx);
+			glDispatchCompute(Voxel_size[0], Voxel_size[1], Voxel_size[2]);
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			marchingcubes_prog.disable(ctx);
+
+			//get triangles
+			triangle_prog.enable(ctx);
+			glDispatchCompute(length, 1, 1);
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			triangle_prog.disable(ctx);
+
+
+			vertices.getSubData(0, sizeof(GLuint), &numVertices);
+			triangles.getSubData(0, sizeof(GLuint), &numTriangles);
+
+			//calculate vertex normal
+			normal_prog.enable(ctx);
+			glDispatchCompute(numVertices, 1, 1);
+			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			normal_prog.disable(ctx);
+			
+
+			return true;
+
+		}
+
+
+
+		
 	}
 
-	void Voxelization::bindbuffer()
+	void Voxelization::bindbuffer(bool showmesh)
 	{
 
 		object_boundary.setBindingPoint(OBJBOUNDARY_SSB_BP);
 		filled_object.setBindingPoint(OBJINSIDE_SSB_BP);
 		denoised_object.setBindingPoint(DENOISEDOBJ_SSB_BP);
 		cubes.setBindingPoint(CUBES_SSB_BP);
-		//boxarray.setBindingPoint(BOXARRAY_SSB_BP);
 		
+		if (showmesh) {
+			tables.setBindingPoint(TRITABLES_SSB_BP);
+			gridpoints.setBindingPoint(GRIDPOINTS_SSB_BP);
+			vertices.setBindingPoint(VERTICES_SSB_BP);
+			triangles.setBindingPoint(TRIANGLES_SSB_BP);
+			cubeedges.setBindingPoint(CUBE_EDGES_SSB_BP);
+			trianglenormals.setBindingPoint(TRINORMALS_SSB_BP);
+			normals.setBindingPoint(NORMALS_SSB_BP);
+			normalid.setBindingPoint(NORMALID_SSB_BP);
+			GLuint zero = 0;
+			vertices.setSubData(0, sizeof(GLuint), &zero);
+			triangles.setSubData(0, sizeof(GLuint), &zero);
+		}
 	}
 
-	void Voxelization::createBuffers() 
+	void Voxelization::createBuffers(bool showmesh) 
 	{
 		int length = Voxel_size[0] * Voxel_size[1] * Voxel_size[2];
 		object_boundary = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
@@ -290,19 +394,93 @@ bool Voxelization::init(std::vector<rgbd_pointcloud> pc, vec3 min, vec3 max, flo
 		filled_object = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
 		denoised_object = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
 		cubes = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * sizeof(float));
-		//boxarray = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length *6* sizeof(float)+ sizeof(GLuint));
-		//center_mass = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * 6 * sizeof(float));
+
+		if (showmesh) {
+		
+			int length_P = GridPoints_size[0] * GridPoints_size[1] * GridPoints_size[2];
+			trianglenormals = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, maxNumTriangles * 3 * sizeof(float));
+			triangles = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, maxNumTriangles * 3 * sizeof(int) + sizeof(GLuint));
+			gridpoints = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length_P * sizeof(float));
+			cubeedges = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, length * 13 * sizeof(int));
+			vertices = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, maxNumVertices * 3 * sizeof(float) + sizeof(GLuint));
+			normals = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, maxNumVertices * 3 * sizeof(float));
+			normalid = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, maxNumVertices * 17 * sizeof(int));//can be 13
+
+			//tables
+			int *flatTriTable = flattenTriTable();
+			tables = Buffer(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_DRAW, (256 + 256 * 16) * sizeof(int));
+			tables.setSubData(0, sizeof(edgeTable), edgeTable);
+			tables.setSubData(sizeof(edgeTable), 256 * 16 * sizeof(int), flatTriTable);
+			delete[] flatTriTable;
+				
+		}
 	}
-	void Voxelization::deleteBuffers()
+	
+	int* Voxelization::flattenTriTable()
+	{
+		int *flatTriTable = new int[256 * 16];
+		int flatTriIndex = 0;
+		for (int i = 0; i < 256; i++) {
+			for (int j = 0; j < 16; j++) {
+				flatTriTable[flatTriIndex] = triTable[i][j];
+				flatTriIndex++;
+			}
+		}
+		return flatTriTable;
+	}
+
+	void Voxelization::deleteBuffers(bool showmesh)
 	{
 		object_boundary.deleteBuffer();
 		filled_object.deleteBuffer();
 		denoised_object.deleteBuffer();
 		cubes.deleteBuffer();
-		//boxarray.deleteBuffer();
+		if (showmesh) {
+			gridpoints.deleteBuffer();
+			trianglenormals.deleteBuffer();		
+			triangles.deleteBuffer();
+			tables.deleteBuffer();
+			cubeedges.deleteBuffer();
+			vertices.deleteBuffer();
+			normals.deleteBuffer();
+			normalid.deleteBuffer();
+			numVertices = 0;
+			numTriangles = 0;
+		
+		}
+	}
+	
+	bool Voxelization::drawmesh(cgv::render::context& ctx) {
+		
+		// Retrieve the number of generated vertices and triangles
+		if (numTriangles == 0)
+			return false;
+		glEnable(GL_COLOR_MATERIAL);
+		glEnable(GL_LIGHTING);
+		glColor3f(1.f, 1.f, 1.f);
+		glBindBuffer(GL_ARRAY_BUFFER, vertices.id);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(3, GL_FLOAT, 0, (void*)(sizeof(GLuint)));
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, normals.id);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glNormalPointer(GL_FLOAT, 0, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangles.id);
+		glDrawElements(GL_TRIANGLES, numTriangles * 3, GL_UNSIGNED_INT, (void*)(sizeof(GLuint)));
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+
+
+		return true;
 	}
 
 	void Voxelization::clear(cgv::render::context& ctx)
 	{
 		cgv::render::ref_rounded_cone_renderer(ctx, -1);
 	}
+	

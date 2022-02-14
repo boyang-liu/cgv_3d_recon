@@ -536,10 +536,15 @@ vr_rgbd::vr_rgbd()
 
 	drawvoexls = true;
 
-	int mode = 0;
+	int mode = 0;//?
 	currentpointcloud = 0;
 	Radius_SelectMode = 0.1;
 	currentcamera = -1;
+	resolution_bbox = 100;;
+	range_1 = 3;
+	range_2 = 5;
+	threshold_1 = 5;
+	threshold_2 = 13;
 
 	BoundingBoxlength = 2.0;
 	BoundingBoxheight = 2.0;
@@ -558,7 +563,27 @@ vr_rgbd::~vr_rgbd()
 
 }
 
+size_t vr_rgbd::generate_mesh() {
+	cgv::render::context& ctx = *get_context();
+	if (rgbdpc_in_box.size() < 3)
+		return 0;
 
+	std::vector<vec3> currentcampos;
+	currentcampos.push_back(rgbdpc_in_box[0].cam_pos);
+	currentcampos.push_back(rgbdpc_in_box[1].cam_pos);
+	currentcampos.push_back(rgbdpc_in_box[2].cam_pos);
+
+	Vox->kernel_range_1 = range_1;
+	Vox->kernel_range_2 = range_2;
+	Vox->filter_threshold_1 = threshold_1;
+	Vox->filter_threshold_2 = threshold_2;
+	Vox->init(rgbdpc_in_box,ivec3(resolution_bbox, resolution_bbox, resolution_bbox) ,pcbb.pos1, pcbb.pos2,true);
+	Vox->generate(ctx, currentcampos,true);
+
+
+
+	return Vox->get_numBoxes();
+}
 	
 	
 size_t vr_rgbd::voxelize_PC() {
@@ -566,19 +591,19 @@ size_t vr_rgbd::voxelize_PC() {
 	if (rgbdpc_in_box.size() <3 )
 		return 0;
 	 
-	
-
-
 	std::vector<vec3> currentcampos;
 	currentcampos.push_back(rgbdpc_in_box[0].cam_pos);
-	//l.push_back(vec3(1.83623, 0.271185, 5));
 	currentcampos.push_back(rgbdpc_in_box[1].cam_pos);
 	currentcampos.push_back(rgbdpc_in_box[2].cam_pos);
-	//std::cout<< rgbdpc[0].cam_pos << rgbdpc[1].cam_pos << rgbdpc[2].cam_pos <<std::endl;
-	Vox->init(rgbdpc_in_box, pcbb.pos1, pcbb.pos2, 0.02);
-	Vox->generate(ctx, currentcampos);
 
-	//post_redraw();
+	Vox->kernel_range_1 = range_1;
+	Vox->kernel_range_2 = range_2;
+	Vox->filter_threshold_1 = threshold_1;
+	Vox->filter_threshold_2 = threshold_2;
+	Vox->init(rgbdpc_in_box, ivec3(resolution_bbox, resolution_bbox, resolution_bbox), pcbb.pos1, pcbb.pos2,false);
+	Vox->generate(ctx, currentcampos,false);
+
+	
 
 	return Vox->get_numBoxes();
 }
@@ -1073,8 +1098,7 @@ size_t vr_rgbd::voxelize_PC() {
 	
 	}
 	void vr_rgbd::temp_test() {
-
-
+		
 		//showvoxelizationmode = true;
 		//showmesh = true;
 		/*if (!showvoxelizationmode)
@@ -1489,8 +1513,10 @@ size_t vr_rgbd::voxelize_PC() {
 		}
 		}				
 
-		if (rgbdpc.size() > 2 && showvolumemode)//				
-			voxelize_PC();		
+		if (rgbdpc.size() > 2 && (showvolumemode|| showcentermassmode))//				
+			voxelize_PC();
+		else if (rgbdpc.size() > 2 && showmeshmode)
+			generate_mesh();
 
 		if (rgbd_inp.is_multi_started()) {
 			for (int i = 0; i < rgbd_inp.nr_multi_de();++i )			
@@ -1598,32 +1624,26 @@ void vr_rgbd::create_gui()
 
 		
 
-		connect_copy(add_control("device", (DummyEnum&)device_idx, "dropdown", device_def)->value_change, rebind(this, &vr_rgbd::device_select));
-
-		//std::cout << "num_devices:"<< num_devices << std::endl;
-		//std::cout << "////////////////////////////////"  << std::endl;
+		connect_copy(add_control("device", (DummyEnum&)device_idx, "dropdown", device_def)->value_change, rebind(this, &vr_rgbd::device_select));		
 		add_member_control(this, "currentcamera", currentcamera, "value_slider", "min=-1;max=2;ticks=true");
-
 		add_gui("rgbd_protocol_path", rgbd_protocol_path, "directory", "w=150");
-		//add_member_control(this, "rgbd_started", rgbd_started, "check");
-
 		add_member_control(this, "color_stream_format", (DummyEnum&)color_stream_format_idx, "dropdown", get_stream_format_enum(color_stream_formats));
-		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));		
-		//add_member_control(this, "ir_stream_format", (DummyEnum&)ir_stream_format_idx, "dropdown", get_stream_format_enum(ir_stream_formats));
+		add_member_control(this, "depth_stream_format", (DummyEnum&)depth_stream_format_idx, "dropdown", get_stream_format_enum(depth_stream_formats));				
 		add_member_control(this, "attach all devices", all_devices_attached, "check");
 		add_member_control(this, "rgbd_multi_started", rgbd_multi_started, "check");
-		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");
-		//connect_copy(add_control("position_scale", position_scale, "value_slider", "min=0.05;max=10;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
-		//connect_copy(add_control("rotation_scale", rotation_scale, "value_slider", "min=0.01;max=1;log=true;ticks=true")->value_change, rebind(static_cast<drawable*>(this), &drawable::post_redraw));
+		add_member_control(this, "get_tracker_positions", get_tracker_positions, "check");		
 		connect_copy(add_button("save current pointcloud")->click, rebind(this, &vr_rgbd::save_all_pc));
-		connect_copy(add_button("load one pointcloud")->click, rebind(this, &vr_rgbd::load_pc));
-		//connect_copy(add_button("load recorded pointcloud")->click, rebind(this, &vr_rgbd::start_load_recorded_pc));
-
+		connect_copy(add_button("load one pointcloud")->click, rebind(this, &vr_rgbd::load_pc));		
 		add_member_control(this, "showallpcmode", showallpcmode, "check");
 		add_member_control(this, "showPCinBboxmode", showPCinBboxmode, "check");
 		add_member_control(this, "showPCoutsideBboxmode", showPCoutsideBboxmode, "check");
 		
 		add_member_control(this, "showvolumemode", showvolumemode, "check");
+		add_member_control(this, "resolution", resolution_bbox, "value_slider", "min=50;max=150;ticks=true");
+		add_member_control(this, "range_value_1", range_1, "value_slider", "min=3;max=7;ticks=true");
+		add_member_control(this, "threshold_value_1", threshold_1, "value_slider", "min=0;max=100;ticks=true");
+		add_member_control(this, "range_value_2", range_2 , "value_slider", "min=3;max=7;ticks=true");
+		add_member_control(this, "threshold_value_2", threshold_2, "value_slider", "min=0;max=200;ticks=true");
 		add_member_control(this, "showcentermassmode", showcentermassmode, "check");
 		connect_copy(add_button("clear trajectory")->click, rebind(this, &vr_rgbd::clear_trajectory));
 		add_member_control(this, "showmeshmode", showmeshmode, "check");
@@ -1807,17 +1827,23 @@ void vr_rgbd::on_set(void* member_ptr)
 		{
 			showmeshmode = false;
 			showcentermassmode = false;
+			update_member(&showmeshmode);
+			update_member(&showcentermassmode);
 		}
 
 		if (member_ptr == &showmeshmode)
 		{
 			showvolumemode = false;
 			showcentermassmode = false;
+			update_member(&showvolumemode);
+			update_member(&showcentermassmode);
 		}
 		if (member_ptr == &showcentermassmode)
 		{
 			showmeshmode = false;
 			showvolumemode = false;
+			update_member(&showmeshmode);
+			update_member(&showvolumemode);
 		}
 
 		update_member(member_ptr);
@@ -1839,10 +1865,7 @@ void vr_rgbd::update_stream_formats()
 	rgbd_inp.query_stream_formats(IS_DEPTH, depth_stream_formats);
 	if (find_control(depth_stream_format_idx))
 		find_control(depth_stream_format_idx)->multi_set(get_stream_format_enum(depth_stream_formats));
-	/*ir_stream_formats.clear();
-	rgbd_inp.query_stream_formats(IS_INFRARED, ir_stream_formats);
-	if (find_control(ir_stream_format_idx))
-		find_control(ir_stream_format_idx)->multi_set(get_stream_format_enum(ir_stream_formats));*/
+	
 }
 
 
@@ -1899,7 +1922,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				}
 			}
 			
-
 			if (ci == 1 && vrke.get_key() == vr::VR_DPAD_LEFT)
 			{
 				switch (vrke.get_action()) {
@@ -1937,8 +1959,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 							rgbdpc_in_box[currentpointcloud].renderColors[i] = mycolor;
 						}
 					}*/
-					
-					
+										
 					break;
 				case cgv::gui::KA_RELEASE:
 					
@@ -2017,7 +2038,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				
 					}*/
 				}
-
 					break;
 				case cgv::gui::KA_RELEASE:
 
@@ -2025,8 +2045,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				}
 
 			}
-
-
 
 			if (ci == 0 && vrke.get_key() == vr::VR_MENU)
 			{
@@ -2103,8 +2121,7 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					if (!boundingboxisfixed)
 						mode = (mode + 1) % 2;
 					else mode=(mode+1)%4;*/
-					
-				
+									
 				}
 					break;
 				case cgv::gui::KA_RELEASE:
@@ -2172,7 +2189,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 					}
 				}
 
-
 				post_redraw();
 			}
 
@@ -2206,12 +2222,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 						//// update intersection points
 						//intersection_points[i] = rotation * (intersection_points[i] - last_pos) + pos;
 						//============================================
-						
-
-
-
-
-
 
 					}
 				}
@@ -2244,8 +2254,6 @@ bool vr_rgbd::handle(cgv::gui::event& e)
 				}
 				post_redraw();
 			}
-
-
 			return true;
 		}
 		return false;
@@ -2289,28 +2297,16 @@ bool vr_rgbd::init(cgv::render::context& ctx)
 
 			}
 		}
-		//std::cout << "================================" << std::endl;
+
 		if (!sky_prog.is_created()) {
 			sky_prog.build_program(ctx, "glsl/sky.glpr");
 			img_tex.create_from_images(ctx, data_dir + "/skybox/cm_{xp,xn,yp,yn,zp,zn}.jpg");//
 			
 		}
-		//if (!floor_prog.is_created()) {
-		//	floor_prog.build_program(ctx, "glsl/floor.glpr");
-		//	flo_tex.create_from_image(ctx, data_dir + "/res/floor.jpg");//
-		//	
-		//}
+		
 		Vox->init_voxelization(ctx);
-		//MarchingCube->initialize(ctx);
-
 		
-
-
-
-		return true;
-
-		
-			
+		return true;		
 }
 void vr_rgbd::clear(cgv::render::context& ctx)
 {
@@ -2448,6 +2444,8 @@ void vr_rgbd::draw_boudingbox(cgv::render::context& ctx, vec3& pos1, vec3& pos2)
 	//		glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
 	//	}
 	//	renderer.disable(ctx);
+
+
 }
 
 
@@ -2557,122 +2555,8 @@ void vr_rgbd::draw_viewingcone(cgv::render::context& ctx, int index, std::vector
 void vr_rgbd::draw(cgv::render::context& ctx)
 {
 	
-	
-
-	//if (rgbdpc.size() > 2) {
-	//rgbdpc_in_box.clear();
-	//rgbdpc_in_box.resize(rgbdpc.size());
-
-	//for (int i = 0; i < rgbdpc.size(); i++) {
-	//	rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-	//}
-
-
-	////if (!DevicesAreStarted) {
-
-	//std::vector<vec3> currentcampos;
-	//currentcampos.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-	////l.push_back(vec3(1.83623, 0.271185, 5));
-	//currentcampos.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-	//currentcampos.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);
-	//Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-	//Vox->generate(ctx, currentcampos);
-
-	////Vox->draw_voxels(ctx);
-	//}
-
-	//==============================================================================================
-	//std::vector<float> Voxels;
-	//Voxels.resize(64, 1);
-	///*std::vector<int> Voxelids;
-	//for (int i = 0; i < 64; i++)
-	//	Voxelids.push_back(i);*/
-	//MarchingCube->set_signed_weight(Vox->get_Voxel_id(), Voxels, uvec3(4, 4, 4));
-	// {
-	//if (showmesh)
-	/*
-	std::vector<vec3> l;
-	l.push_back(vec3(-2, -2, 0));
-	//l.push_back(vec3(1.83623, 0.271185, 5));
-	l.push_back(vec3(-2, -2, 0));
-	l.push_back(vec3(-2, -2, 0));
-	rgbd_pointcloud q;	
-	q.add_point(vec3(0.25, 0.25, 0.25));
-	vector<rgbd_pointcloud> q1;
-	q1.push_back(q);
-	Vox->init(q1, vec3(0, 0, 0), vec3(2, 2, 2), 0.5);
-	Vox->generate(ctx, l);
-	Vox->draw_voxels(ctx);
-	*/
-	//draw_grid(ctx, vec3(0,0,0), vec3(2,2,2), 0.5);
-	// 
-	// 
-
-	
-
 	draw_boudingbox(ctx, pcbb.pos1,pcbb.pos2);
-	
-	
-	
-	//===========================================================================================
-	if (rgbdpc.size() > 2 ) {//&& showmesh
-	////	//std::cout << rgbdpc[0].cam_rotation << std::endl;
-	////	//Voxelization a;		
-	////	
-	////
-
-		/*rgbdpc_in_box.clear();
-		rgbdpc_in_box.resize(rgbdpc.size());
-
-		for (int i = 0; i < rgbdpc.size(); i++) {
-			rgbdpc_in_box[i]=setboundingbox(rgbdpc[i], vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123));
-		}
-		
-
-		std::vector<vec3> l;
-		l.push_back(rgbdpc[0].cam_rotation * vec3(0, 0, 0) + rgbdpc[0].cam_translation);
-		l.push_back(rgbdpc[1].cam_rotation * vec3(0, 0, 0) + rgbdpc[1].cam_translation);
-		l.push_back(rgbdpc[2].cam_rotation * vec3(0, 0, 0) + rgbdpc[2].cam_translation);*/	
-	////	
-	//	MarchingCube->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-	//	MarchingCube->generate(ctx, l);
-	//	//MarchingCube->draw_voxels(ctx);
-	//	MarchingCube->drawmesh(ctx);
-	////	
-		
-					
-		/*Vox->init(rgbdpc_in_box, vec3(0.83623, -0.728815, 2.24123), vec3(2.83623, 1.271185, 4.24123), 0.02);
-		
-		
-
-		Vox->generate(ctx, l);//*/
-		
-	//	//showmesh = false;
-	}	
-	//===========================================================================================
-	////MarchingCube->draw(ctx);
-	
-	
-	
-
-		/*if (show_points) {
-			auto& pr = cgv::render::ref_point_renderer(ctx);
 			
-			pr.set_y_view_angle((float)vr_view_ptr->get_y_view_angle());
-
-			if(current_pc.size()!=0)
-				draw_pc(ctx, current_pc);
-			
-			size_t begin = 0;
-			size_t end = recorded_pcs.size();
-			if (end > max_nr_shown_recorded_pcs)
-				begin = end - max_nr_shown_recorded_pcs;
-			
-			for (size_t i=begin; i<end; ++i)
-				draw_pc(ctx, recorded_pcs[i]);
-		}*/
-		
-
 		if (vr_view_ptr) {
 			std::vector<vec3> P;
 			std::vector<rgb> C;
@@ -2694,32 +2578,7 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 				}
 			}
 			if (state_ptr) {
-				//if (selectPointsmode ) {
-				//	if (state_ptr->controller[1].status == vr::VRS_TRACKED)
-				//	{
-				//		vec3 ray_origin, ray_direction;
-				//		std::vector<vec4> sphere;
-				//		std::vector<rgb> color;
-				//		state_ptr->controller[1].put_ray(&ray_origin(0), &ray_direction(0));
-				//		vec3 sphere_center = ray_origin + sphere_distance * ray_direction;
-
-
-				//		sphere.push_back(vec4(sphere_center, Radius_SelectMode));
-				//		color.push_back(rgb(0, 0, 1));
-				//		cgv::render::sphere_renderer& sr = ref_sphere_renderer(ctx);
-				//		glEnable(GL_BLEND);
-				//		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				//		//sr.set_render_style(sphere_style);
-				//		sr.set_color_array(ctx, color);
-				//		sr.set_sphere_array(ctx, sphere);
-				//		sr.render(ctx, 0, 1);
-				//		sphere.clear();
-				//		color.clear();
-				//		glDisable(GL_BLEND);
-
-				//	}
-				//}
-				//else 
+				 
 				if (setboundingboxmode) {
 					vec3 ray_origin, ray_direction;
 					state_ptr->controller[1].put_ray(&ray_origin(0), &ray_direction(0));
@@ -2733,21 +2592,10 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 
 					draw_boudingbox(ctx, pos1, pos2);
 					pcbb.pos1 = pos1;
-					pcbb.pos2 = pos2;
-					//std::cout<<"pcbb.pos1"<<pcbb.pos1<<std::endl;
-					//std::cout<<"pcbb.pos2"<<pcbb.pos2<<std::endl;
+					pcbb.pos2 = pos2;					
 					pcbb.step = BoundingBoxstep;
 
-
-					/*if (rgbdpc.size() > 0) {
-					for (int i = 0; i < rgbdpc.size(); i++) {
-						rgbdpc_in_box[i] = setboundingbox(rgbdpc[i], pos1, pos2);
-					}
-					}*/
-					
-					
-
-
+	
 				}
 				else {
 					if (boundingboxisfixed) {
@@ -2845,9 +2693,13 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 		if (showvolumemode || showcentermassmode)
 		{
 
-			Vox->draw_voxels(ctx, !showCenterMass);
+			Vox->draw_voxels(ctx, showvolumemode);
 			
 			
+		}
+		else if(showmeshmode){
+		
+			Vox->drawmesh(ctx);
 		}
 		
 		float max_scene_extent = 100;
@@ -2887,6 +2739,51 @@ void vr_rgbd::draw(cgv::render::context& ctx)
 			glDepthMask(GL_TRUE);
 		}*/
 
+
+
+
+
+		////// draw static boxes
+		//boxes.clear();
+		//vec3 min1 = vec3(0,0,0);
+		//vec3 max1 = vec3(1, 1, 1);
+		//boxes.push_back(box3(min1, max1));
+		//cgv::render::box_renderer& renderer = cgv::render::ref_box_renderer(ctx);
+		//std::vector<rgb> box_colors2;
+		//box_colors2.clear();
+		//rgb table_clr1(1.0f, 0.0f, 0.3f);
+		//box_colors2.push_back(table_clr1);
+		//renderer.set_render_style(style);
+
+		//renderer.set_box_array(ctx, boxes);
+		//renderer.set_color_array(ctx, box_colors2);
+		//if (renderer.validate_and_enable(ctx)) {
+		//	
+
+		//	glEnable(GL_DEPTH_TEST);
+		//	glEnable(GL_BLEND);
+		//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//	
+
+		//	glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
+
+		//	glDisable(GL_BLEND);
+		//
+		//	glDisable(GL_DEPTH_TEST);
+
+
+		//}
+		//renderer.disable(ctx);
+		//// draw dynamic boxes 
+		//	renderer.set_render_style(movable_style);
+		//	renderer.set_box_array(ctx, movable_boxes);
+		//	renderer.set_color_array(ctx, movable_box_colors);
+		//	renderer.set_translation_array(ctx, movable_box_translations);
+		//	renderer.set_rotation_array(ctx, movable_box_rotations);
+		//	if (renderer.validate_and_enable(ctx)) {
+		//		glDrawArrays(GL_POINTS, 0, (GLsizei)movable_boxes.size());
+		//	}
+		//	renderer.disable(ctx);
 
 	
 }
