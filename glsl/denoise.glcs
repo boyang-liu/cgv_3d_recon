@@ -31,20 +31,20 @@ int indexCube(int x, int y, int z){
 float denoise(ivec3 VoxelID){
 
 float value=0;
+int n=range/2;
+int x, y, z;
+int range_sqr=range*range;
+int size =range*range*range;
+for (int i = 0; i < size; ++i)
+{
+	x =  (i % range)+VoxelID.x-n;
+	y =  (i % range_sqr) / range+VoxelID.y-n;
+	z =  (i /range_sqr)+VoxelID.z-n;
+	if(x<cubeGridDims.x && x>=0 &&y<cubeGridDims.y && y>=0 &&z<cubeGridDims.z && z>=0)
+		value=value+cubes[indexCube(x,y,z)];
+}
 
-int thr2=int(ceil(threshold/2));
-int thr1=1-thr2;
-for(int i=thr1;i<thr2;i++)
-	for(int j=thr1;j<thr2;j++)
-		for(int k=thr1;k<thr2;k++)
-		{
-		if((VoxelID.x+i)<cubeGridDims.x && (VoxelID.x+i)>=0 &&
-		(VoxelID.y+j)<cubeGridDims.y && (VoxelID.y+j)>=0 &&
-		(VoxelID.z+k)<cubeGridDims.z && (VoxelID.z+k)>=0
-		)
-		value=value+cubes[indexCube((VoxelID.x+i),(VoxelID.y+j),(VoxelID.z+k))];
-	
-		}
+
 if( value >= threshold )
 	return 1.0;
 else 
