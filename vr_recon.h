@@ -85,16 +85,16 @@ protected:
 	size_t nr_depth_frames;
 	size_t nr_color_frames;
 	///
-	bool record_frame;
+
 	///
-	bool record_all_frames;
+
 	/// 
 	bool record_key_frames;
-	bool clear_all_frames;
-	bool in_calibration;
-	bool zoom_in;
-	bool zoom_out;
-	bool save_pointcloud;
+
+
+
+
+	
 	int key_frame_step;
 	/// intermediate point cloud and to be rendered point cloud
 	std::vector<vertex> intermediate_pc, current_pc, test_pc;
@@ -113,10 +113,8 @@ protected:
 
 	///counter of pc
 	int counter_pc;
-	///registration
-	bool registration_started;
 
-	int rgbd_controller_index;
+
 	/// current pose of the controller
 	mat3 controller_orientation;
 	vec3 controller_position;
@@ -140,8 +138,7 @@ protected:
 	///
 	bool show_points;
 	unsigned max_nr_shown_recorded_pcs;
-	bool trigger_is_pressed;
-	float recording_fps;
+
 	///
 	std::future<size_t> future_handle;
 
@@ -153,7 +150,6 @@ protected:
 	bool rgbd_started;
 	bool rgbd_multi_started;
 	bool all_devices_attached;
-	std::string rgbd_protocol_path;
 	bool get_tracker_positions;
 	/// 
 	rgbd_input rgbd_inp;
@@ -344,7 +340,7 @@ public:
 	void load_recorded_PCs();
 	void clear_trajectory();
 	void test1(int a);
-	void temp_test();
+	
 	
 	//frame_type read_rgb_frame();
 	//should be a thread
@@ -368,7 +364,7 @@ public:
 	//void generate_rdm_pc(point_cloud& pc1, point_cloud& pc2);
 	//void  test_icp();
 	//void construct_TSDtree();
-	bool record_this_frame(double t);
+
 	void timer_event(double t, double dt);
 	std::string get_type_name() const;
 	void create_gui();

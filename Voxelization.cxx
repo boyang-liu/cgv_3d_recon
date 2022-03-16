@@ -82,26 +82,7 @@ bool Voxelization::init_voxelization(cgv::render::context& ctx) {
 
 
 void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
-		/*std::vector<vec3> BoxPoses;
-		BoxPoses.push_back(vec3(0, 0, 0));
-		rgba clr(1.f, 1.f, 1.f, 0.5f);
 		
-		
-		cgv::render::volume_render_style vstyle;
-		cgv::render::texture density_tex;
-		cgv::media::volume::volume density_volume;
-		if (density_tex.is_created())
-			density_tex.destruct(ctx);
-		std::vector<float>& density_data = density_volume.ref_voxel_grid().data;
-
-
-		auto& vr = ref_volume_renderer(ctx);				
-		vr.set_render_style(vstyle);
-		vr.set_volume_texture(&density_tex);
-		vr.set_transfer_function_texture(&tf_editor_ptr->ref_tex());
-		vr.set_bounding_box();
-		vr.transform_to_bounding_box(true);
-		vr.render(ctx,0,0);*/
 
 		if (render_content.size() == 0)
 			return;
@@ -130,7 +111,7 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 					box_colors.emplace_back(clr);
 					sigma_m += 1;
 					sum =sum+ (BoxMinPos + BoxMaxPos)/2 ;
-					//BoxPoses.push_back(BoxMinPos);
+					
 					}
 					
 				}
@@ -165,9 +146,7 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 		renderer.set_color_array(ctx, box_colors);
 		renderer.render(ctx, 0, boxes.size());
 
-			//glEnable(GL_BLEND);				
-			//glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
-			//glDisable(GL_BLEND);		
+					
 		}
 		else {	
 			draw_center_mass(ctx, center_gravity);
@@ -177,7 +156,9 @@ void Voxelization::draw_voxels(cgv::render::context& ctx, bool showvolume){
 			renderer.set_box_array(ctx, boxes);
 			renderer.set_color_array(ctx, box_colors);
 			//renderer.render(ctx, 0, boxes.size());
+			//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glDrawArrays(GL_POINTS, 0, (GLsizei)boxes.size());
 			glDisable(GL_BLEND);
 			
