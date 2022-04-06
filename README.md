@@ -1,5 +1,4 @@
-# Research project:
-3D scanning based estimating the center of gravity of the body
+# Research project: 3D scanning based estimating the center of gravity of the body
 
 the program needs cgv framework,azure kinect sdk
 
