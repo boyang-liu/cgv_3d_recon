@@ -36,6 +36,13 @@ void Buffer::setSubData(int offset, size_t _size, const void* data) {
 	glBufferSubData(target, offset, _size, data);
 	glBindBuffer(target, 0);
 }
+void Buffer::setBufferData(size_t _size, const void* data) {
+	glBindBuffer(target, id);
+	glBufferData(target, _size, data, usage);
+	glBindBuffer(target, 0);
+}
+
+
 void Buffer::getData(void* container) { 
 	getSubData(0, size, container); 
 }

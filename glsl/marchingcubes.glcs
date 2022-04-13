@@ -4,18 +4,23 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout (std430, binding = 0) buffer gridpointsBuffer
+layout (std430, binding = 1) buffer gridpointsBuffer
 {
-     
+     //TSDF value
      float gridpoints[];
 };
 
-layout (std430, binding = 2) buffer cubeedgesBuffer
+layout (std430, binding = 9) buffer VerticesweightBuffer
+{
+    float weights[];
+};
+
+layout (std430, binding = 5) buffer cubeedgesBuffer
 {
     int cubes[];
 };
 
-layout (std430, binding = 3) buffer tablesBuffer
+layout (std430, binding = 2) buffer tablesBuffer
 {
      int edgeTable[256];
      //int triTable[256][16];
@@ -26,13 +31,13 @@ struct Vector
     float x, y, z;
 };
 
-layout (std430, binding = 6) buffer vertexBuffer
+layout (std430, binding = 8) buffer vertexBuffer
 {
     int vertCount;
     Vector vertices[];
 };
 
-layout (std430, binding = 8) buffer normalidBuffer
+layout (std430, binding = 7) buffer normalidBuffer
 {   
 	//first 16 nums are use to  save the related index of triangle
 	// 17 th saves the num of related triangles
@@ -115,9 +120,9 @@ void createEdgeVertex(int edgeLocalID){
     ControlNode nodeB = controlNodes[edgeNodeB[edgeLocalID]];
 
     // calculate the interpolated coordinates of the vertex
-    //float t = tvalue(nodeA.value, nodeB.value);
+    float t = tvalue(nodeA.value, nodeB.value);
 
-    vec3 p = mix(nodeA.pos, nodeB.pos, 0.5);	
+    vec3 p = mix(nodeA.pos, nodeB.pos, t);	
 
 
     //vec3 n = mix(nodeA.normal, nodeB.normal, t);
@@ -132,7 +137,6 @@ void createEdgeVertex(int edgeLocalID){
 
     edgeNodes[edgeLocalID] = vertexID;
 }
-
 
 
 
@@ -230,9 +234,12 @@ void main(){
 
 
 	}
-	
 
-	 cubes[currentCubeID+12] = configuration;
+	if(weights[indexPoint(x,y,z)]==0||weights[indexPoint(x,y+1,z)]==0||weights[indexPoint(x+1,y+1,z)]==0||weights[indexPoint(x+1,y,z)]==0||
+	weights[indexPoint(x,y,z+1)]==0||weights[indexPoint(x,y+1,z+1)]==0||weights[indexPoint(x+1,y+1,z+1)]==0||weights[indexPoint(x+1,y,z+1)]==0)
+		cubes[currentCubeID+12] = 0;
+	 else
+		cubes[currentCubeID+12] = configuration;
 	
 	
 }

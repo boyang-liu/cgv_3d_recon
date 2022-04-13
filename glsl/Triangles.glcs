@@ -6,12 +6,12 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 //layout (local_size_variable) in;
 
-layout (std430, binding = 2) buffer cubeedgesBuffer
+layout (std430, binding = 5) buffer cubeedgesBuffer
 {
     int cubes[];
 };
 
-layout (std430, binding = 3) buffer tablesBuffer
+layout (std430, binding = 2) buffer tablesBuffer
 {
     int edgeTable[256];
     int triTable[256][16];
@@ -22,12 +22,12 @@ struct Vector
     float x, y, z;
 };
 
-layout (std430, binding = 4) buffer trinormalsBuffer
+layout (std430, binding = 3) buffer trinormalsBuffer
 {
     Vector trinormals[];
 };
 
-layout (std430, binding = 6) buffer verticesBuffer
+layout (std430, binding = 8) buffer verticesBuffer
 {
 	int vertCount;
     Vector vertices[];
@@ -38,13 +38,13 @@ struct Triangle
     int a, b, c;
 };
 
-layout (std430, binding = 5) coherent buffer trianglesBuffer
+layout (std430, binding = 4) coherent buffer trianglesBuffer
 {
     int triCount;
     Triangle triangles[];
 };
 
-layout (std430, binding = 8) buffer normalidBuffer
+layout (std430, binding = 7) buffer normalidBuffer
 {   
 	//first 16 nums are use to  save the related index of triangle
 	// 17 th saves the num of related triangles

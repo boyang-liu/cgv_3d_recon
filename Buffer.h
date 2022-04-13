@@ -18,6 +18,7 @@ public:
 	Buffer(GLenum _target, GLenum _usage, size_t _size, void* data);
 	void setData(const void* data);
 	void setSubData(int offset, size_t _size, const void* data);
+	void setBufferData(size_t _size, const void* data);
 	void getData(void* container);
 	void getSubData(int offset, size_t _size, void* container);
 	void setBindingPoint(int binding);

@@ -8,19 +8,19 @@ struct Vector
     float x, y, z;
 };
 
-layout (std430, binding = 4) buffer trinormalsBuffer
+layout (std430, binding = 3) buffer trinormalsBuffer
 {
     Vector trinormals[];
 };
 
 
-layout (std430, binding = 7) buffer normalsBuffer
+layout (std430, binding = 6) buffer normalsBuffer
 {   
 	
     Vector normals[];
 };
 
-layout (std430, binding = 8) buffer normalidBuffer
+layout (std430, binding = 7) buffer normalidBuffer
 {   
 	//first 16 nums are use to  save the related index of triangle
 	// 17 th saves the num of related triangles

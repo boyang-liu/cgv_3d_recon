@@ -1,0 +1,144 @@
+#version 450
+
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout (std430, binding = 0) buffer depthimageBuffer
+{
+    int depthimage[];
+};
+
+layout (std430, binding = 1) buffer VerticesBuffer	
+{
+    float TSDF[];
+};
+layout (std430, binding = 9) buffer VerticesweightBuffer
+{
+    float weights[];
+};
+
+
+uniform ivec3 vereticesGridDims;
+uniform vec3  min_pos;
+uniform vec3  max_pos;
+uniform float voxel_length;
+
+
+uniform float fx_d;
+uniform float fy_d;
+uniform float cx_d;
+uniform float cy_d;
+uniform float depth_scale;
+uniform int DepthImageWidth;
+uniform int DepthImageHeight;
+
+uniform mat3 backrotationmatrix;
+uniform vec3 cam_pos;
+uniform bool IsFirstFrame;
+
+int indexVertex(int x, int y, int z){
+
+    return x + vereticesGridDims.x * y + vereticesGridDims.x * vereticesGridDims.y * z;
+
+}
+/*
+int indexPixel(int x, int y)
+{
+
+	return x + DepthImageWidth * y ;
+
+}
+*/
+
+
+vec3 posVertex(int x, int y, int z){
+
+	vec3 pos_V= vec3(min_pos.x+x*voxel_length,min_pos.y+y*voxel_length,min_pos.z+z*voxel_length);
+	return pos_V;
+
+}
+
+
+
+ivec2 getpixelIndex(float x,float y,float z){
+
+	float x_new , y_new;
+	int x_n , y_n;
+		
+	x_new=x/(z*fx_d)+cx_d;
+	y_new=y/(z*fy_d)+cy_d;
+	x_n=int(floor(x_new+0.5));
+	y_n=int(floor(y_new+0.5));	
+
+	//return x_n + DepthImageWidth * y_n ;
+	return ivec2(x_n,y_n);
+}
+
+void main(){
+	ivec3 id = ivec3(gl_GlobalInvocationID);
+	
+	int x = id.x;
+    int y = id.y;
+    int z = id.z;
+
+	int idx =indexVertex(x,y,z);
+
+	
+	vec3 pos=posVertex(x,y,z);//get the position of the current GridVertex in global coordinate
+	vec3 pos2 = backrotationmatrix*(pos-cam_pos);//get the position of the GridVertex in camera coordinate
+	pos2=-pos2;
+	ivec2 current_pixel = getpixelIndex(pos2.x,pos2.y,pos2.z);
+
+	if(current_pixel.x<0 && current_pixel.y<0 && current_pixel.x>=DepthImageWidth && current_pixel.y>=DepthImageHeight){
+	
+	// outside the range of depth image
+		if(IsFirstFrame){
+
+			weights[idx]=0;                                          
+			TSDF[idx]=1;
+
+		}
+	
+	
+	
+	}else	
+	{
+
+		int current_pixel_id = current_pixel.x + DepthImageWidth * current_pixel.y; 
+
+		if(depthimage[current_pixel_id]==0){
+
+		// out of the range of the detection of infrared camera 
+			if(IsFirstFrame){
+				weights[idx]=0;                                       
+				TSDF[idx]=1;
+			}
+
+		}else
+		{
+
+
+
+			float d = depth_scale * depthimage[current_pixel_id] * 0.125;
+			vec3 p_pixel=vec3((current_pixel.x - cx_d) * d * fx_d,(current_pixel.y - cy_d) * d * fy_d,d);
+			float sdf=length(p_pixel)-length(pos2);
+			float truncated_distance=voxel_length*5;
+			float tsdf= sdf/truncated_distance;
+			if(tsdf>1)
+				tsdf=1;
+			else if(tsdf<-1)
+				tsdf=-1;
+			if(IsFirstFrame){
+				weights[idx]=1;
+				TSDF[idx]=tsdf;
+			}else
+			{	
+				TSDF[idx]=(TSDF[idx]*weights[idx]+tsdf)/(weights[idx]+1);
+				weights[idx]+=1;
+			}
+		}
+
+
+	}
+	
+}
