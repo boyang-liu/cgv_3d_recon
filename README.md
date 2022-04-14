@@ -1,1 +1,0 @@
-# cgv_vr_3d_scanning
