@@ -1,0 +1,16 @@
+   
+show all
+//type(rgbd_control):protocol_path="D:/data/kinect"
+
+name(vr interactor):show_focus=true
+
+
+
+persistent
+name(vr interactor):tracking_rotation=-95
+name(vr interactor):tracking_rotation_origin_x=-2.49354
+name(vr interactor):tracking_rotation_origin_y=0.73553
+name(vr interactor):tracking_rotation_origin_z=1.08309
+name(vr interactor):tracking_origin_x=-0.0575647
+name(vr interactor):tracking_origin_y=-0.373726
+name(vr interactor):tracking_origin_z=1.23816
